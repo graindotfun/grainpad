@@ -1,6 +1,7 @@
 import nacl from "tweetnacl";
 import bs58 from "bs58";
-import { SITE } from "@/lib/site-config";
+import { SITE, identityPolicy } from "@/lib/site-config";
+import { reservedIdentity } from "@/lib/launch-identity.mjs";
 import { bucket, fail, limitedJSON, sameOrigin, sha256 } from "@/lib/server-utils";
 import { metadataMessage,metadataPayload,metadataLink,type MetadataDraft } from "@/lib/metadata-shared";
 export async function POST(request:Request){
@@ -23,6 +24,7 @@ export async function POST(request:Request){
   const type=png?"image/png":jpeg?"image/jpeg":webp?"image/webp":"";
   if(!type||draft.imageType!==type||bytes.length>2_000_000)throw new Error("Upload a valid PNG, JPEG or WebP below 2 MB.");
   const storage=bucket();const imageHash=await sha256(bytes);
+  const reserved=reservedIdentity({name:draft.name,symbol:draft.symbol,imageHash,website,twitter},identityPolicy(draft.owner));if(reserved)throw new Error(reserved);
   const links={...(website?{website}:{}),...(twitter?{twitter}:{})};
   const metadata={name:draft.name.trim(),symbol:draft.symbol.trim(),description:draft.description.trim(),image:`${SITE.origin}/api/assets/${imageHash}`,...(website?{external_url:website}:{}),...links,...(Object.keys(links).length?{extensions:links}:{}),properties:{category:"image",files:[{uri:`${SITE.origin}/api/assets/${imageHash}`,type}]}};
   const json=JSON.stringify(metadata);const metaHash=await sha256(json);
