@@ -34,3 +34,31 @@ body:has(>.grain-updates) .contract-copy:active{transform:scale(.97)}
 }
 @media(hover:hover) and (pointer:fine){.grain-updates .index-content .index-row:hover{background:transparent}}
 @media(prefers-reduced-motion:reduce){body:has(>.grain-updates) .contract-copy{transition:none;transform:none}}
+
+/* Keep the current cached discovery data and pagination; this is its grain presentation. */
+.grain-updates .discovery-card{isolation:isolate;transition:transform 160ms ease}
+.grain-updates .discovery-card::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:1px solid var(--brand-muted);border-radius:inherit;opacity:0;transition:opacity 160ms ease}
+.grain-updates .discovery-card:hover{border-color:transparent}
+.grain-updates .discovery-card.is-grain:hover{border-color:#ff7a2955}
+.grain-updates .discovery-card:focus-within::before{opacity:.65}
+.grain-updates :is(.discovery-create,.discovery-filters>button,.discovery-pagination button,.discovery-card-meta button,.discovery-open){transition:transform 120ms ease,opacity 120ms ease}
+.grain-updates .discovery-create:hover{filter:none;opacity:.9}
+.grain-updates :is(.discovery-create,.discovery-filters>button,.discovery-pagination button,.discovery-card-meta button):active{transform:scale(.97)}
+.grain-updates .discovery-track{height:8px;border-radius:2px}
+.grain-updates .discovery-track i{width:100%;border-radius:0;transform-origin:left;background:radial-gradient(circle,var(--xmr-orange) 1.4px,transparent 1.7px) 0 0/5px 4px}
+.grain-updates .discovery-prelaunch{background-image:radial-gradient(circle,#ff66001a .8px,transparent 1px);background-size:17px 19px}
+.grain-updates :is(.approach-section,.principles-section){border-image:repeating-linear-gradient(90deg,var(--brand-line) 0 3px,transparent 3px 9px) 1}
+.grain-updates .token-discovery{--discovery-muted:#a0aaad}
+.grain-updates :is(.discovery-overline,.discovery-network,.discovery-symbol,.discovery-value>span,.discovery-value small,.discovery-progress>span,.discovery-card-meta button,.discovery-card-meta time,.discovery-badges>span,.discovery-badges>.discovery-official,.discovery-badges>.discovery-quote,.discovery-footnote,.discovery-coverage,.discovery-filters>button,.discovery-filters>button>span,.discovery-pagination button,.graduated-line){font-size:11px;line-height:1.5}
+.grain-updates .discovery-card-meta{flex-wrap:wrap;row-gap:8px}
+.grain-updates .discovery-badges{flex-wrap:wrap}
+.grain-updates .discovery-filters>button>span{opacity:1}
+html[data-theme=light] .grain-updates .token-discovery{--discovery-muted:#605b52}
+html[data-theme=light] .grain-updates .discovery-overline{color:#a13d00}
+html[data-theme=light] .grain-updates :is(.discovery-caution,.discovery-status,.discovery-copy-error,.graduated-line){color:#80511f}
+html[data-theme=light] .grain-updates .discovery-value .is-up{color:#286443}
+html[data-theme=light] .grain-updates .discovery-card-meta button:hover{color:#a13d00}
+@media(hover:hover) and (pointer:fine){.grain-updates .discovery-card:hover::before{opacity:.65}}
+@media(prefers-reduced-motion:reduce){
+ .grain-updates :is(.discovery-card,.discovery-card::before,.discovery-create,.discovery-filters>button,.discovery-pagination button,.discovery-card-meta button,.discovery-open){animation:none!important;transition:none!important;transform:none!important}
+}
