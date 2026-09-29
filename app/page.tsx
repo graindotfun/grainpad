@@ -26,7 +26,8 @@ export default function Home(){
  const [launches,setLaunches]=useState<Launch[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(false),[attempt,setAttempt]=useState(0);
  useEffect(()=>{let current=true;fetch("/api/platform").then(r=>{if(!r.ok)throw Error();return r.json() as Promise<PlatformStatus>}).then(d=>{if(current)setPlatform(d)}).catch(()=>{if(current)setPlatformError(true)});return()=>{current=false}},[]);
  useEffect(()=>{let current=true;fetch("/api/launches?network=mainnet-beta").then(r=>{if(!r.ok)throw Error();return r.json() as Promise<{launches:Launch[];nextCursor:string|null;officialMint:string|null}>}).then(d=>{if(current){setLaunches(d.launches);setNextCursor(d.nextCursor);setOfficialMint(d.officialMint)}}).catch(()=>{if(current)setError(true)}).finally(()=>{if(current)setLoading(false)});return()=>{current=false}},[attempt]);
- const status=platform?.stale?"Platform data is stale · retry shortly":platform?.active?"Launches are open":platform?"Platform activation pending":platformError?"Platform status unavailable":"Checking platform status";
+ const launchesOpen=platform?.active===true&&platform.creationEnabled===true;
+ const status=platform?.stale?"Platform data is stale · retry shortly":launchesOpen?"Launches are open":platform?.active?"Platform active · token creation locked":platform?"Platform activation pending":platformError?"Platform status unavailable":"Checking platform status";
  return <main className="landing-shell">
   <a className="skip-content" href="#main-content">Skip to content</a><SiteHeader/>
   <section className="brand-hero" id="main-content" aria-labelledby="hero-heading">
@@ -35,7 +36,7 @@ export default function Home(){
     <p className="hero-description">Create your token. Shape what comes next.<br/>Clear launch conditions. Your wallet. Your call.</p>
     <HeroFeatures data={overview}/>
     <div className="hero-actions"><a href="/launch" className="action-button action-light">Create a token <ArrowUpRight size={20}/></a><a href="#launches" className="action-text">Explore launches <ArrowDown size={17}/></a></div>
-    <a className="hero-status" href="/platform"><span className={`status-indicator ${platform?.active?"is-active":""}`}/><span>{status}</span><ArrowUpRight size={12}/></a>
+    <a className="hero-status" href="/platform"><span className={`status-indicator ${launchesOpen?"is-active":""}`}/><span>{status}</span><ArrowUpRight size={12}/></a>
    </div><div className="hero-art"><GenesisField/></div>
    <div className="hero-baseline"><span><i/> FROM FIRST IDEA TO FIRST BLOCK.</span><a href="#approach">Discover the approach <ArrowDown size={13}/></a></div>
   </section>

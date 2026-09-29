@@ -2,8 +2,9 @@ import {database} from '@/lib/server-owner';
 import {bucket} from '@/lib/server-utils';
 import {sharedMarketCache} from '@/lib/server-cache';
 import {readLaunchRecords} from '@/lib/launch-records';
-import {grainpadPlatformId} from '@/lib/platform-policy';
+import {grainpadPlatformId,platformCacheKey} from '@/lib/platform-policy';
 import {canShowLaunchClaims, recordedBurns} from '@/lib/public-overview.mjs';
+import {TOKEN_CREATION_ENABLED} from '@/lib/platform-settings.mjs';
 import {HERO_FEATURES} from '@/lib/brand-presentation';
 
 export const dynamic = 'force-dynamic';
@@ -24,10 +25,10 @@ export async function GET() {
   }, {ttl:60_000, maxStale:300_000});
   // Read the existing platform cache; never add per-viewer RPC requests or alter verification.
   const [platformRow, official] = await Promise.all([
-   db.prepare('SELECT value, updated_at, expires_at FROM market_cache WHERE key=?').bind(`platform:rules:v3:${platformId}`).first(),
+   db.prepare('SELECT value, updated_at, expires_at FROM market_cache WHERE key=?').bind(platformCacheKey(platformId)).first(),
    db.prepare('SELECT mint, pool, approval FROM official_token WHERE id=1').first(),
   ]);
-  const verified = canShowLaunchClaims(platformRow, official, platformId);
+  const verified = TOKEN_CREATION_ENABLED && canShowLaunchClaims(platformRow, official, platformId);
   return Response.json({...stats.data, checkedAt:new Date(stats.updatedAt).toISOString(), stale:stats.stale,
    claimsValidUntil:verified ? Number(platformRow?.updated_at) + 30_000 : 0,
    features:{pairedLaunches:verified && HERO_FEATURES.pairedLaunches, onChainRules:verified && HERO_FEATURES.onChainRules},
