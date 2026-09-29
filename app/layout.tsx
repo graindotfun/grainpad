@@ -10,6 +10,7 @@ import "./token-tape.css";
 import "./theme.css";
 import "./premium.css";
 import "./token-market.css";
+import "./token-discovery.css";
 import {ContractAddressBar} from "@/components/contract-address-bar";
 
 export const metadata: Metadata = {
