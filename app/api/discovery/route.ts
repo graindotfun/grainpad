@@ -14,7 +14,7 @@ export async function GET(request:Request){
   const [registry,official,cache]=await Promise.all([
    sharedMarketCache(db,`discovery:registry:v1:${platform}`,()=>readLaunchRecords(bucket(),'mainnet-beta',platform),{ttl:60_000,maxStale:300_000}),
    db.prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>(),
-   db.prepare("SELECT key,value,updated_at FROM market_cache WHERE (key LIKE ? OR key LIKE 'chart:v3:%') AND updated_at>=? AND value IS NOT NULL").bind(`market:v3:${platform}:%`,now-300_000).all<CacheRow>()
+   db.prepare("SELECT key,value,updated_at FROM market_cache WHERE ((key>=? AND key<?) OR (key>='chart:v3:' AND key<'chart:v3;')) AND updated_at>=? AND value IS NOT NULL").bind(`market:v3:${platform}:`,`market:v3:${platform};`,now-300_000).all<CacheRow>()
   ]);
   const officialMint=official?.mint||null,rows=enrichDiscovery(registry.data,cache.results||[],platform,officialMint,now);
   return Response.json(discoveryPage(rows,{search,filter:filter as DiscoveryFilter,sort:sort as DiscoverySort,page},officialMint,registry.updatedAt,registry.stale),{headers});
