@@ -14,7 +14,7 @@ const sections = [
   ["overview", "Overview"], ["launch-flow", "Launch flow"],
   ["launch-parameters", "Launch parameters"], ["fees", "Fees"],
   ["graduation", "Graduation"], ["grain-and-treasury", "$GRAIN and Treasury"],
-  ["trust-model", "Trust model"], ["verification", "Verification"],
+  ["trust-model", "How Grainpad is managed"], ["verification", "Verification"],
   ["pxmr-research", "p/xmr research"], ["official-links", "Official links"],
 ] as const;
 type ReadState = "loading" | "ready" | "unavailable";
@@ -113,9 +113,10 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
           <p>$GRAIN grants no right to revenue, yield, dividends or redemption. Buybacks do not guarantee any token price.</p>
         </Section>
         <Section index={6}>
-          <p>A new dedicated admin wallet, funded from the founder’s personal trading wallet, controls Grainpad’s platform configuration. It can change the platform fee, including for existing curve pools, and edit fee recipients and migration settings, and change or remove launch rules.</p>
-          <p>Admin, platform fee recipient, migration Fee Key recipient and vesting recipient are distinct protocol roles, but Grainpad configures all four to this dedicated wallet. A separate role does not mean a separate key or independent control.</p>
-          <p>No multisig or timelock is active. We plan to move to a Squads multisig with a timelock for new launches. Launches created before the move, including GRAIN, stay under the current config. The verified interface has no existing-admin transfer instruction. No date is promised. The launch page’s policy checks do not remove the admin’s authority.</p>
+          <p>Grainpad is an ambitious project built by a small team. We want to be clear about how the platform is managed today and what we plan to improve as we grow.</p>
+          <p>Today, a dedicated, founder-controlled wallet manages Grainpad’s Raydium LaunchLab configuration. The same wallet is assigned to receive platform fees, the migration Fee Key and any platform vesting allocation. These roles currently share one signing key.</p>
+          <p>Within the protocol’s limits, the admin can update platform fees, fee recipients and migration settings, and change or remove launch rules. Platform fee changes can affect existing bonding-curve pools. The launch page checks current settings, but those checks do not prevent later admin changes.</p>
+          <p>Moving to a Squads multisig with multiple approvals and a timelock that delays changes is one of our highest development priorities as our budget grows. Neither control is active today, and we have not committed to a deployment date. We plan to introduce them for new launches. Tokens created under the current configuration would remain under its existing admin: the reviewed LaunchLab interface does not support transferring that authority.</p>
         </Section>
         <Section index={7}>
           <p>Use the exact addresses below. The official mint is read from Grainpad’s published token record, which requires owner approval and a PASS from verify-launch before publication. The verifier checks finalized platform, pool, fees, supply, authorities, curve parameters, content-addressed metadata and image, project links, and no developer purchase in the creation transaction. It also checks the founder’s observed token balance. It does not establish future behaviour. Every listed token has a proof page and JSON API showing the quote asset, individual rule checks, rule accounts and finalized read slot. A mismatch fails closed.</p>
