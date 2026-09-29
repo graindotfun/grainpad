@@ -18,6 +18,11 @@ export default defineConfig(async () => {
       { find: /^@\/lib\/research\/regtest-(report|state)\.json$/, replacement: fileURLToPath(new URL("./data/lab-display.json", import.meta.url)) },
       { find: /^buffer$/, replacement: fileURLToPath(new URL("./node_modules/buffer/index.js", import.meta.url)) },
       { find: /^bigint-buffer$/, replacement: fileURLToPath(new URL("./node_modules/bigint-buffer/dist/browser.js", import.meta.url)) },
+      // Share cards: satori's yoga loads from a compiled wasm module (Workers forbid runtime wasm compilation).
+      { find: /^yoga-layout\/load$/, replacement: fileURLToPath(new URL("./lib/og/yoga-load.mjs", import.meta.url)) },
+      { find: /^grainpad-yoga-binary$/, replacement: fileURLToPath(new URL("./node_modules/yoga-layout/dist/binaries/yoga-wasm-base64-esm.js", import.meta.url)) },
+      { find: /^grainpad-yoga-wrap$/, replacement: fileURLToPath(new URL("./node_modules/yoga-layout/dist/src/wrapAssembly.js", import.meta.url)) },
+      { find: /^grainpad-yoga-enums$/, replacement: fileURLToPath(new URL("./node_modules/yoga-layout/dist/src/generated/YGEnums.js", import.meta.url)) },
     ] },
     plugins: [vinext(), cloudflare({
       viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },

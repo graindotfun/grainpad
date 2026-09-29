@@ -1,12 +1,11 @@
 import {PublicKey} from '@solana/web3.js';
 import {database} from './server-owner';
 import {grainpadPlatformId} from './platform-policy';
-import {nativeStats} from './native-stats.mjs';
 import {displayUnits} from './token-units.mjs';
 import type {ProjectRecord} from './server-project';
 /** Everything a share card or page metadata needs, read only from D1 and existing caches.
  * Never spends RPC or third-party budget: a crawler must not be able to trigger chain reads. */
-export type ShareToken={record:ProjectRecord;route:'curve'|'graduating'|'cpmm'|null;quote:string;progressPct:number|null;raised:string|null;target:string|null;priceQuote:number|null;marketCapQuote:number|null;usd:{price:number|null;marketCap:number|null;volume:number|null;change:number|null}|null;native:Awaited<ReturnType<typeof nativeStats>>|null;crew:{tasks:number;contributors:number;approved:number;payments:number};updatedAt:number|null};
+export type ShareToken={record:ProjectRecord;route:'curve'|'graduating'|'cpmm'|null;quote:string;progressPct:number|null;raised:string|null;target:string|null;priceQuote:number|null;marketCapQuote:number|null;usd:{price:number|null;marketCap:number|null;volume:number|null;change:number|null}|null;crew:{tasks:number;contributors:number;approved:number;payments:number};updatedAt:number|null};
 export function validMint(value:string){try{return new PublicKey(value).toBase58()===value;}catch{return false;}}
 async function cached<T>(key:string){const row=await database().prepare('SELECT value,updated_at FROM market_cache WHERE key=?').bind(key).first<{value:string|null;updated_at:number}>();if(!row?.value)return null;try{return {data:JSON.parse(row.value) as T,updatedAt:row.updated_at};}catch{return null;}}
 export async function shareProject(mint:string):Promise<ProjectRecord|null>{
@@ -27,7 +26,7 @@ export async function shareToken(mint:string):Promise<ShareToken|null>{
   progressPct:market?.data.route==='cpmm'?100:target>0?Math.min(100,Number(progress!.raised)/target*100):null,
   raised:progress&&market?displayUnits(progress.raised,market.data.quote.decimals):null,target:progress&&market?displayUnits(progress.target,market.data.quote.decimals):null,
   priceQuote:market?.data.quoteStats?.price??null,marketCapQuote:market?.data.quoteStats?.marketCap??null,
-  usd:chart?.data.available&&chart.data.stats?chart.data.stats:null,native:await nativeStats(db,mint).catch(()=>null),
+  usd:chart?.data.available&&chart.data.stats?chart.data.stats:null,
   crew:{tasks:Number(crew?.tasks||0),contributors:Number(crew?.contributors||0),approved:Number(crew?.approved||0),payments:Number(crew?.payments||0)},updatedAt:market?.updatedAt??null};
 }
 export function compact(value:number|null|undefined,prefix=''){if(value===null||value===undefined||!Number.isFinite(value))return '—';const abs=Math.abs(value);const [n,s]=abs>=1e9?[value/1e9,'B']:abs>=1e6?[value/1e6,'M']:abs>=1e3?[value/1e3,'K']:[value,''];return prefix+(abs>=1e3?n.toFixed(n>=100?0:n>=10?1:2):abs>=1?n.toFixed(2):n.toPrecision(3))+s;}

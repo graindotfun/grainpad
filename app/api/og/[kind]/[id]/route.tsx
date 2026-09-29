@@ -1,4 +1,4 @@
-import {ImageResponse} from 'next/og';
+import {renderPng} from '@/lib/og/render';
 import {Buffer} from 'buffer';
 import albertSans from '@/lib/og/albert-sans-500.ttf?inline';
 import plexMono from '@/lib/og/ibm-plex-mono-500.woff?inline';
@@ -30,7 +30,7 @@ function Frame({label,path,children,accent}:{label:string;path:string;children:R
   </div>
   <div style={{display:'flex',flexDirection:'column',flex:1,justifyContent:'center'}}>{children}</div>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:'Plex',fontSize:20,color:C.muted,borderTop:`1px solid ${C.line}`,paddingTop:22}}>
-   <span>{path}</span><span style={{color:accent||C.muted}}>Your token page is already here.</span>
+   <span>{path}</span><span style={{color:accent||C.muted}}>Launched on Grainpad</span>
   </div>
  </div>;
 }
@@ -53,12 +53,12 @@ function Progress({pct,label}:{pct:number;label:string}){
 async function tokenCard(t:ShareToken,kind:string){
  const image=await tokenImage(t.record.image),graduated=t.route==='cpmm',path=`grainpad.fun/token/${short(t.record.mint)}`;
  const mcap=t.usd?.marketCap!=null?compact(t.usd.marketCap,'$'):t.marketCapQuote!=null?`${compact(t.marketCapQuote)} ${t.quote}`:'—';
- const volume=t.usd?.volume!=null?compact(t.usd.volume,'$'):t.native?.volume?`${compact(Number(t.native.volume.display))} ${t.quote}`:'—';
- if(kind==='receipt')return <Frame label="LAUNCH RECEIPT" path={`${path}/receipt`}><Identity t={t} image={image} sub={`${t.quote} pair`}/><Stats items={[['Launched',new Date(t.record.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})],['Creator',short(t.record.creator)],['Verification','On-chain'],['Lifecycle',graduated?'Graduated':t.route==='graduating'?'Migrating':'Curve']]}/><div style={{display:'flex',marginTop:26,fontSize:26,color:C.muted}}>Provenance, creator declarations and every finalized trade, on one public record.</div></Frame>;
+ const volume=t.usd?.volume!=null?compact(t.usd.volume,'$'):'—';
+ if(kind==='receipt')return <Frame label="LAUNCH RECEIPT" path={`${path}/receipt`}><Identity t={t} image={image} sub={`${t.quote} pair`}/><Stats items={[['Launched',t.record.createdAt.slice(0,10)],['Creator',short(t.record.creator)],['Verified','At registration'],['Lifecycle',graduated?'Graduated':t.route==='graduating'?'Migrating':'Curve']]}/><div style={{display:'flex',marginTop:26,fontSize:26,color:C.muted}}>Launch provenance, creator statements and indexed trades on one public record.</div></Frame>;
  if(kind==='room')return <Frame label="LAUNCH ROOM · CREW" path={`${path}/room`} accent={C.orange}><Identity t={t} image={image} sub="Crew board"/><Stats items={[['Tasks',String(t.crew.tasks)],['Contributors',String(t.crew.contributors)],['Approved',String(t.crew.approved)],['Paid · verified',String(t.crew.payments)]]}/><div style={{display:'flex',marginTop:26,fontSize:26,color:C.muted}}>Pick a task. Ship the work. Get credited under your wallet.</div></Frame>;
  return <Frame label={graduated?'GRADUATED · RAYDIUM':`TOKEN · ${t.quote} PAIR`} path={path} accent={graduated?C.orange:undefined}>
   <Identity t={t} image={image} sub={graduated?'graduated':`${t.quote} pair`}/>
-  <Stats items={[['Market cap',mcap],['24h volume',volume],['24h trades',t.native?.trades?String(t.native.trades):'—'],['Creator',short(t.record.creator)]]}/>
+  <Stats items={[['Market cap',mcap],['24h volume',volume],['Price',t.usd?.price!=null?compact(t.usd.price,'$'):t.priceQuote!=null?`${compact(t.priceQuote)} ${t.quote}`:'—'],['Creator',short(t.record.creator)]]}/>
   {t.progressPct!==null&&<Progress pct={t.progressPct} label={graduated?'Bonding curve → Raydium CPMM':`Bonding curve · ${t.raised} / ${t.target} ${t.quote}`}/>}
  </Frame>;
 }
@@ -79,9 +79,8 @@ export async function GET(request:Request,{params}:{params:Promise<{kind:string;
   let element;
   if(kind==='crew')element=await crewCard(id);
   else{const t=await shareToken(id);if(!t)return new Response('Not found',{status:404});element=await tokenCard(t,kind);}
-  const image=new ImageResponse(element,{width:1200,height:630,fonts,headers:{'Cache-Control':'public, max-age=600, s-maxage=600'}});
-  const bytes=await image.arrayBuffer(),response=new Response(bytes,{headers:{'Content-Type':'image/png','Cache-Control':'public, max-age=600, s-maxage=600','X-Content-Type-Options':'nosniff'}});
+  const bytes=await renderPng(element,{width:1200,height:630,fonts}),response=new Response(bytes as Uint8Array<ArrayBuffer>,{headers:{'Content-Type':'image/png','Cache-Control':'public, max-age=600, s-maxage=600','X-Content-Type-Options':'nosniff'}});
   await cache?.put(key,response.clone()).catch(()=>undefined);
   return response;
- }catch{return new Response('Share card unavailable',{status:503,headers:{'Cache-Control':'no-store'}});}
+ }catch(error){console.error('grainpad_og',JSON.stringify({kind,message:error instanceof Error?error.message.slice(0,300):'render failed'}));return new Response('Share card unavailable',{status:503,headers:{'Cache-Control':'no-store'}});}
 }
