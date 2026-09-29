@@ -27,7 +27,7 @@ test('transient provider errors trigger fallback; wrong fallback genesis fails c
 });
 test('regular daily denial cannot be bypassed by fallback; in-flight reads share only within a lane',async()=>{
  const f=fixture();f.options.reserve=async()=>false;assert((await createRpcForwarder(f.options)('mainnet-beta',body('getBalance'))).error);assert.equal(f.calls.length,0);
- const g=fixture();g.options.fetcher=async(url,options)=>{g.calls.push({url});await new Promise(r=>setTimeout(r,5));return Response.json({jsonrpc:'2.0',id:1,result:1});};
+ const g=fixture();g.options.fetcher=async(url)=>{g.calls.push({url});await new Promise(r=>setTimeout(r,5));return Response.json({jsonrpc:'2.0',id:1,result:1});};
  const forward=createRpcForwarder(g.options);await Promise.all([forward('mainnet-beta',body('getBalance'),{lane:'trade'}),forward('mainnet-beta',body('getBalance'),{lane:'trade'}),forward('mainnet-beta',body('getBalance'),{lane:'display'})]);assert.equal(g.calls.length,2);
 });
 test('only recorded submissions make trade status checks daily-exempt',async()=>{

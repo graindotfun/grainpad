@@ -2,7 +2,6 @@ import {poolStats,type MarketStats} from './market-display';
 import {chartAvailability} from './chart-identity.mjs';
 import {quoteAsset} from './quote-assets.mjs';
 import {PublicKey} from '@solana/web3.js';
-import {bucket} from './server-utils';
 import {database} from './server-owner';
 import {chain} from './server-rpc';
 import {POLICY,grainpadPlatformId} from './platform-policy';
@@ -13,12 +12,12 @@ import {readMarketSnapshot} from './market-snapshot.mjs';
 import {creationOnly} from './trade-activity.mjs';
 import {isOwnPlatform} from './launch-identity.mjs';
 
-export type MarketView={progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};updatedAt:number;stale:boolean;slot:number};
+export type MarketView={quoteStats?:{price:number|null;marketCap:number|null}|null;creator?:string;progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};updatedAt:number;stale:boolean;slot:number};
 export async function serverMarket(address:string,{viewer=false}:{viewer?:boolean}={}):Promise<MarketView>{
  const mint=new PublicKey(address).toBase58(),platform=grainpadPlatformId().toBase58(),db=database();
  // Unregistered/foreign mints cannot create cache entries or spend RPC budget.
- const object=await bucket().get(`launches/mainnet-beta/${mint}`);
- const record=object?await object.json<{mint:string;platformId:string;verification:string;quoteAsset?:string;name:string;symbol:string;image:string}>():null;
+ const indexed=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',platform,mint).first<{record:string}>();
+ const record=indexed?JSON.parse(indexed.record) as {mint:string;platformId:string;verification:string;quoteAsset?:string;name:string;symbol:string;image:string;creator?:string}:null;
  if(!record||record.mint!==mint||record.verification!=='confirmed-on-chain'||!isOwnPlatform(record.platformId,platform))throw Error('This token is not a registered Grainpad launch.');
  const cached=await sharedMarketCache(db,`market:v3:${platform}:${mint}`,async(previous:MarketView|null)=>{
   const network=await sharedMarketCache(db,'mainnet-genesis',()=>chain('mainnet-beta','getGenesisHash'),{ttl:86_400_000,maxStale:86_400_000});
@@ -52,5 +51,5 @@ export async function serverMarket(address:string,{viewer=false}:{viewer?:boolea
   chart={...result.data,stale:result.stale};
  }catch{chart.stale=true;}
  const official=await db.prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();
- return {...cached.data,name:record.name,symbol:record.symbol,image:record.image,official:official?.mint===mint,stats:chart.stats,chart,updatedAt:cached.updatedAt,stale:cached.stale};
+ return {...cached.data,creator:record.creator,name:record.name,symbol:record.symbol,image:record.image,official:official?.mint===mint,stats:chart.stats,chart,updatedAt:cached.updatedAt,stale:cached.stale};
 }

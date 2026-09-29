@@ -1,0 +1,13 @@
+import {eventHistory} from '@/lib/event-history.mjs';
+import {PublicKey} from '@solana/web3.js';import {database} from '@/lib/server-owner';import {grainpadPlatformId} from '@/lib/platform-policy';import {publicReceipt} from '@/lib/public-receipt.mjs';
+export async function GET(_request:Request,{params}:{params:Promise<{mint:string}>}){try{
+ const mint=new PublicKey((await params).mint).toBase58(),db=database();
+ const saved=await db.prepare('SELECT record,indexed_at FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string;indexed_at:number}>();
+ if(!saved)return Response.json({error:'No verified indexed launch found.'},{status:404});
+ const official=await db.prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();
+ const receipt=publicReceipt(JSON.parse(saved.record),{officialMint:official?.mint??null,indexedAt:saved.indexed_at});
+ const launch=await db.prepare("SELECT record FROM chain_event WHERE mint=? AND kind='launch' ORDER BY slot LIMIT 1").bind(mint).first<{record:string}>();
+ const first=await db.prepare("SELECT record FROM chain_event WHERE mint=? AND kind='buy' ORDER BY slot,id LIMIT 20").bind(mint).all<{record:string}>();
+ const launchEvent=launch?JSON.parse(launch.record):null,tape=await eventHistory(db,mint);
+ return Response.json({...receipt,launchTime:launchEvent?.blockTime?new Date(launchEvent.blockTime*1000).toISOString():null,launchTransaction:launchEvent?.signature??null,firstObservedBuyers:first.results.map(r=>JSON.parse(r.record)),observedCreatorBuys:tape.events.filter((e:{kind:string;wallet:string})=>e.kind==='buy'&&e.wallet===receipt.creator),tape,coverage:{...receipt.coverage,launchTransaction:launchEvent?'finalized transaction indexed':'not indexed',earlyBuyers:'first observed buys in partial history; within-slot order not established',fees:'Partial finalized creator-vault accruals and curve / CPMM / LP claims in the public tape',creatorBuy:'Declaration and observed creator buys shown separately; completeness and intent are not inferred',tape:tape.coverage}},{headers:{'Cache-Control':'public, max-age=30'}});
+}catch{return Response.json({error:'Receipt unavailable.'},{status:503});}}

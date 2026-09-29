@@ -35,7 +35,9 @@ export default function RootLayout({
       <head>
         <link rel="preload" href="/fonts/albert-sans-latin-variable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" fetchPriority="high"/>
         <link rel="preload" href="/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous"/>
-        <meta name="theme-color" content="#0d1012"/><script src="/theme-init.js"/>
+        <meta name="theme-color" content="#0d1012"/>
+        {/* eslint-disable-next-line @next/next/no-sync-scripts -- Tiny same-origin theme initializer must run before paint to prevent theme flash. */}
+        <script src="/theme-init.js"/>
       </head>
       <body className="antialiased"><ContractAddressBar/>{children}</body>
     </html>

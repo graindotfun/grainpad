@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 const mint='A'.repeat(32),pool='B'.repeat(32),quote='C'.repeat(32);
-let fetched=0,loaded=0,refreshFlag;
+let fetched=0,loaded=0;
 globalThis.marketHistoryTest={market:{pool,mint,quote:{mint:quote},chart:{available:true},stale:false},serverMarket:async()=>{loaded++;return globalThis.marketHistoryTest.market;}};
 await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.test-output/market-history-route.mjs',bundle:true,platform:'node',format:'esm',logLevel:'silent',plugins:[{name:'history-boundaries',setup(b){
  const stubs={

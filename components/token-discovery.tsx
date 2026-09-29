@@ -22,6 +22,7 @@ function DiscoveryCard({token}:{token:DiscoveryToken}){
   <div className="discovery-progress">{token.state==='graduated'?<div className="graduated-line"><span>On Raydium</span><ArrowUpRight size={12}/></div>:<><div className="discovery-track"><i style={{width:`${token.progress??0}%`}}/></div><span>{token.state==='graduating'?'Migrating':token.progress===null?'Pending':`${token.progress.toFixed(1)}%`}</span></>}</div>
  </div></a>
  <div className="discovery-card-meta"><button aria-label={`Copy ${token.symbol} contract address`} title={token.mint} onClick={async()=>{try{await navigator.clipboard.writeText(token.mint);setCopied(true);setCopyError(false);setTimeout(()=>setCopied(false),1800);}catch{setCopyError(true);}}}>{copied?<Check size={10}/>:<Copy size={10}/>}<span>{copied?'Copied':`${token.mint.slice(0,4)}…${token.mint.slice(-4)}`}</span></button><time dateTime={token.createdAt} title={new Date(token.createdAt).toLocaleString()}>{age(token.createdAt)}</time></div>
+ {token.creator&&<p className="small muted" title={token.creator}>Creator: {token.creator.slice(0,5)}…{token.creator.slice(-4)}</p>}
  {copyError&&<p className="discovery-copy-error" role="status">Copy unavailable. Open token details.</p>}
  </article>;
 }
@@ -35,7 +36,6 @@ export function TokenDiscovery(){
  useEffect(()=>{const element=section.current;if(!element)return;const observer=new IntersectionObserver(([entry])=>setVisible(entry.isIntersecting),{rootMargin:'350px'});observer.observe(element);return()=>observer.disconnect();},[]);
  useEffect(()=>{
   if(!visible)return;
-  setError('');
   let live=true;
   const stop=startViewerPolling(async(signal:AbortSignal)=>{
    try{
@@ -58,6 +58,7 @@ export function TokenDiscovery(){
  <div className="discovery-results" aria-busy={!data&&!error}>
  {!data&&!error?<div className="discovery-grid discovery-skeleton" aria-label="Loading tokens" role="status">{Array.from({length:5},(_,i)=><div key={i}><div/><span/><span/></div>)}</div>:!data&&error?<div className="discovery-empty" role="alert"><RefreshCw size={26}/><h4>The directory is unavailable.</h4><p>{error}</p><Button variant="outline" onClick={()=>{setError('');setRetry(n=>n+1)}}>Try again</Button></div>:data?.total===0?<div className="discovery-prelaunch"><div className="discovery-first"><span className="discovery-first-mark"><Sprout size={34}/></span><p className="discovery-overline">ROOM FOR YOUR NEXT IDEA</p><h4>The first chapter<br/>starts here.</h4><p>Confirmed Grainpad launches will appear here. Yours could be the first.</p><a href="/launch">Explore the workspace <ArrowUpRight size={16}/></a></div><div className="discovery-grain-pending"><TokenImage src={BRAND_ASSETS.token} symbol="GRAIN" size={68}/><div><span className="discovery-overline">PLATFORM TOKEN</span><strong>GRAIN</strong><p>Awaiting launch</p></div><p>The official contract will be published here after launch. Verify the address, not the name.</p></div></div>:data?.tokens.length?<div className="discovery-grid">{data.tokens.map(token=><DiscoveryCard key={token.mint} token={token}/>)}</div>:<div className="discovery-empty" role="status"><Search size={26}/><h4>{search?'No matching tokens.':filter==='graduated'?'No confirmed graduations yet.':filter==='near'?'No tokens near graduation yet.':'No confirmed curve data yet.'}</h4><p>{search?'Try a name, symbol or complete contract address.':'Only available market snapshots determine launch status.'}</p><Button variant="outline" onClick={()=>{setQuery('');setSearch('');changeFilter('all');}}>View all tokens</Button></div>}
  </div>
+ {data?.coverage&&<p className="small muted" role="status">{data.coverage}</p>}
  {data&&data.pages>1&&<nav className="discovery-pagination" aria-label="Token pages"><Button variant="outline" aria-label="Previous token page" disabled={data.page<=1} onClick={()=>navigate(data.page-1)}><ChevronLeft size={16}/></Button>{Array.from(new Set([1,...[data.page-1,data.page,data.page+1].filter(n=>n>1&&n<data.pages),data.pages])).map((n,i,arr)=><span key={n}>{i>0&&n-arr[i-1]>1&&<em>…</em>}<button aria-label={`Token page ${n}`} aria-current={data.page===n?'page':undefined} onClick={()=>navigate(n)}>{n}</button></span>)}<Button variant="outline" aria-label="Next token page" disabled={data.page>=data.pages} onClick={()=>navigate(data.page+1)}><ChevronRight size={16}/></Button></nav>}
  {(error&&data||data?.stale)&&<p className="discovery-status" role="status">Showing the last available directory. Updates are temporarily delayed.</p>}
  <div className="discovery-footnote"><span>Only launches through Grainpad. Listings are not endorsements.</span><span>MC in USD · {data?.counts.unknown?`${data.counts.unknown} awaiting market data`:'Missing data appears as —'}</span></div>

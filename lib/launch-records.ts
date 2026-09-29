@@ -2,7 +2,7 @@ import {isOwnPlatform} from './launch-identity.mjs';
 import type {Network} from "./site-config";
 
 export type LaunchRecord = {
-  mint: string; pool: string; name: string; symbol: string; image: string;
+  creator?:string; mint: string; pool: string; name: string; symbol: string; image: string;
   network: Network; createdAt: string; verification: "confirmed-on-chain";
   quoteAsset?:string;quoteMint?:string;quoteDecimals?:number;platformName?: string; platformId: string; official?: boolean;
 };

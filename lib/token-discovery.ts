@@ -2,7 +2,7 @@ import type {LaunchRecord} from './launch-records';
 export type DiscoveryToken=LaunchRecord&{state:'curve'|'graduating'|'graduated'|'unknown';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null};
 export type DiscoveryFilter='all'|'new'|'near'|'graduated';
 export type DiscoverySort='newest'|'oldest'|'market-cap'|'volume';
-export type DiscoveryResult={tokens:DiscoveryToken[];featured:DiscoveryToken[];total:number;filteredTotal:number;page:number;pages:number;pageSize:number;counts:{all:number;new:number;near:number;graduated:number;unknown:number};officialMint:string|null;updatedAt:number;stale:boolean};
+export type DiscoveryResult={coverage?:string;totalIndexed?:number;tokens:DiscoveryToken[];featured:DiscoveryToken[];total:number;filteredTotal:number;page:number;pages:number;pageSize:number;counts:{all:number;new:number;near:number;graduated:number;unknown:number};officialMint:string|null;updatedAt:number;stale:boolean};
 export type CacheRow={key:string;value:string;updated_at:number};
 const number=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)?v:null;
 const nonnegative=(v:unknown)=>{const n=number(v);return n!==null&&n>=0?n:null;};

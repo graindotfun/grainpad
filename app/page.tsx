@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-html-link-for-pages -- Native navigation avoids the deployed vinext RSC client-router failure. */
 import {BRAND_CHAIN} from "@/lib/brand-presentation";
 import {HeroFeatures,SiteStats,useSiteOverview} from "@/components/site-overview";
 import {TokenDiscovery} from "@/components/token-discovery";

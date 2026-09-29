@@ -1,9 +1,8 @@
+import {sessionRpcFetch} from "./browser-rpc-session.mjs";
 import {rebroadcastSigned} from './rebroadcast.mjs';
 import './browser-buffer.mjs';
 import { Buffer } from "buffer";
 import { Connection, PublicKey, Keypair, VersionedTransaction, TransactionMessage, ComputeBudgetProgram } from "@solana/web3.js";
-import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import BN from "bn.js";
 import {quoteAsset} from "./quote-assets.mjs";
 import {buildLaunchInstruction} from "./launch-instructions.mjs";
 import {expectedRuleAccounts,assertRuleAccounts} from "./launch-rules.mjs";
@@ -22,7 +21,7 @@ import type {Wallet} from "./wallet";
 import {formatSOL} from "./format-sol";
 export {formatSOL} from "./format-sol";
 export type {Wallet} from "./wallet";
-export function rpc(network:Network,attemptId?:string,submittedSignature?:string){return new Connection(`${window.location.origin}/api/rpc?network=${network}`,{commitment:"confirmed",disableRetryOnRateLimit:true,httpHeaders:{...(attemptId?{'X-Grainpad-Attempt':attemptId}:{}),...(submittedSignature?{'X-Grainpad-Signature':submittedSignature}:{})}});}
+export function rpc(network:Network,attemptId?:string,submittedSignature?:string){return new Connection(`${window.location.origin}/api/rpc?network=${network}`,{commitment:"confirmed",disableRetryOnRateLimit:true,fetch:sessionRpcFetch,httpHeaders:{...(attemptId?{'X-Grainpad-Attempt':attemptId}:{}),...(submittedSignature?{'X-Grainpad-Signature':submittedSignature}:{})}});}
 export async function assertNetwork(connection:Connection,network:Network){if(await connection.getGenesisHash()!==NETWORKS[network].genesis)throw Error("RPC network does not match your selection.");}
 export function solToLamports(value:string):bigint{
  if(!/^(0|[1-9][0-9]*)(\.[0-9]{1,9})?$/.test(value))throw Error("Enter a SOL amount with up to 9 decimal places.");

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {readFileSync} from 'node:fs';
-import {sharedMarketCache,takeBudget} from '../lib/shared-market-cache.mjs';
+import {sharedMarketCache} from '../lib/shared-market-cache.mjs';
 import {pinOfficial,isOwnPlatform} from '../lib/launch-identity.mjs';
 import {creationOnly} from '../lib/trade-activity.mjs';
 import {readLaunchRecords} from '../lib/launch-records.ts';

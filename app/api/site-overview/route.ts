@@ -1,7 +1,6 @@
 import {database} from '@/lib/server-owner';
-import {bucket} from '@/lib/server-utils';
+
 import {sharedMarketCache} from '@/lib/server-cache';
-import {readLaunchRecords} from '@/lib/launch-records';
 import {grainpadPlatformId,platformCacheKey} from '@/lib/platform-policy';
 import {canShowLaunchClaims, recordedBurns} from '@/lib/public-overview.mjs';
 import {TOKEN_CREATION_ENABLED} from '@/lib/platform-settings.mjs';
@@ -13,11 +12,11 @@ export async function GET() {
  try {
   const db = database(), platformId = grainpadPlatformId().toBase58();
   const stats = await sharedMarketCache(db, `public-overview:v1:${platformId}`, async () => {
-   const rows = await readLaunchRecords(bucket(), 'mainnet-beta', platformId);
+   const count = await db.prepare('SELECT count(*) AS total FROM launch_index WHERE network=? AND platform_id=?').bind('mainnet-beta',platformId).first<{total:number}>();
    const official = await db.prepare('SELECT mint FROM official_token WHERE id=1').first();
    const receipts = official ? await db.prepare('SELECT kind, burned FROM treasury_receipts WHERE kind=?').bind('buyback').all() : null;
    return {
-    launches: rows.length || null,
+    launches: count?.total || null,
     // No volume indexer exists. Reserves and fee collections are not trade volume.
     volume: null,
     burned: receipts ? recordedBurns(receipts.results) : null,
