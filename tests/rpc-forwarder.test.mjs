@@ -3,11 +3,12 @@ import {createRpcForwarder} from '../lib/rpc-forwarder.mjs';
 const genesis='5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';
 const body=method=>({jsonrpc:'2.0',id:1,method,params:[]});
 function fixture(){
- const calls=[],budgets=[];const db={};const primary='https://primary.invalid/',fallback='https://fallback.invalid/';
+ const calls=[],budgets=[],recorded=new Set();const primary='https://primary.invalid/',fallback='https://fallback.invalid/';
+ const db={recorded,prepare:()=>({bind:(signature)=>({first:async()=>recorded.has(signature)?{expires_at:Number.MAX_SAFE_INTEGER}:null,run:async()=>({})})})};
  const options={database:()=>db,env:{SOLANA_RPC_URL:primary,SOLANA_READ_RPC_URL:fallback},reserve:async(db,method,options)=>{budgets.push({method,...options});return true;},fetcher:async(url,options)=>{
   const payload=JSON.parse(options.body);calls.push({url,payload});if(url===primary)throw Error('primary offline');
   return Response.json({jsonrpc:'2.0',id:1,result:payload.method==='getGenesisHash'?genesis:42});
- }};return {calls,budgets,options,primary,fallback};
+ }};return {calls,budgets,options,primary,fallback,recorded};
 }
 test('read errors use network-checked fallback with unchanged params and lane',async()=>{
  const f=fixture(),forward=createRpcForwarder(f.options),query={...body('getMultipleAccounts'),params:[['account'],{commitment:'finalized',minContextSlot:123}]};
@@ -29,10 +30,11 @@ test('regular daily denial cannot be bypassed by fallback; in-flight reads share
  const g=fixture();g.options.fetcher=async(url,options)=>{g.calls.push({url});await new Promise(r=>setTimeout(r,5));return Response.json({jsonrpc:'2.0',id:1,result:1});};
  const forward=createRpcForwarder(g.options);await Promise.all([forward('mainnet-beta',body('getBalance'),{lane:'trade'}),forward('mainnet-beta',body('getBalance'),{lane:'trade'}),forward('mainnet-beta',body('getBalance'),{lane:'display'})]);assert.equal(g.calls.length,2);
 });
-test('old submitted signature checks are daily-exempt without requiring a new receipt',async()=>{
- const f=fixture(),signature='1'.repeat(64);f.options.fetcher=async()=>Response.json({jsonrpc:'2.0',id:1,result:{value:[null]}});
- await createRpcForwarder(f.options)('mainnet-beta',{...body('getSignatureStatuses'),params:[[signature],{searchTransactionHistory:true}]},{lane:'trade'});
- assert.equal(f.budgets[0].dailyExempt,true);
+test('only recorded submissions make trade status checks daily-exempt',async()=>{
+ const f=fixture(),recorded='1'.repeat(64),stranger='2'.repeat(64);f.recorded.add(recorded);f.options.fetcher=async()=>Response.json({jsonrpc:'2.0',id:1,result:{value:[null]}});
+ const forward=createRpcForwarder(f.options),status=signature=>({...body('getSignatureStatuses'),params:[[signature],{searchTransactionHistory:true}]});
+ await forward('mainnet-beta',status(recorded),{lane:'trade'});await forward('mainnet-beta',status(stranger),{lane:'trade'});
+ assert.deepEqual(f.budgets.map(b=>b.dailyExempt),[true,false]);
 });
 test('fallback absence cannot be mistaken for expiry after an ambiguous send',async()=>{
  const f=fixture();f.options.fetcher=async(url,options)=>{const payload=JSON.parse(options.body);if(url===f.primary)throw Error('offline');return Response.json({jsonrpc:'2.0',id:1,result:payload.method==='getGenesisHash'?genesis:{value:[null]}});};
