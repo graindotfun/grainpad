@@ -9,7 +9,7 @@ const platform={active:true,policyMatches:true,kind:'grainpad',platformId,restri
 const statement=(sql,args=[])=>({
  bind:(...next)=>statement(sql,next),
  first:async()=>{
-  if(sql.includes('FROM market_cache'))return args[0]===`platform:rules:v5:${platformId}`?{value:JSON.stringify(platform),updated_at:Date.now()-1000,expires_at:Date.now()+29_000}:null;
+  if(sql.includes('FROM market_cache'))return args[0]===`platform:rules:v6:${platformId}`?{value:JSON.stringify(platform),updated_at:Date.now()-1000,expires_at:Date.now()+29_000}:null;
   if(sql.includes('FROM official_token'))return official;
   return null;
  },

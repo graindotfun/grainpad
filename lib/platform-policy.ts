@@ -1,3 +1,3 @@
 export {POLICY,grainpadPlatformId,decodePlatform,assertGrainpadPolicy} from "./platform-policy.mjs";
-export const platformCacheKey=(platformId:string)=>`platform:rules:v5:${platformId}`;
+export const platformCacheKey=(platformId:string)=>`platform:rules:v6:${platformId}`;
 export type PlatformStatus={creationEnabled?:boolean;exists?:boolean;setupStage?:"1a"|"1b"|"complete"|"blocked";stale?:boolean;slot?:number;rules?:unknown[];policyMatches?:boolean;active:boolean;kind:"grainpad"|"pending";platformId:string;grainpadId:string;protocolRate:number|null;platformRate:number|null;creatorRate:number|null;totalRate:number|null;feeWallet:string;programId:string;configurationAuthority:string;checkedAt:string};
