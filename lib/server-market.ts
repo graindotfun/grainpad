@@ -12,7 +12,8 @@ import {readMarketSnapshot} from './market-snapshot.mjs';
 import {creationOnly} from './trade-activity.mjs';
 import {isOwnPlatform} from './launch-identity.mjs';
 
-export type MarketView={transferTaxBps?:number;quoteStats?:{price:number|null;marketCap:number|null}|null;creator?:string;progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};updatedAt:number;stale:boolean;slot:number};
+export type NativeStats={trades:number;buys:number;sells:number;traders:number;volume:{raw:string;decimals:number;symbol:string|null;display:string}|null;lastPrice:number|null;changePct:number|null;notice:string;truncated?:boolean};
+export type MarketView={native?:NativeStats|null;transferTaxBps?:number;quoteStats?:{price:number|null;marketCap:number|null}|null;creator?:string;progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};updatedAt:number;stale:boolean;slot:number};
 export async function serverMarket(address:string,{viewer=false}:{viewer?:boolean}={}):Promise<MarketView>{
  const mint=new PublicKey(address).toBase58(),platform=grainpadPlatformId().toBase58(),db=database();
  // Unregistered/foreign mints cannot create cache entries or spend RPC budget.
