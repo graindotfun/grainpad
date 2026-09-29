@@ -1,3 +1,4 @@
+import {rebroadcastSigned} from './rebroadcast.mjs';
 import './browser-buffer.mjs';
 import { Buffer } from "buffer";
 import { Connection, PublicKey, Keypair, VersionedTransaction, TransactionMessage, ComputeBudgetProgram } from "@solana/web3.js";
@@ -21,7 +22,7 @@ import type {Wallet} from "./wallet";
 import {formatSOL} from "./format-sol";
 export {formatSOL} from "./format-sol";
 export type {Wallet} from "./wallet";
-export function rpc(network:Network,attemptId?:string){return new Connection(`${window.location.origin}/api/rpc?network=${network}`,{commitment:"confirmed",disableRetryOnRateLimit:true,...(attemptId?{httpHeaders:{'X-Grainpad-Attempt':attemptId}}:{})});}
+export function rpc(network:Network,attemptId?:string,submittedSignature?:string){return new Connection(`${window.location.origin}/api/rpc?network=${network}`,{commitment:"confirmed",disableRetryOnRateLimit:true,httpHeaders:{...(attemptId?{'X-Grainpad-Attempt':attemptId}:{}),...(submittedSignature?{'X-Grainpad-Signature':submittedSignature}:{})}});}
 export async function assertNetwork(connection:Connection,network:Network){if(await connection.getGenesisHash()!==NETWORKS[network].genesis)throw Error("RPC network does not match your selection.");}
 export function solToLamports(value:string):bigint{
  if(!/^(0|[1-9][0-9]*)(\.[0-9]{1,9})?$/.test(value))throw Error("Enter a SOL amount with up to 9 decimal places.");
@@ -29,10 +30,10 @@ export function solToLamports(value:string):bigint{
  if(n>BigInt(Number.MAX_SAFE_INTEGER))throw Error("Amount is too large.");return n;
 }
 export type PreparedLaunch={setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
-export type PreparedOperation=Pick<PreparedLaunch,"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[]};
+export type PreparedOperation=Pick<PreparedLaunch,"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
 /** Only release a pending UI after finality or provable blockhash expiry. */
 export async function resolveSubmitted(signature:string){
- const connection=rpc('mainnet-beta');await assertNetwork(connection,'mainnet-beta');
+ const connection=rpc('mainnet-beta',undefined,signature);await assertNetwork(connection,'mainnet-beta');
  const status=(await connection.getSignatureStatuses([signature],{searchTransactionHistory:true})).value[0];
  if(status?.confirmationStatus==='finalized')return status.err?'failed':'finalized';
  const raw=localStorage.getItem(`grainpad-tx-expiry:${signature}`),expiry=raw?Number(raw):NaN;
@@ -227,16 +228,10 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
  if(p.targetAccount)safeStore(`grainpad-tx-target:${signature}`,p.targetAccount);
  safeStore(`grainpad-tx-expiry:${signature}`,String(p.lastValidBlockHeight));
  // Preserve public receipt details before the RPC call, even if its response is lost.
- attempt.update('send_started',{signature,submissionAttempted:true});
- try{onSignature(signature);}catch{/* UI/storage observers cannot discard a signed transaction. */}
- const received=await connection.sendRawTransaction(wire,{skipPreflight:false,maxRetries:0,preflightCommitment:"confirmed"});if(received!==signature)throw Error("RPC returned an unexpected signature.");
- attempt.update('rpc_accepted',{rpcAccepted:true});
- for(let i=0;i<35;i++){
-  const status=(await connection.getSignatureStatuses([signature])).value[0];
-  if(status?.err)throw Error(`Transaction failed: ${JSON.stringify(status.err)}. Check the explorer before retrying.`);
-  if(status?.confirmationStatus==="confirmed"||status?.confirmationStatus==="finalized"){attempt.update('confirmed',{confirmationStatus:status.confirmationStatus});return signature;}
-  await new Promise(r=>setTimeout(r,1800));
- }
- throw Error("Confirmation is still pending. Check this transaction in the explorer before launching again.");
+ const submissionConnection=rpc(p.network,attempt.get().id,signature);
+ return await rebroadcastSigned({connection:submissionConnection,wire,signature,lastValidBlockHeight:p.lastValidBlockHeight,onEvent:(stage:string,details:Record<string,unknown>)=>{
+  attempt.update(stage,details);
+  if(stage==='send_started'){try{onSignature(signature);}catch{/* Preserve the signed receipt even if UI observers fail. */}}
+ }});
  }catch(error){const failure=attempt.fail(error);if((error as {retryReview?:boolean})?.retryReview)Object.assign(failure,{retryReview:true});throw failure;}
 }

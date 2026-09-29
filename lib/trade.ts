@@ -1,4 +1,5 @@
 import './browser-buffer.mjs';
+import {publicPriorityPolicy} from './priority-fee.mjs';
 import {Buffer} from 'buffer';
 import {getAssociatedTokenAddressSync,unpackAccount,TOKEN_PROGRAM_ID} from '@solana/spl-token';
 import {PublicKey} from '@solana/web3.js';
@@ -18,7 +19,7 @@ export async function prepareTrade(ownerAddress:string,mintAddress:string,side:'
  if(!/^\d+(\.\d{1,2})?$/.test(slippage))throw Error('Slippage must be between 0 and 20%, with at most two decimals.');
  const slippageBps=Math.round(Number(slippage)*100);
  const market=await readMarket(rpc('mainnet-beta'),new PublicKey(mintAddress),grainpadPlatformId());
- return {...await prepareCurveTrade({connection:rpc('mainnet-beta'),owner:new PublicKey(ownerAddress),mint:new PublicKey(mintAddress),platformId:grainpadPlatformId(),side,amount:parseUnits(text,side==='buy'?market.quote.decimals:6),slippageBps,expectedGenesis:NETWORKS['mainnet-beta'].genesis}),network:'mainnet-beta' as const};
+ return {...await prepareCurveTrade({connection:rpc('mainnet-beta'),owner:new PublicKey(ownerAddress),mint:new PublicKey(mintAddress),platformId:grainpadPlatformId(),side,amount:parseUnits(text,side==='buy'?market.quote.decimals:6),slippageBps,expectedGenesis:NETWORKS['mainnet-beta'].genesis,priorityBounds:await publicPriorityPolicy()}),network:'mainnet-beta' as const};
 }
 
 export async function readTradeBalances(ownerAddress:string,mintAddress:string){

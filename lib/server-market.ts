@@ -13,7 +13,7 @@ import {creationOnly} from './trade-activity.mjs';
 import {isOwnPlatform} from './launch-identity.mjs';
 
 export type MarketView={quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string};updatedAt:number;stale:boolean;slot:number};
-export async function serverMarket(address:string):Promise<MarketView>{
+export async function serverMarket(address:string,{viewer=false}:{viewer?:boolean}={}):Promise<MarketView>{
  const mint=new PublicKey(address).toBase58(),platform=grainpadPlatformId().toBase58(),db=database();
  // Unregistered/foreign mints cannot create cache entries or spend RPC budget.
  const object=await bucket().get(`launches/mainnet-beta/${mint}`);
@@ -36,7 +36,7 @@ export async function serverMarket(address:string):Promise<MarketView>{
    }catch{/* History unavailable is unknown, never zero. */}
   }
   return {...snapshot,activity};
- });
+ },{refresh:viewer});
  let chart:{available:boolean;pool:string;stale?:boolean;reason?:string}={available:false,pool:cached.data.pool,stale:false};
  try{
   const result=await sharedMarketCache(db,`chart:v2:${cached.data.pool}`,async()=>{
@@ -46,7 +46,7 @@ export async function serverMarket(address:string):Promise<MarketView>{
    if(!r.ok)throw Error('Chart provider unavailable.');
    const body=await r.json() as {data?:{id:string;attributes:{address:string};relationships:{base_token:{data:{id:string}};quote_token:{data:{id:string}}}}};
    return chartAvailability(body,cached.data.pool,mint,cached.data.quote.mint);
-  },{ttl:60_000,maxStale:300_000});
+  },{ttl:60_000,maxStale:300_000,refresh:viewer});
   chart={...result.data,stale:result.stale};
  }catch{chart.stale=true;}
  const official=await db.prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();

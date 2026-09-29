@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {readFileSync} from 'node:fs';
-import {sharedMarketCache,reserveRpcBudget,takeBudget} from '../lib/shared-market-cache.mjs';
+import {sharedMarketCache,takeBudget} from '../lib/shared-market-cache.mjs';
 import {pinOfficial,isOwnPlatform} from '../lib/launch-identity.mjs';
 import {creationOnly} from '../lib/trade-activity.mjs';
 import {readLaunchRecords} from '../lib/launch-records.ts';
@@ -22,12 +22,12 @@ test('a stalled lease cannot cause a second refresh or overwrite a newer owner',
  const db=database();await db.prepare('INSERT INTO market_cache (key,lease_until,lease_owner) VALUES (?,?,?)').bind('pool',99999,'other-worker').run();let calls=0;
  await assert.rejects(sharedMarketCache(db,'pool',async()=>{calls++;return {}},{now:()=>1000,sleep:async()=>{}}),/updating/);assert.equal(calls,0);
 });
-test('global budget cannot be bypassed with separate viewers or worker instances',async()=>{
- const db=database();const results=await Promise.all(Array.from({length:100},()=>reserveRpcBudget(db,'getMultipleAccounts',1000)));
- assert.equal(results.filter(Boolean).length,10);assert.equal(await reserveRpcBudget(db,'getMultipleAccounts',2000),true);
- db.sqlite.exec("UPDATE rpc_budget SET used=900000 WHERE key='rpc-day'");assert.equal(await reserveRpcBudget(db,'getMultipleAccounts',3000),false);
- assert.equal(await reserveRpcBudget(db,'getMultipleAccounts',86_400_000),true);
- assert.equal(await takeBudget(db,'oversized',201,200,1000),false);
+test('cache-only market reads never refresh without a visible token-page request',async()=>{
+ const db=database();let calls=0,time=1000;const load=async()=>{calls++;return {price:1};};
+ await assert.rejects(()=>sharedMarketCache(db,'viewer-pool',load,{refresh:false,now:()=>time}),/token page is visible/);assert.equal(calls,0);
+ await sharedMarketCache(db,'viewer-pool',load,{now:()=>time});time=32000;
+ const cached=await sharedMarketCache(db,'viewer-pool',load,{refresh:false,now:()=>time});assert(cached.stale);assert.equal(calls,1);
+ await sharedMarketCache(db,'viewer-pool',load,{refresh:true,now:()=>time});assert.equal(calls,2);
 });
 test('exact official mint is pinned; identical names, unicode lookalikes and forged flags are not official',()=>{
  const rows=[{mint:'copy',name:'Grainpad',symbol:'GRAIN',official:true},{mint:'lookalike',name:'Graіnpad',symbol:'GRAІN',official:true},{mint:'real',name:'Grainpad',symbol:'GRAIN'}];
