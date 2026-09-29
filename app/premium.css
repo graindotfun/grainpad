@@ -1,6 +1,13 @@
 /* Grainpad: warm paper, orange matter, readable records. */
 :root{--brand-faint:#a0aab0;--field-bg:#0d1216;--field-border:#68757d;--surface-muted:#b5bdc1}
 
+/* Paint the sticky header through both page gutters without widening its layout.
+   Clip only these decorative layers so the mobile menu and focus rings stay visible.
+   Shadows extend the paint without adding horizontal scrollable overflow. */
+.site-header::before,.site-header::after{content:"";position:absolute;left:0;right:0;z-index:-1;pointer-events:none;box-shadow:0 0 0 100vmax currentColor;clip-path:inset(0 -100vmax)}
+.site-header::before{top:0;bottom:0;background:var(--background);color:var(--background)}
+.site-header::after{bottom:-1px;height:1px;background:var(--brand-line);color:var(--brand-line)}
+
 /* Presentation-only repairs. Native disclosure and select keyboard behavior remain intact. */
 details.setup-note{display:block;grid-column:1/-1;width:100%;min-width:0;margin:24px 0;padding:0;border:1px solid var(--brand-line);border-radius:12px;background:var(--card);color:var(--brand-muted);font-size:14px;line-height:1.8;overflow:hidden}
 details.setup-note>summary{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:64px;padding:20px 24px;color:var(--foreground);cursor:pointer;list-style:none;line-height:1.5}
