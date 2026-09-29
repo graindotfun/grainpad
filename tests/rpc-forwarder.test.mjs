@@ -4,7 +4,7 @@ const genesis='5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';
 const body=method=>({jsonrpc:'2.0',id:1,method,params:[]});
 function fixture(){
  const calls=[],budgets=[],recorded=new Set();const primary='https://primary.invalid/',fallback='https://fallback.invalid/';
- const db={recorded,prepare:()=>({bind:(signature)=>({first:async()=>recorded.has(signature)?{expires_at:Number.MAX_SAFE_INTEGER}:null,run:async()=>({})})})};
+ const db={recorded,prepare:sql=>({bind:(signature)=>({first:async()=>sql.includes('rpc_budget')?{used:1}:recorded.has(signature)?{expires_at:Number.MAX_SAFE_INTEGER}:null,run:async()=>({})})})};
  const options={database:()=>db,env:{SOLANA_RPC_URL:primary,SOLANA_READ_RPC_URL:fallback},reserve:async(db,method,options)=>{budgets.push({method,...options});return true;},fetcher:async(url,options)=>{
   const payload=JSON.parse(options.body);calls.push({url,payload});if(url===primary)throw Error('primary offline');
   return Response.json({jsonrpc:'2.0',id:1,result:payload.method==='getGenesisHash'?genesis:42});
