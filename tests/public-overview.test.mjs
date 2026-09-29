@@ -26,3 +26,9 @@ test('burn totals remain exact and missing receipts stay unknown',()=>{
  assert.equal(recordedBurns([{kind:'buyback',burned:'0'}]),'0');
  assert.throws(()=>recordedBurns([{kind:'buyback',burned:'-1'}]));
 });
+
+test('wXMR-only rewards claims require the verified rewards service as well as launch rules',()=>{
+ const rewardPlatform={...platform,rules:[{symbol:'wXMR'}],rewards:{configurationReady:true,operational:true}};
+ assert.equal(canShowLaunchClaims(row(rewardPlatform),official(),'test-platform',now),true);
+ assert.equal(canShowLaunchClaims(row({...rewardPlatform,rewards:{configurationReady:true,operational:false}}),official(),'test-platform',now),false);
+});

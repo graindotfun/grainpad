@@ -52,5 +52,5 @@ export function SiteStats({data}:{data:SiteOverviewData|null}) {
 
 export function HeroFeatures({data}:{data:SiteOverviewData|null}) {
  if (!data || data.stale || !data.features.pairedLaunches || !data.features.onChainRules) return null;
- return <div className="hero-features"><span>Pair with SOL or wXMR</span><RulesBadge/></div>;
+ return <div className="hero-features"><span>Paired with wXMR</span><RulesBadge/></div>;
 }

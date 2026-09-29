@@ -4,8 +4,9 @@ import './browser-buffer.mjs';
 import { Buffer } from "buffer";
 import { Connection, PublicKey, Keypair, VersionedTransaction, TransactionMessage, ComputeBudgetProgram } from "@solana/web3.js";
 import {quoteAsset} from "./quote-assets.mjs";
-import {buildLaunchInstruction} from "./launch-instructions.mjs";
-import {expectedRuleAccounts,assertRuleAccounts} from "./launch-rules.mjs";
+import {buildRewardsLaunch} from "./rewards-launch.mjs";
+import {readRewardsIssuanceState} from "./rewards-issuance.mjs";
+import {REWARDS_POLICY} from "./rewards-policy.mjs";
 import { NETWORKS, type Network } from "./site-config";
 import {assertMintSuffix} from "./vanity-suffix";
 import {POLICY,grainpadPlatformId,decodePlatform,assertGrainpadPolicy} from "./platform-policy";
@@ -28,8 +29,8 @@ export function solToLamports(value:string):bigint{
  const [a,b=""]=value.split(".");const n=BigInt(a)*BigInt("1000000000")+BigInt(b.padEnd(9,"0"));
  if(n>BigInt(Number.MAX_SAFE_INTEGER))throw Error("Amount is too large.");return n;
 }
-export type PreparedLaunch={setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
-export type PreparedOperation=Pick<PreparedLaunch,"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
+export type PreparedLaunch={setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;rewards?:{taxBps:number;collector:string};fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
+export type PreparedOperation=Pick<PreparedLaunch,"rewards"|"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
 /** Only release a pending UI after finality or provable blockhash expiry. */
 export async function resolveSubmitted(signature:string){
  const connection=rpc('mainnet-beta',undefined,signature);await assertNetwork(connection,'mainnet-beta');
@@ -45,34 +46,24 @@ export async function resolveSubmitted(signature:string){
  throw Error('Transaction is still pending or its expiry cannot be verified. Check the explorer before retrying.');
 }
 export const DEVNET_PLATFORM="";
-export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string}):Promise<PreparedLaunch>{
+export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number}):Promise<PreparedLaunch>{
  assertTokenCreationEnabled();
  if(!input.mintKeypair)throw Error("Generate a grn mint address before preparing this launch.");
  assertMintSuffix(input.mintKeypair.publicKey.toBase58());
  (globalThis as unknown as {Buffer:typeof Buffer}).Buffer??=Buffer;
- const sdk=await import("@raydium-io/raydium-sdk-v2");
  const connection=rpc(input.network);await assertNetwork(connection,input.network);
- const owner=new PublicKey(input.owner);const maxLamports=solToLamports(input.maxCost);
+ if(input.network!=="mainnet-beta")throw Error("Rewards launches are mainnet-only.");
+ const owner=new PublicKey(input.owner),maxLamports=solToLamports(input.maxCost);
  if(maxLamports<=BigInt("0"))throw Error("Set a maximum launch cost before preparing the transaction.");
- const program=input.network==="devnet"?sdk.DEVNET_PROGRAM_ID.LAUNCHPAD_PROGRAM:sdk.LAUNCHPAD_PROGRAM;
- if(input.network==="devnet"&&!DEVNET_PLATFORM)throw Error("Devnet launch setup is pending. The Monero test report is available in the research tab.");
  const quote=quoteAsset(input.quoteAsset);
- if(input.mintKeypair.publicKey.toBase58()==='Db91fm8AxxfoFySAp6Jg3KVcfZHUTAR7bJDJb5WLMgrn'&&quote.symbol!=='SOL')throw Error('Official GRAIN must stay paired with SOL.');
- const ownId=grainpadPlatformId();
- const ownAccount=input.network==="mainnet-beta"?await connection.getAccountInfo(ownId,"finalized"):null;
- if(input.network==="mainnet-beta"&&!ownAccount)throw Error("Grainpad is awaiting owner activation. Open Platform settings first. No launch was prepared and nothing was sent.");
- if(ownAccount){if(!ownAccount.owner.equals(program))throw Error("Unexpected platform owner.");assertGrainpadPolicy(decodePlatform(ownAccount.data));}
- const platformId=input.network==="devnet"?new PublicKey(DEVNET_PLATFORM):ownId;
- const configId=new PublicKey(quote.config);
- assertRuleAccounts(ownId,await connection.getMultipleAccountsInfo(expectedRuleAccounts(ownId),'finalized'));
- const [configAccount,platformAccount]=await connection.getMultipleAccountsInfo([configId,platformId]);
- if(!configAccount||!platformAccount||!configAccount.owner.equals(program)||!platformAccount.owner.equals(program))throw Error("LaunchLab configuration is unavailable on this network.");
- const config=sdk.LaunchpadConfig.decode(configAccount.data);const platform=sdk.PlatformConfig.decode(platformAccount.data);
- if(ownAccount&&config.tradeFeeRate.toString()!==String(POLICY.protocolRate))throw Error("Protocol fees changed. Review the published launch policy first.");
+ if(quote.symbol!=='wXMR')throw Error('Holder reward launches must be paired with wXMR.');
+ if(!REWARDS_POLICY.transferFeeBps.includes(input.taxBps!))throw Error('Choose an approved transfer-tax rate.');
+ if(input.mintKeypair.publicKey.toBase58()==='Db91fm8AxxfoFySAp6Jg3KVcfZHUTAR7bJDJb5WLMgrn')throw Error('The official GRAIN purchase route needs a separate reviewed configuration.');
+ const {platformId,platform,config,collector}=await readRewardsIssuanceState(connection);
  const mint=input.mintKeypair;
  if(mint.publicKey.equals(owner)||await connection.getAccountInfo(mint.publicKey))throw Error("Mint address is already in use. Use a fresh mint-only key, never your wallet key.");
- const built=buildLaunchInstruction({owner,mint:mint.publicKey,platform:platformId,symbol:quote.symbol,name:input.name,tokenSymbol:input.symbol,uri:input.uri});
- const transaction=new VersionedTransaction(new TransactionMessage({payerKey:owner,recentBlockhash:(await connection.getLatestBlockhash('confirmed')).blockhash,instructions:[ComputeBudgetProgram.setComputeUnitLimit({units:600000}),ComputeBudgetProgram.setComputeUnitPrice({microLamports:10000}),built.instruction]}).compileToV0Message());
+ const built=buildRewardsLaunch({owner,mint:mint.publicKey,platform:platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quote.mint});
+ const transaction=new VersionedTransaction(new TransactionMessage({payerKey:owner,recentBlockhash:(await connection.getLatestBlockhash('confirmed')).blockhash,instructions:[ComputeBudgetProgram.setComputeUnitLimit({units:600000}),ComputeBudgetProgram.setComputeUnitPrice({microLamports:10000}),...built.instructions]}).compileToV0Message());
  const latest=await connection.getLatestBlockhash("confirmed");transaction.message.recentBlockhash=latest.blockhash;
  const before=await connection.getBalance(owner,"confirmed");
  const sim=await connection.simulateTransaction(transaction,{sigVerify:false,commitment:"confirmed",accounts:{encoding:"base64",addresses:[owner.toBase58()]}});
@@ -83,7 +74,7 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  const estimatedLamports=Math.max(0,before-after);
  if(BigInt(estimatedLamports)>maxLamports)throw Error(`Estimated cost ${formatSOL(estimatedLamports)} SOL exceeds your limit. Nothing was sent.`);
  if(before-estimatedLamports<5000000)throw Error("NO-GO: launch would leave less than the required 0.005 SOL reserve.");
- const prepared:PreparedLaunch={targetAccount:mint.publicKey.toBase58(),operationKind:"launch",minimumBalanceLamports:5000000,measuredDebitLamports:Math.max(0,before-after),networkFeeLamports:fee.value,balanceBeforeLamports:before,transaction,network:input.network,owner:input.owner,mint:mint.publicKey.toBase58(),pool:built.pool.toBase58(),metadataHash:input.metadataHash,name:input.name,symbol:input.symbol,platformName:"Grainpad",quoteAsset:quote.symbol,quoteMint:quote.mint,quoteDecimals:quote.decimals,estimatedLamports,maxLamports,createdAt:Date.now(),lastValidBlockHeight:latest.lastValidBlockHeight,blockhash:latest.blockhash,fees:{protocol:config.tradeFeeRate.toString(),platform:platform.feeRate.toString(),creator:platform.creatorFeeRate.toString()},simulationLogs:sim.value.logs||[]};
+ const prepared:PreparedLaunch={rewards:{taxBps:input.taxBps!,collector:String(collector)},targetAccount:mint.publicKey.toBase58(),operationKind:"launch",minimumBalanceLamports:5000000,measuredDebitLamports:Math.max(0,before-after),networkFeeLamports:fee.value,balanceBeforeLamports:before,transaction,network:input.network,owner:input.owner,mint:mint.publicKey.toBase58(),pool:built.pool.toBase58(),metadataHash:input.metadataHash,name:input.name,symbol:input.symbol,platformName:"Grainpad",quoteAsset:quote.symbol,quoteMint:quote.mint,quoteDecimals:quote.decimals,estimatedLamports,maxLamports,createdAt:Date.now(),lastValidBlockHeight:latest.lastValidBlockHeight,blockhash:latest.blockhash,fees:{protocol:config.tradeFeeRate.toString(),platform:platform.feeRate.toString(),creator:platform.creatorFeeRate.toString()},simulationLogs:sim.value.logs||[]};
  launchMintSigners.set(prepared,mint);return prepared;
 }
 async function preflightOperation(reviewed:PreparedOperation,connection:Connection,attempt:ReturnType<typeof createSigningAttempt>){
@@ -103,11 +94,10 @@ async function preflightOperation(reviewed:PreparedOperation,connection:Connecti
  if(!refreshable)assertBlockhashWindow(p.lastValidBlockHeight,await connection.getBlockHeight("confirmed"));
  if(p.targetAccount&&await connection.getAccountInfo(new PublicKey(p.targetAccount),'confirmed'))throw Error('Target already exists: creation skipped. Verify the existing account; do not create twice.');
  if(p.operationKind==='launch'){
-  const account=await connection.getAccountInfo(grainpadPlatformId(),'finalized');
-  if(!account?.owner.equals(new PublicKey(POLICY.program)))throw Error('NO-GO: platform creation must be finalized and verified before issuance.');
-  assertGrainpadPolicy(decodePlatform(account.data));
-  assertRuleAccounts(grainpadPlatformId(),await connection.getMultipleAccountsInfo(expectedRuleAccounts(grainpadPlatformId()),'finalized'));
+  const state=await readRewardsIssuanceState(connection);
+  if(!p.rewards||p.rewards.collector!==String(state.collector)||!REWARDS_POLICY.transferFeeBps.includes(p.rewards.taxBps))throw Error('Rewards configuration changed. Prepare a new launch review.');
  }
+
  // Always simulate the exact message again immediately before the user wallet prompt.
  const before=await connection.getBalance(new PublicKey(p.owner),'confirmed');
  if(refreshable){
