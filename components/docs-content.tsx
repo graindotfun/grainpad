@@ -132,7 +132,8 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
         </Section>
         <Section index={8}>
           <p>Separately from the launchpad, Grainpad maintains a research implementation of the p/xmr registry. It has been tested on Monero regtest only, using test funds.</p>
-          <p>There is no live Monero engine, native XMR settlement or XMR redemption. The research does not back $GRAIN or any token launched on Solana. XMR/wXMR rewards, an independent Grainpad curve, GRAIN as a quote asset and holder discounts are research only, not live features. We do not claim the same protocol or exact curve as p/xmr.</p>
+          <p>There is no live Monero engine, native XMR settlement or XMR redemption. The research does not back $GRAIN or any token launched on Solana. An independent Grainpad curve, GRAIN as a quote asset and holder discounts are research only. We do not claim the same protocol or exact curve as p/xmr.</p>
+          <p><a href="/rewards">wXMR holder rewards and tax-funded GRAIN burns</a> are required before token launches open. They are being implemented and are not active yet.</p>
           <a className="docs-related" href="/lab">Explore the research, source and test records</a>
           <p>Read the <a href="/roadmap">Monero roadmap</a> and the <a href="/transparency">donation commitment and public receipts</a>.</p>
         </Section>
