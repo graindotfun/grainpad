@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {Keypair,PublicKey} from '@solana/web3.js';
 import * as sdk from '@raydium-io/raydium-sdk-v2';
 import {PLATFORM_SETTINGS} from '../lib/platform-settings.mjs';
-import {PILOT_SIGNING_ENABLED,assertPilotSigningEnabled,pilotInstructions,compilePilot,planPilotFromSummary,planPilot,simulatePilot} from '../lib/pilot-review.mjs';
+import {PILOT_SIGNING_ENABLED,assertPilotSigningEnabled,pilotInstructions,compilePilot,planPilotFromSummary,planPilot,simulatePilot,readPilotSetupAccounts} from '../lib/pilot-review.mjs';
 
 const mint=Keypair.fromSeed(new Uint8Array(32).fill(151)).publicKey,collector=String(Keypair.fromSeed(new Uint8Array(32).fill(152)).publicKey);
 const draft={name:'Grainpad pilot',symbol:'PILOT',uri:'https://grainpad.fun/pilot.json',taxBps:200};
@@ -53,4 +53,11 @@ test('simulation is skipped while blocked and fails closed if admission would st
  const ok=await simulatePilot(connection(null),{collector,draft,mint,readSetup:async()=>summary('activation-review')});
  assert.equal(ok.simulated,true);assert.equal(ok.simulation.admissionClosedAfter,true);assert.equal(ok.pool,String(pool));assert.equal(ok.signingAuthorized,false);
  await assert.rejects(()=>simulatePilot(connection({lamports:1_000_000,owner:String(sdk.LAUNCHPAD_PROGRAM),data:['AAAA','base64']}),{collector,draft,mint,readSetup:async()=>summary('activation-review')}),/admission open/);
+});
+
+test('the server snapshot is one collector-independent read, so query parameters cannot multiply RPC calls',async()=>{
+ let calls=0;const connection={getGenesisHash:async()=>{calls++;return '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';},getMultipleAccountsInfoAndContext:async keys=>{calls++;assert.equal(keys.length,8);return {context:{slot:7},value:keys.map(()=>null)};}};
+ const snapshot=await readPilotSetupAccounts(connection);
+ assert.equal(calls,2);assert.equal(snapshot.slot,7);assert.equal(JSON.parse(JSON.stringify(snapshot)).accounts.length,8);
+ await assert.rejects(()=>readPilotSetupAccounts({...connection,getGenesisHash:async()=>'devnet'}),/Mainnet/);
 });
