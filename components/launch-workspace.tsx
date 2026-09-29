@@ -19,7 +19,7 @@ import {SiteHeader} from "@/components/site-header";
 import {KineticText} from "@/components/kinetic-text";
 import type {PlatformStatus} from "@/lib/platform-policy";
 import { SITE, identityPolicy, type Network } from "@/lib/site-config";
-import { metadataMessage, metadataPayload, metadataLink, type MetadataDraft } from "@/lib/metadata-shared";
+import { assertMetadataText, metadataMessage, metadataPayload, metadataLink, type MetadataDraft } from "@/lib/metadata-shared";
 import {walletProviders} from "@/lib/wallet";
 import type {PreparedLaunch,Wallet} from "@/lib/launch";
 import type {Keypair} from "@solana/web3.js";
@@ -82,7 +82,7 @@ export default function LaunchWorkspace({initialTab="launch"}:{initialTab?:"laun
  async function importMint(file?:File){if(!file)return;clearMint();try{if(file.size>4096)throw Error("Choose a small, generated mint key JSON file.");await import("@/lib/browser-buffer.mjs");const {parseVanityMint}=await import("@/lib/vanity-mint");const key=parseVanityMint(await file.text());mintKey.current=key;setVanityMint(key.publicKey.toBase58());setStatus("Mint address loaded in this tab only. No transaction sent.");}catch(e){setError(errorText(e));}}
  async function prepare(){setError("");setStatus("");setPrepared(null);setAck(false);setSignature("");setResult(null);
   try{assertTokenCreationEnabled();if(!name.trim()||new TextEncoder().encode(name.trim()).length>32)throw Error("Enter a token name of 1–32 UTF-8 bytes.");if(!/^[$A-Za-z0-9]{1,10}$/.test(symbol))throw Error("Enter a ticker of 1–10 letters or digits.");if(!owner||!wallet.current)throw Error("Connect your wallet first.");
-   const reserved=reservedIdentity({name,symbol,website:websiteValue,twitter:twitterValue},identityPolicy(owner));if(reserved)throw Error(reserved);
+   const reserved=reservedIdentity({name,symbol,website:websiteValue,twitter:twitterValue},identityPolicy(owner));if(reserved)throw Error(reserved);assertMetadataText({name,symbol,description});
    const {Buffer}=await import("buffer");(globalThis as unknown as {Buffer:typeof Buffer}).Buffer??=Buffer;
    const module=await import("@/lib/launch");module.solToLamports(maxCost);if(!maxCost||Number(maxCost)<=0)throw Error("Set your maximum launch cost in SOL.");
    if(network==="devnet"&&!module.DEVNET_PLATFORM)throw Error("Devnet deployment is not available yet. Use the tested Monero lab, or choose Mainnet to prepare a real Solana launch.");
