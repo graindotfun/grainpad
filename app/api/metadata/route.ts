@@ -4,9 +4,12 @@ import { SITE, identityPolicy } from "@/lib/site-config";
 import { reservedIdentity } from "@/lib/launch-identity.mjs";
 import { bucket, fail, limitedJSON, sameOrigin, sha256 } from "@/lib/server-utils";
 import { metadataMessage,metadataPayload,metadataLink,type MetadataDraft } from "@/lib/metadata-shared";
+import { TOKEN_CREATION_ENABLED } from "@/lib/platform-settings.mjs";
 export async function POST(request:Request){
  try{
   sameOrigin(request);
+  // Metadata exists only to create a token; while creation is locked it is unauthenticated public storage.
+  if(!TOKEN_CREATION_ENABLED)return fail(Error("Token creation is locked pending separate approval. Metadata uploads are closed."),403);
   const body=await limitedJSON(request,2_800_000);const draft=body.draft as MetadataDraft;
   if(!draft||typeof draft.name!=="string"||!draft.name.trim()||new TextEncoder().encode(draft.name.trim()).length>32)throw new Error("Name must be 1–32 UTF-8 bytes.");
   if(typeof draft.symbol!=="string"||!/^[$A-Za-z0-9]{1,10}$/.test(draft.symbol))throw new Error("Ticker must have 1–10 letters or digits.");
