@@ -7,6 +7,7 @@ import {grainImpersonation,reservedIdentity} from "@/lib/launch-identity.mjs";
 import {TokenImage} from "./token-image";
 import {quoteAsset} from "@/lib/quote-assets.mjs";
 import {WxmrWarning} from "@/components/wxmr-warning";
+import {OpenInWallet} from "@/components/open-in-wallet";
 import {BRAND_ASSETS} from "@/lib/brand-assets";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ArrowRight, FlaskConical, Layers3, ShieldCheck, Wallet as WalletIcon, Check, Loader2, Download, ImagePlus, Copy } from "lucide-react";
@@ -101,7 +102,7 @@ export default function LaunchWorkspace({initialTab="launch"}:{initialTab?:"laun
  return <main className="shell workspace-shell"><SiteHeader walletAction={<Button variant="outline" onClick={chooseWallet} disabled={!!busy}><WalletIcon size={16}/>{owner?short(owner):"Connect wallet"}</Button>}/>
 
  <div className="notice"><ShieldCheck size={16}/><span>{BRAND_CHAIN.label} launches use Raydium LaunchLab. The p/xmr Monero registry is a separate test prototype with no XMR backing.</span></div>
- {walletMenu&&<section className="wallet-menu panel"><h2>Connect a {BRAND_CHAIN.label} wallet</h2>{walletChoices.length?walletChoices.map(p=><Button key={p.name} onClick={()=>connect(p.wallet)}>{p.name}</Button>):<p>No supported wallet detected. Open this site in a browser with <a className="inline-link" href="https://phantom.com/" target="_blank" rel="noreferrer">Phantom</a> or <a className="inline-link" href="https://solflare.com/" target="_blank" rel="noreferrer">Solflare</a>.</p>}<Button variant="ghost" onClick={()=>setWalletMenu(false)}>Close</Button></section>}
+ {walletMenu&&<section className="wallet-menu panel"><h2>Connect a {BRAND_CHAIN.label} wallet</h2>{walletChoices.length?walletChoices.map(p=><Button key={p.name} onClick={()=>connect(p.wallet)}>{p.name}</Button>):<OpenInWallet/>}<Button variant="ghost" onClick={()=>setWalletMenu(false)}>Close</Button></section>}
  <Tabs value={tab} onValueChange={setTab} className="workspace"><div className="workspace-bar"><TabsList variant="line" className="workspace-tabs"><TabsTrigger value="launch" onClick={()=>setTab("launch")}><Layers3/>Launch workspace</TabsTrigger><TabsTrigger value="lab" onClick={()=>setTab("lab")}><FlaskConical/>p/xmr lab</TabsTrigger></TabsList><a className="workspace-rewards" href="/fees">Creator earnings <ArrowUpRight size={14}/></a></div>
  <TabsContent value="launch"><div className="page-heading"><div><p className="eyebrow">CREATE / {BRAND_CHAIN.label.toUpperCase()}</p><h1><KineticText>Launch a token.</KineticText></h1></div><p>Create on {BRAND_CHAIN.label}. Review every detail.<br/>Launch from your own wallet.</p></div>
  <div className="launch-grid"><section className="panel form-panel"><div className="panel-title"><span className="step">01</span><h2>Token identity</h2></div><div className="form-row"><label>Token name<Input placeholder="Give your token a name" value={name} onChange={e=>{setName(e.target.value);reset();}} disabled={locked} maxLength={32}/></label><label>Ticker<Input placeholder="E.G. SEED" value={symbol} onChange={e=>{setSymbol(e.target.value.toUpperCase());reset();}} disabled={locked} maxLength={10}/></label></div>

@@ -8,3 +8,12 @@ export function walletProviders():{name:string;wallet:Wallet}[]{
  if(w.solana&&!list.some(p=>p.wallet===w.solana))list.push({name:'Browser wallet',wallet:w.solana});
  return list;
 }
+/** Mobile browsers inject no Solana wallet; these universal links reopen the page in a wallet's in-app browser, which does. */
+export function walletBrowseLinks(pageUrl:string){
+ const page=new URL(pageUrl);if(page.protocol!=='https:'&&page.hostname!=='localhost')throw Error('Wallet browse links require an HTTPS page.');
+ const url=encodeURIComponent(page.toString()),ref=encodeURIComponent(page.origin);
+ return [{name:'Phantom',href:`https://phantom.app/ul/browse/${url}?ref=${ref}`},{name:'Solflare',href:`https://solflare.com/ul/v1/browse/${url}?ref=${ref}`}];
+}
+export function isMobileBrowser(userAgent:string,maxTouchPoints=0){
+ return /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent)||(/Macintosh/.test(userAgent)&&maxTouchPoints>1);
+}
