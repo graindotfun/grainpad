@@ -2,6 +2,7 @@ import {database} from '@/lib/server-owner';
 import {registeredProject} from '@/lib/server-project';
 import {roomPage,publishRoomEvent,verifyRoomPublication} from '@/lib/launch-room.mjs';
 import {consumeRequestBudget} from '@/lib/abuse-budget.mjs';
+import {requestClientKey} from '@/lib/client-key.mjs';
 import {sameOrigin,limitedJSON,fail} from '@/lib/server-utils';
 export const dynamic='force-dynamic';
 export async function GET(request:Request,{params}:{params:Promise<{mint:string}>}){try{
@@ -11,7 +12,7 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
 }catch(e){return fail(e,400);}}
 export async function POST(request:Request,{params}:{params:Promise<{mint:string}>}){try{
  sameOrigin(request);const mint=(await params).mint,db=database();
- if(!await consumeRequestBudget(db,`room:ip:${request.headers.get('cf-connecting-ip')||'local'}`,20))return fail(Error('Too many publications. Wait a minute and retry.'),429);
+ if(!await consumeRequestBudget(db,`room:ip:${requestClientKey(request)}`,20))return fail(Error('Too many publications. Wait a minute and retry.'),429);
  const {payload,signature}=await limitedJSON(request,12000);
  const p=verifyRoomPublication(payload,signature,new URL(request.url).origin,mint);
  if(!await consumeRequestBudget(db,`room:author:${p.author}`,60,{windowMs:3600000})||!await consumeRequestBudget(db,'room:site',1000,{windowMs:3600000}))return fail(Error('Publication limit reached. Your text is still here; retry later.'),429);

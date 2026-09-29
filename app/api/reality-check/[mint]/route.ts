@@ -8,6 +8,7 @@ import {registeredProject} from '@/lib/server-project';
 import {readMarket} from '@/lib/market-core.mjs';
 import {exitScenarios} from '@/lib/reality-check.mjs';
 import {consumeRequestBudget} from '@/lib/abuse-budget.mjs';
+import {requestClientKey} from '@/lib/client-key.mjs';
 export async function POST(request:Request,{params}:{params:Promise<{mint:string}>}){try{
  sameOrigin(request);const {amount,slippage}=await limitedJSON(request,1000);
  if(typeof amount!=='string'||amount.length>30||typeof slippage!=='string'||slippage.length>5)return fail(Error('Enter a token amount and slippage.'),400);
@@ -15,7 +16,7 @@ export async function POST(request:Request,{params}:{params:Promise<{mint:string
  const {parseTokenUnits}=await import('@/lib/quote-assets.mjs');parseTokenUnits(amount,6);
  if(!/^(0|[1-9]\d?)(\.\d{1,2})?$/.test(slippage)||Number(slippage)>20)throw Error('Slippage must be between 0 and 20%.');
  const project=await registeredProject((await params).mint),db=database();
- if(!await consumeRequestBudget(db,`exit:ip:${request.headers.get('cf-connecting-ip')||'local'}`,6)||!await consumeRequestBudget(db,'exit:site',30))return fail(Error('Quote checks are busy. Please retry in a minute.'),429);
+ if(!await consumeRequestBudget(db,`exit:ip:${requestClientKey(request)}`,6)||!await consumeRequestBudget(db,'exit:site',30))return fail(Error('Quote checks are busy. Please retry in a minute.'),429);
  const connection=readConnection();if(await connection.getGenesisHash()!==NETWORKS['mainnet-beta'].genesis)throw Error('Network mismatch.');
  const market=await readMarket(connection,new PublicKey(project.mint),grainpadPlatformId());
  const result=exitScenarios(market,project.mint,project.creator,amount,slippage),checkedAt=Date.now();
