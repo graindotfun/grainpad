@@ -17,6 +17,7 @@ export async function GET(request:Request){
   if(search.length>128||!['all','new','near','graduated'].includes(filter)||!['newest','oldest','market-cap','volume'].includes(sort)||!Number.isSafeInteger(page)||page<1)return Response.json({error:'Invalid directory request.'},{status:400,headers});
   const db=database(),platform=grainpadPlatformId().toBase58(),now=Date.now();
   const [registry,official,cache]=await Promise.all([
+   // Discovery runs only inside this shared cache refresh. No cron or separate scanner is scheduled.
    sharedMarketCache(db,`discovery:registry:v2:${platform}`,async()=>{
     try{await discoverLaunches({storage:bucket(),chain:(method:string,params:unknown[]=[])=>chain('mainnet-beta',method,params),prove:(mint:PublicKey,id:PublicKey)=>getLaunchProof(readConnection('mainnet-beta'),mint,id),limit:4});}catch{/* A discovery failure must not hide launches already recorded. */}
     return readLaunchRecords(bucket(),'mainnet-beta',platform);
