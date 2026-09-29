@@ -1,3 +1,4 @@
+import {poolStats,type MarketStats} from './market-display';
 import {chartAvailability} from './chart-identity.mjs';
 import {quoteAsset} from './quote-assets.mjs';
 import {PublicKey} from '@solana/web3.js';
@@ -12,7 +13,7 @@ import {readMarketSnapshot} from './market-snapshot.mjs';
 import {creationOnly} from './trade-activity.mjs';
 import {isOwnPlatform} from './launch-identity.mjs';
 
-export type MarketView={quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string};updatedAt:number;stale:boolean;slot:number};
+export type MarketView={progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};updatedAt:number;stale:boolean;slot:number};
 export async function serverMarket(address:string,{viewer=false}:{viewer?:boolean}={}):Promise<MarketView>{
  const mint=new PublicKey(address).toBase58(),platform=grainpadPlatformId().toBase58(),db=database();
  // Unregistered/foreign mints cannot create cache entries or spend RPC budget.
@@ -37,18 +38,19 @@ export async function serverMarket(address:string,{viewer=false}:{viewer?:boolea
   }
   return {...snapshot,activity};
  },{refresh:viewer});
- let chart:{available:boolean;pool:string;stale?:boolean;reason?:string}={available:false,pool:cached.data.pool,stale:false};
+ let chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats}={available:false,pool:cached.data.pool,stale:false};
  try{
-  const result=await sharedMarketCache(db,`chart:v2:${cached.data.pool}`,async()=>{
+  const result=await sharedMarketCache(db,`chart:v3:${cached.data.pool}`,async()=>{
    if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Chart provider limit.');
    const r=await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${cached.data.pool}`,{signal:AbortSignal.timeout(6000)});
    if(r.status===404)return {available:false,pool:cached.data.pool};
    if(!r.ok)throw Error('Chart provider unavailable.');
-   const body=await r.json() as {data?:{id:string;attributes:{address:string};relationships:{base_token:{data:{id:string}};quote_token:{data:{id:string}}}}};
-   return chartAvailability(body,cached.data.pool,mint,cached.data.quote.mint);
+   const body=await r.json() as {data?:{id:string;attributes:Record<string,unknown>&{address:string};relationships:{base_token:{data:{id:string}};quote_token:{data:{id:string}}}}};
+   const identity=chartAvailability(body,cached.data.pool,mint,cached.data.quote.mint);
+   return {...identity,...(identity.available?{stats:poolStats(body.data!.attributes)}:{})};
   },{ttl:60_000,maxStale:300_000,refresh:viewer});
   chart={...result.data,stale:result.stale};
  }catch{chart.stale=true;}
  const official=await db.prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();
- return {...cached.data,name:record.name,symbol:record.symbol,image:record.image,official:official?.mint===mint,chart,updatedAt:cached.updatedAt,stale:cached.stale};
+ return {...cached.data,name:record.name,symbol:record.symbol,image:record.image,official:official?.mint===mint,stats:chart.stats,chart,updatedAt:cached.updatedAt,stale:cached.stale};
 }
