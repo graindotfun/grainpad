@@ -1,0 +1,11 @@
+'use client';
+import {useEffect,useState} from 'react';
+import type {MarketView} from '@/lib/server-market';
+type Context={creator:string;launchTime:string|null;registeredAt:string;pool:string;platform:string;quote:{symbol:string};declaredCreatorBuy:{amount:string;asset:string}|null};
+type Props={mint:string;market:MarketView|null};
+export function TokenProjectContext(props:Props){return <TokenProjectContextView key={props.mint} {...props}/>;}
+function TokenProjectContextView({mint,market}:Props){
+ const [data,setData]=useState<Context|null>(null),[error,setError]=useState('');
+ useEffect(()=>{const c=new AbortController();fetch(`/api/receipt/${mint}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw Error('Project identity is temporarily unavailable.');setData(await r.json());}).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[mint]);
+ return <section className="panel product-panel token-project-context"><div className="product-section-heading"><div><p className="eyebrow">THE PROJECT BEHIND THE MARKET</p><h2>Identity & activity</h2></div><div className="product-actions"><a className="token-chip" href={`/token/${mint}/room`}>Launch Room</a><a className="token-chip" href={`/token/${mint}/receipt`}>Receipt & tape</a></div></div>{error&&<p role="status">{error}</p>}<dl className="product-facts"><div><dt>Creator</dt><dd>{data?<a href={`/creator/${data.creator}`}>{data.creator.slice(0,7)}…{data.creator.slice(-5)}</a>:'—'}</dd></div><div><dt>On-chain launch</dt><dd>{data?.launchTime?new Date(data.launchTime).toLocaleString():'Not indexed yet'}</dd></div><div><dt>Lifecycle</dt><dd>{market?market.route==='cpmm'?'Graduated · Raydium':market.route==='graduating'?'Migration pending':'Bonding curve':'Awaiting market data'}</dd></div><div><dt>Declared creator buy</dt><dd>{data?.declaredCreatorBuy?`${data.declaredCreatorBuy.amount} ${data.declaredCreatorBuy.asset} · self-declared`:'Not declared'}</dd></div></dl><p className="small muted">The token identity, receipt, project room and indexed history stay at the same address after graduation. Indexed events may have gaps.</p></section>;
+}

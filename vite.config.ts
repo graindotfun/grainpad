@@ -12,6 +12,7 @@ export default defineConfig(async () => {
   if (commit && !/^[a-f0-9]{40}$/.test(commit)) throw Error("Expected a full GitHub commit SHA.");
   if (process.env.GITHUB_ACTIONS === "true" && !commit) throw Error("Missing GitHub checkout SHA.");
   return {
+    server: {host: '0.0.0.0', allowedHosts: ['terminal.local']},
     define: { __GRAINPAD_COMMIT__: JSON.stringify(commit) },
     resolve: { alias: [
       { find: /^@\/lib\/research\/regtest-(report|state)\.json$/, replacement: fileURLToPath(new URL("./data/lab-display.json", import.meta.url)) },
