@@ -1,3 +1,4 @@
+import "@/app/marketing-refinements.css";
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default function RoadmapPage() {
-  return <main className="shell record-shell">
+  return <main className="shell record-shell grain-updates">
     <a className="skip-content" href="#main-content">Skip to roadmap</a><SiteHeader textOnly/>
     <header className="page-heading record-heading" id="main-content"><div><p className="eyebrow">GRAINPAD / ROADMAP</p><h1>Roadmap<span>.</span></h1></div><a href="/transparency" className="record-link">View transparency</a></header>
     <ol className="roadmap-items" aria-label="Monero roadmap">

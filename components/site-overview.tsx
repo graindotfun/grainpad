@@ -1,4 +1,5 @@
 "use client";
+import {RulesBadge} from './rules-badge';
 import {useEffect, useState} from 'react';
 import {displayUnits} from '@/lib/token-units.mjs';
 
@@ -51,5 +52,5 @@ export function SiteStats({data}:{data:SiteOverviewData|null}) {
 
 export function HeroFeatures({data}:{data:SiteOverviewData|null}) {
  if (!data || data.stale || !data.features.pairedLaunches || !data.features.onChainRules) return null;
- return <div className="hero-features"><span>Pair with SOL or wXMR</span><a href="/docs">Launch rules enforced on-chain</a></div>;
+ return <div className="hero-features"><span>Pair with SOL or wXMR</span><RulesBadge/></div>;
 }

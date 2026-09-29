@@ -1,5 +1,5 @@
 /* Documentation extends the shared editorial grid, type and theme tokens. */
-.docs-shell{--docs-accent:var(--xmr-orange)}
+.docs-shell{--docs-accent:var(--xmr-orange);--docs-header-height:86px}
 .docs-heading{align-items:flex-end;padding-bottom:36px;border-bottom:1px solid var(--brand-line);margin-bottom:0}
 .docs-heading h1{font-size:clamp(58px,7vw,96px);line-height:1.05;margin:16px 0 20px}
 .docs-intro{font-size:18px;color:var(--brand-muted);margin:0}
@@ -14,7 +14,7 @@
 .docs-index a:hover{color:var(--foreground)}
 .docs-status-link{display:inline-block;font-size:14px;border-bottom:1px solid var(--brand-line);padding:6px 0;margin-top:24px}
 .docs-article{min-width:0;max-width:870px}
-.docs-section{padding:40px 0;border-bottom:1px solid var(--brand-line);scroll-margin-top:24px}
+.docs-section{padding:40px 0;border-bottom:1px solid var(--brand-line);scroll-margin-top:var(--docs-header-height)}
 .docs-section:last-child{border-bottom:0}
 .docs-section-heading{display:flex;gap:18px;align-items:baseline;margin-bottom:22px}
 .docs-section-heading>span{font:13px/1.5 var(--font-code);color:var(--docs-accent);flex-shrink:0}
@@ -57,5 +57,18 @@
 .docs-shell .brand-footer{margin-top:50px}
 html[data-theme="light"] .docs-shell{--docs-accent:var(--light-accent)}
 @media(max-width:1000px){.docs-layout{grid-template-columns:200px minmax(0,1fr);gap:35px}.docs-address-row{grid-template-columns:1fr;gap:7px}}
-@media(max-width:760px){.docs-heading{padding-bottom:26px}.docs-edition{margin-top:24px}.docs-layout{grid-template-columns:1fr;gap:0}.docs-index{position:static;padding:26px 0;border-bottom:1px solid var(--brand-line)}.docs-index ol{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}.docs-index li a{font-size:14px;gap:9px}.docs-status-link{margin-top:16px}.docs-section{padding:32px 0}.docs-callout{padding:18px}.docs-addresses{padding:0 18px}.docs-facts>div{grid-template-columns:1fr;gap:4px}.docs-facts dd{text-align:left}.docs-links li{flex-wrap:wrap;gap:5px 20px}.docs-fees{gap:12px}.docs-fees strong{font-size:32px}}
+@media(max-width:760px){.docs-heading{padding-bottom:26px}.docs-edition{margin-top:24px}.docs-layout{grid-template-columns:minmax(0,1fr);gap:0}.docs-index{position:static;padding:26px 0;border-bottom:1px solid var(--brand-line)}.docs-index ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}.docs-index li a{font-size:14px;gap:9px}.docs-status-link{margin-top:16px}.docs-section{padding:32px 0}.docs-callout{padding:18px}.docs-addresses{padding:0 18px}.docs-facts>div{grid-template-columns:1fr;gap:4px}.docs-facts dd{text-align:left}.docs-links li{flex-wrap:wrap;gap:5px 20px}.docs-fees{gap:12px}.docs-fees strong{font-size:32px}}
 @media(max-width:380px){.docs-index ol{grid-template-columns:1fr}.docs-fees{grid-template-columns:1fr}.docs-fees>div{display:flex;align-items:baseline;gap:16px}.docs-fees p{margin:0}}
+
+/* Long protocol addresses in prose must shrink the track, not the viewport. */
+.docs-layout>*,.docs-section-heading h2,.docs-index li,.docs-index li a{min-width:0}
+.docs-section-body,.docs-section-heading h2,.docs-index li a,.docs-facts dd,.docs-links a{overflow-wrap:anywhere}
+.docs-section-body :is(pre,table,.docs-scroll){display:block;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.docs-section-body pre{white-space:pre;overflow-wrap:normal}
+.docs-section-body pre code{white-space:inherit;overflow-wrap:normal}
+.docs-section-body :not(pre)>code{overflow-wrap:anywhere}
+.docs-heading[id],.docs-section [id]{scroll-margin-top:var(--docs-header-height)}
+@media(max-width:980px){.docs-shell{--docs-header-height:80px}}
+@media(max-width:420px){.docs-shell{--docs-header-height:74px}}
+/* The section margin supplies the entire sticky offset; avoid adding the global 90px twice. */
+html:has(.docs-shell){scroll-padding-top:0}

@@ -1,4 +1,5 @@
 "use client";
+import "@/app/marketing-refinements.css";
 import {BRAND_CHAIN} from "@/lib/brand-presentation";
 import {HeroFeatures,SiteStats,useSiteOverview} from "@/components/site-overview";
 import {TokenDiscovery} from "@/components/token-discovery";
@@ -19,7 +20,7 @@ export default function Home(){
  useEffect(()=>{let current=true;fetch("/api/platform").then(r=>{if(!r.ok)throw Error();return r.json() as Promise<PlatformStatus>}).then(d=>{if(current)setPlatform(d)}).catch(()=>{if(current)setPlatformError(true)});return()=>{current=false}},[]);
  const launchesOpen=platform?.active===true&&platform.creationEnabled===true;
  const status=platform?.stale?"Platform data is stale · retry shortly":launchesOpen?"Launches are open":platform?.active?"Platform active · token creation locked":platform?"Platform activation pending":platformError?"Platform status unavailable":"Checking platform status";
- return <main className="landing-shell">
+ return <main className="landing-shell grain-updates">
   <a className="skip-content" href="#main-content">Skip to content</a><SiteHeader/>
   <section className="brand-hero" id="main-content" aria-labelledby="hero-heading">
    <div className="hero-copy"><p className="overline"><span className="hero-network"><span className="orange-square"/> {BRAND_CHAIN.label.toUpperCase()}</span> IDEAS INTO EXISTENCE</p>

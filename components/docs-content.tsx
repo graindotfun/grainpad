@@ -1,4 +1,5 @@
 "use client";
+import "@/app/marketing-refinements.css";
 import {BRAND_CHAIN} from "@/lib/brand-presentation";
 import {GraduationCoverage} from "@/components/graduation-coverage";
 import { useEffect, useState, type ReactNode } from "react";
@@ -69,7 +70,7 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
   const total = rates.creator + rates.platform + rates.protocol;
   const addressNote = active ? "Matches the current mainnet policy" : platformState === "ready" ? "Configured for activation · not yet active" : "From site configuration · mainnet verification pending";
 
-  return <main className="shell docs-shell">
+  return <main className="shell docs-shell grain-updates">
     <a className="skip-content" href="#main-content">Skip to documentation</a><SiteHeader/>
     <header className="page-heading docs-heading" id="main-content">
       <div><p className="eyebrow">GRAINPAD / DOCUMENTATION</p><h1><KineticText>Docs.</KineticText></h1><p className="docs-intro">Launch mechanics. Current policy. Verifiable records.</p></div>
