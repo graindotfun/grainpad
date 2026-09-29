@@ -36,7 +36,7 @@ test('exact official mint is pinned; identical names, unicode lookalikes and for
 });
 test('directory fails closed on reference-platform, foreign and old records missing provenance',async()=>{
  const base={mint:'So11111111111111111111111111111111111111112',name:'Grainpad',symbol:'GRAIN',network:'mainnet-beta',verification:'confirmed-on-chain',createdAt:'2026-09-29T00:00:00.000Z'};
- const records=[{...base,platformId:'ours'},{...base,platformId:'reference'},{...base,platformId:'foreign'},base];
+ const records=[{...base,platformId:'ours'},{...base,platformId:'reference'},{...base,platformId:'foreign'},base,{...base,platformId:'ours',verification:'awaiting-finalization'}];
  const storage={list:async()=>({objects:records.map((_,i)=>({key:String(i)})),truncated:false}),get:async key=>({text:async()=>JSON.stringify(records[Number(key)])})};
  assert.equal((await readLaunchRecords(storage,'mainnet-beta','ours')).length,1);
 });
