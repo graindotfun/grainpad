@@ -9,8 +9,10 @@ const plain={name:'Seed Cat',symbol:'SEED',imageHash:'0'.repeat(64),website:'htt
 test('a non-admin wallet cannot publish the official name, ticker, artwork or links',()=>{
  const policy=identityPolicy(stranger);
  assert.equal(reservedIdentity(plain,policy),null);
- for(const draft of [{name:'Grainpad'},{symbol:'GRAIN'},{name:'Grаin'},{symbol:'GRA1N'},{name:'G\u200Brain Official'},{symbol:'$GRAIN'}])
+ for(const draft of [{name:'Grainpad'},{symbol:'GRAIN'},{name:'Grаin'},{symbol:'GRA1N'},{name:'G\u200Brain Official'},{symbol:'$GRAIN'},{name:'Official GRAIN'},{symbol:'GRAINTOKEN'}])
   assert.match(reservedIdentity({...plain,...draft},policy),/reserved for the official token/);
+ for(const draft of [{name:'Whole Grain'},{name:'Grain Bowl'},{symbol:'GRAINS'},{name:'Migraine'}])
+  assert.equal(reservedIdentity({...plain,...draft},policy),null);
  assert.match(reservedIdentity({...plain,imageHash:OFFICIAL_ARTWORK.sha256},policy),/artwork is reserved/);
  for(const website of ['https://grainpad.fun/','https://GRAINPAD.fun/token','https://www.grainpad.fun/'])
   assert.match(reservedIdentity({...plain,website},policy),/own website/);
