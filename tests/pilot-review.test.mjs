@@ -15,7 +15,8 @@ const noNetwork=new Proxy({},{get(){throw Error('Unexpected RPC call');}});
 test('pilot signing is locked and the lock fails closed',()=>{
  assert.equal(PILOT_SIGNING_ENABLED,false);
  assert.throws(assertPilotSigningEnabled,/locked/);
- assert.equal(planPilotFromSummary(summary('activation-review'),{draft,mint}).signingAuthorized,false);
+ const plan=planPilotFromSummary(summary('activation-review'),{draft,mint});
+ assert.equal(plan.signingAuthorized,false);assert.equal(plan.previewOnly,true);assert.equal(plan.executable,false);assert.match(plan.notice,/not executable/);
 });
 
 test('the pilot transaction opens admission, launches and closes admission, with exactly the admin and mint as signers',()=>{
