@@ -10,7 +10,7 @@
 .docs-index .eyebrow{font-size:12px;margin:0 0 18px}
 .docs-index ol{list-style:none;padding:0;margin:0}
 .docs-index li a{display:flex;gap:15px;padding:9px 0;font-size:14px;line-height:1.5;color:var(--brand-muted)}
-.docs-index li a span{font:12px/1.75 var(--font-code);color:var(--docs-accent)}
+.docs-index li a span{flex-shrink:0;white-space:nowrap;font:12px/1.75 var(--font-code);color:var(--docs-accent)}
 .docs-index a:hover{color:var(--foreground)}
 .docs-status-link{display:inline-block;font-size:14px;border-bottom:1px solid var(--brand-line);padding:6px 0;margin-top:24px}
 .docs-article{min-width:0;max-width:870px}
