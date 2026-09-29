@@ -1,4 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
+import {TOKEN_PROGRAM_ID} from '@solana/spl-token';
 import {Keypair,PublicKey} from '@solana/web3.js';import BN from 'bn.js';import * as sdk from '@raydium-io/raydium-sdk-v2';
 import {exitScenarios} from '../lib/reality-check.mjs';import {QUOTES} from '../lib/quote-assets.mjs';
 const creator=Keypair.generate().publicKey,mint=Keypair.generate().publicKey;
@@ -24,7 +25,7 @@ test('migration, invalid input, zero and excess slippage produce no sale quote',
 });
 test('CPMM sell accounts for base fees, quote fees and reserve direction after graduation',()=>{
  const m=market(),p=sdk.CpmmPoolInfoLayout.decode(Buffer.alloc(sdk.CpmmPoolInfoLayout.span));
- Object.assign(p,{mintA:mint,mintB:new PublicKey(QUOTES.SOL.mint),baseReserve:new BN('1000000000000'),quoteReserve:new BN('100000000000'),enableCreatorFee:true,feeOn:sdk.FeeOn.BothToken,configInfo:{tradeFeeRate:new BN(2500),creatorFeeRate:new BN(10000),protocolFeeRate:new BN(120000),fundFeeRate:new BN(40000)}});
+ Object.assign(p,{mintProgramA:TOKEN_PROGRAM_ID,mintProgramB:TOKEN_PROGRAM_ID,mintA:mint,mintB:new PublicKey(QUOTES.SOL.mint),baseReserve:new BN('1000000000000'),quoteReserve:new BN('100000000000'),enableCreatorFee:true,feeOn:sdk.FeeOn.BothToken,configInfo:{tradeFeeRate:new BN(2500),creatorFeeRate:new BN(10000),protocolFeeRate:new BN(120000),fundFeeRate:new BN(40000)}});
  const r=exitScenarios({...m,route:'cpmm',cpData:p},String(mint),String(creator),'10000','1');for(const s of r.scenarios){assert.equal(s.error,undefined);assert.ok(BigInt(s.output)<BigInt(s.spotValue));assert.ok(s.fees.some(f=>f.asset==='base'));assert.ok(s.priceImpactBps>=0);}
  const reverse={...p,mintA:p.mintB,mintB:p.mintA,baseReserve:p.quoteReserve,quoteReserve:p.baseReserve};
  assert.deepEqual(exitScenarios({...m,route:'cpmm',cpData:reverse},String(mint),String(creator),'10000','1').scenarios,r.scenarios);

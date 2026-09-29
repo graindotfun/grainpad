@@ -7,6 +7,7 @@ import {rpc,assertNetwork} from './launch';
 import {NETWORKS} from './site-config';
 import {grainpadPlatformId} from './platform-policy';
 import {readMarket} from './market-core.mjs';
+import {baseTokenProgram} from './transfer-tax.mjs';
 import {prepareCurveTrade,parseUnits} from './trade-core.mjs';
 export async function inspectTrade(mintAddress:string){
  (globalThis as unknown as {Buffer:typeof Buffer}).Buffer??=Buffer;
@@ -25,7 +26,7 @@ export async function prepareTrade(ownerAddress:string,mintAddress:string,side:'
 export async function readTradeBalances(ownerAddress:string,mintAddress:string){
  const connection=rpc('mainnet-beta'),owner=new PublicKey(ownerAddress),mint=new PublicKey(mintAddress);
  await assertNetwork(connection,'mainnet-beta');const market=await readMarket(connection,mint,grainpadPlatformId()),quoteMint=new PublicKey(market.quote.mint);
- const baseAta=getAssociatedTokenAddressSync(mint,owner),quoteAta=getAssociatedTokenAddressSync(quoteMint,owner);
+ const tokenProgram=baseTokenProgram(market.pool),baseAta=getAssociatedTokenAddressSync(mint,owner,false,tokenProgram),quoteAta=getAssociatedTokenAddressSync(quoteMint,owner);
  const [sol,accounts]=await Promise.all([connection.getBalance(owner,'confirmed'),connection.getMultipleAccountsInfo([baseAta,quoteAta],'confirmed')]);
- return {owner:ownerAddress,base:(accounts[0]?unpackAccount(baseAta,accounts[0],TOKEN_PROGRAM_ID).amount:0n).toString(),quote:market.quote.native?String(sol):(accounts[1]?unpackAccount(quoteAta,accounts[1],TOKEN_PROGRAM_ID).amount:0n).toString(),sol:String(sol),quoteSymbol:market.quote.symbol};
+ return {owner:ownerAddress,base:(accounts[0]?unpackAccount(baseAta,accounts[0],tokenProgram).amount:0n).toString(),quote:market.quote.native?String(sol):(accounts[1]?unpackAccount(quoteAta,accounts[1],TOKEN_PROGRAM_ID).amount:0n).toString(),sol:String(sol),quoteSymbol:market.quote.symbol};
 }
