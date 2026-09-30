@@ -61,7 +61,7 @@ html[data-theme="light"] .delay-chip{color:var(--grain-warning)}
 
 /* Grainpad Select: one trigger and menu for every product select (Radix listbox underneath). */
 :root{--grain-control-bg:#141a1e;--grain-control-border:#39434a;--grain-control-border-hover:#7b8b97;--grain-menu-bg:#171d21;--grain-menu-border:#343e44;--grain-menu-hover:#232c31;--grain-menu-shadow:0 18px 40px -12px #000000b3,0 2px 8px #00000059}
-html[data-theme="light"]{--grain-control-bg:#fff;--grain-control-border:#d8cdb9;--grain-control-border-hover:#928774;--grain-menu-bg:#fffdf8;--grain-menu-border:#e2d8c6;--grain-menu-hover:color-mix(in srgb,var(--grain-orange) 5%,#fffdf8);--grain-menu-shadow:0 18px 40px -14px #403b3340,0 2px 8px #403b331a}
+html[data-theme="light"]{--grain-control-bg:#fff;--grain-control-border:#d8cdb9;--grain-control-border-hover:#928774;--grain-menu-bg:#fffdf8;--grain-menu-border:#e2d8c6;--grain-menu-hover:color-mix(in srgb,var(--grain-orange) 7%,transparent);--grain-menu-shadow:0 18px 40px -14px #403b3340,0 2px 8px #403b331a}
 .grain-select{display:inline-flex;align-items:center;gap:10px;min-width:0}
 .grain-select-label{flex:none;color:var(--muted-foreground);font:500 12px/1 var(--font-body);white-space:nowrap}
 .grain-select-trigger{display:inline-flex;align-items:center;justify-content:space-between;gap:12px;min-width:168px;height:38px;margin:0;padding:0 11px 0 13px;border:1px solid var(--grain-control-border);border-radius:8px;background:var(--grain-control-bg);color:var(--foreground);font:500 12.5px/1 var(--font-body);letter-spacing:0;text-align:left;cursor:pointer;box-shadow:none;transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent}
