@@ -10,7 +10,7 @@
 @utility scrollbar-gutter-stable { scrollbar-gutter:stable; }
 
 :root {
- --grain-orange:#ff6600; --grain-orange-hover:#ff8533; --grain-orange-ink:#ad4400; --grain-warning:#d9a441; --xmr-orange:var(--grain-orange); --charcoal:#4c4c4c; --off-white:#f1eee7;
+ --grain-orange:#ff6600; --grain-orange-tint:color-mix(in srgb,var(--grain-orange) 8%,transparent); --grain-orange-ring:color-mix(in srgb,var(--grain-orange) 30%,transparent); --grain-orange-ink:#ad4400; --grain-warning:#d9a441; --xmr-orange:var(--grain-orange); --charcoal:#4c4c4c; --off-white:#f1eee7;
  --background:#101010; --foreground:var(--off-white); --card:#161616; --card-foreground:var(--off-white); --popover:#202020; --popover-foreground:var(--off-white);
  --primary:var(--off-white); --primary-foreground:#151515; --secondary:#282828; --secondary-foreground:var(--off-white); --muted:#242424; --muted-foreground:#a9a7a2;
  --accent:#292929; --accent-foreground:var(--off-white); --destructive:#ff987d; --border:#363636; --input:var(--charcoal); --ring:var(--xmr-orange); --radius:1rem;
