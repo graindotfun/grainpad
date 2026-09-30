@@ -1,5 +1,5 @@
 import type {LaunchRecord} from './launch-records';
-export type DiscoveryToken=LaunchRecord&{state:'curve'|'graduating'|'graduated'|'unknown';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;figuresSource:'grainpad'|'geckoterminal'|null};
+export type DiscoveryToken=LaunchRecord&{state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;figuresSource:'grainpad'|'geckoterminal'|null};
 export type DiscoveryFilter='all'|'new'|'near'|'graduated';
 export type DiscoverySort='newest'|'oldest'|'market-cap'|'volume';
 export type DiscoveryResult={coverage?:string;totalIndexed?:number;tokens:DiscoveryToken[];featured:DiscoveryToken[];total:number;filteredTotal:number;page:number;pages:number;pageSize:number;counts:{all:number;new:number;near:number;graduated:number;unknown:number};officialMint:string|null;updatedAt:number;stale:boolean};
@@ -31,9 +31,24 @@ export function enrichDiscovery(records:LaunchRecord[],cache:CacheRow[],platform
   const volume24h=useNative?nativeVolume:nonnegative(stats?.volume);
   const change24h=useNative?native?.changeCoverage==='24h'?number(native.change24h):null:number(stats?.change);
   const figuresSource=useNative?'grainpad':marketCapUsd!==null||volume24h!==null||change24h!==null?'geckoterminal':null;
-  return {...record,official:Boolean(officialMint&&record.mint===officialMint),state,progress:state==='graduated'?100:progress,
+  const shown=state==='graduated'?100:progress;
+  const lifecycle=state==='graduated'?'raydium_live':state==='graduating'?'migration_pending':state==='curve'&&shown!==null&&shown>=100?'curve_complete':state==='curve'?'curve_live':'unavailable';
+  return {...record,official:Boolean(officialMint&&record.mint===officialMint),state,lifecycle,progress:shown,
    marketCapUsd,volume24h,change24h,figuresSource,marketUpdatedAt:marketCapUsd!==null||volume24h!==null?(useNative?snapshotRow!.updated_at:chartRow!.updated_at):null};
  });
+}
+/** One bad cache or launch row must not fail the directory. */
+export function discoveryRecords(rows:{record:string;market?:string|null;chart?:string|null;market_time?:number;chart_time?:number}[],platform:string){
+ const cache:CacheRow[]=[];const records:LaunchRecord[]=[];
+ for(const row of rows){
+  let record:LaunchRecord|null=null;try{record=JSON.parse(row.record) as LaunchRecord;}catch{record=null;}
+  if(!record?.mint)continue;
+  records.push(record);
+  let market:DisplaySnapshot|null=null;if(row.market){try{market=JSON.parse(row.market) as DisplaySnapshot;}catch{market=null;}}
+  if(market)cache.push({key:`market:v3:${platform}:${record.mint}`,value:row.market as string,updated_at:Number(row.market_time)||0});
+  if(row.chart&&market?.pool)cache.push({key:`chart:v3:${market.pool}`,value:row.chart,updated_at:Number(row.chart_time)||0});
+ }
+ return {records,cache};
 }
 export function discoveryPage(rows:DiscoveryToken[],query:{search?:string;filter?:DiscoveryFilter;sort?:DiscoverySort;page?:number},officialMint:string|null,updatedAt:number,stale=false):DiscoveryResult{
  const filter=query.filter||'all',sort=query.sort||'newest',search=(query.search||'').trim().normalize('NFKC').toLowerCase();

@@ -50,16 +50,20 @@ function Stats({items}:{items:[string,string][]}){
 function Progress({pct,label}:{pct:number;label:string}){
  return <div style={{display:'flex',flexDirection:'column',marginTop:26}}><div style={{display:'flex',justifyContent:'space-between',fontFamily:'Plex',fontSize:18,color:C.muted}}><span>{label}</span><span style={{color:C.orange}}>{pct>=100?'COMPLETE':`${pct.toFixed(1)}%`}</span></div><div style={{display:'flex',height:8,background:C.panel,marginTop:10,width:'100%'}}><div style={{display:'flex',height:8,width:`${Math.max(2,pct)}%`,background:C.orange}}/></div></div>;
 }
+function ageText(seconds:number|null){if(seconds===null)return '';if(seconds<60)return 'Just launched';if(seconds<3600)return `${Math.floor(seconds/60)}m old`;if(seconds<86400)return `${Math.floor(seconds/3600)}h old`;return `${Math.floor(seconds/86400)}d old`;}
 async function tokenCard(t:ShareToken,kind:string){
- const image=await tokenImage(t.record.image),graduated=t.route==='cpmm',path=`grainpad.fun/token/${short(t.record.mint)}`;
+ const image=await tokenImage(t.record.image),graduated=t.route==='cpmm'||t.lifecycle==='raydium_live',path=`grainpad.fun/token/${short(t.record.mint)}`;
  const external=t.usd?.source==='geckoterminal';
  const mcap=t.usd?.marketCap!=null?compact(t.usd.marketCap,'$'):t.marketCapQuote!=null?`${compact(t.marketCapQuote)} ${t.quote}`:'—';
- const volume=t.usd?.volume!=null?compact(t.usd.volume,'$'):'—';
- if(kind==='receipt')return <Frame label="LAUNCH RECEIPT" path={`${path}/receipt`}><Identity t={t} image={image} sub={`${t.quote} pair`}/><Stats items={[['Launched',t.record.createdAt.slice(0,10)],['Creator',short(t.record.creator)],['Verified','At registration'],['Lifecycle',graduated?'Graduated':t.route==='graduating'?'Migrating':'Curve']]}/><div style={{display:'flex',marginTop:26,fontSize:26,color:C.muted}}>Launch provenance, creator statements and indexed trades on one public record.</div></Frame>;
+ const volume=t.usd?.volume!=null?compact(t.usd.volume,'$'):t.trades!=null?String(t.trades):'—';
+ const volumeLabel=t.usd?.volume!=null?(external?'24h volume · GeckoTerminal':'24h volume'):t.trades!=null?'Trades':'24h volume';
+ const age=ageText(t.ageSeconds);
+ const life=t.lifecycle==='raydium_live'?'Raydium':t.lifecycle==='migration_pending'?'Migrating':t.lifecycle==='curve_complete'?'Curve complete':'Curve';
+ if(kind==='receipt')return <Frame label="LAUNCH RECEIPT" path={`${path}/receipt`}><Identity t={t} image={image} sub={`${age?`${age} · `:''}${t.quote} pair`}/><Stats items={[['Launched',t.record.createdAt.slice(0,10)],['Trades',t.trades===null?'—':String(t.trades)],['Raised',t.raised&&t.target?`${t.raised} / ${t.target}`:'—'],['Lifecycle',life]]}/><div style={{display:'flex',marginTop:26,fontSize:26,color:C.muted}}>Launch provenance, creator statements and indexed trades on one public record.</div></Frame>;
  if(kind==='room')return <Frame label="LAUNCH ROOM · CREW" path={`${path}/room`} accent={C.orange}><Identity t={t} image={image} sub="Crew board"/><Stats items={[['Tasks',String(t.crew.tasks)],['Contributors',String(t.crew.contributors)],['Approved',String(t.crew.approved)],['Paid · verified',String(t.crew.payments)]]}/><div style={{display:'flex',marginTop:26,fontSize:26,color:C.muted}}>Pick a task. Ship the work. Get credited under your wallet.</div></Frame>;
  return <Frame label={graduated?'GRADUATED · RAYDIUM':`TOKEN · ${t.quote} PAIR`} path={path} accent={graduated?C.orange:undefined}>
-  <Identity t={t} image={image} sub={graduated?'graduated':`${t.quote} pair`}/>
-  <Stats items={[[external?'Market cap · GeckoTerminal':'Market cap',mcap],[external?'24h volume · GeckoTerminal':'24h volume',volume],[external?'Price · GeckoTerminal':'Price',t.usd?.price!=null?compact(t.usd.price,'$'):t.priceQuote!=null?`${compact(t.priceQuote)} ${t.quote}`:'—'],['Creator',short(t.record.creator)]]}/>
+  <Identity t={t} image={image} sub={graduated?'graduated':`${age?`${age} · `:''}${t.quote} pair`}/>
+  <Stats items={[[external?'Market cap · GeckoTerminal':'Market cap',mcap],[volumeLabel,volume],[external?'Price · GeckoTerminal':'Price',t.usd?.price!=null?compact(t.usd.price,'$'):t.priceQuote!=null?`${compact(t.priceQuote)} ${t.quote}`:'—'],['Creator',short(t.record.creator)]]}/>
   {t.progressPct!==null&&<Progress pct={t.progressPct} label={graduated?'Bonding curve → Raydium CPMM':`Bonding curve · ${t.raised} / ${t.target} ${t.quote}`}/>}
  </Frame>;
 }

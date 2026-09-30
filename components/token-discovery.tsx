@@ -36,16 +36,18 @@ export function TokenDiscovery({initialQuote='all',roomMode=false,sectionNumber=
  useEffect(()=>{const timer=setTimeout(()=>{setSearch(query);setPage(1)},250);return()=>clearTimeout(timer);},[query]);
  useEffect(()=>{const element=section.current;if(!element)return;const observer=new IntersectionObserver(([entry])=>setVisible(entry.isIntersecting),{rootMargin:'350px'});observer.observe(element);return()=>observer.disconnect();},[]);
  useEffect(()=>{
-  if(!visible)return;
   let live=true;
-  const stop=startViewerPolling(async(signal:AbortSignal)=>{
+  const load=async(signal:AbortSignal)=>{
    try{
     const response=await fetch(`/api/discovery?q=${encodeURIComponent(search)}&filter=${filter}&sort=${sort}&page=${page}&quote=${quote}`,{signal,cache:'no-store'});
-    const body=await response.json() as DiscoveryResult&{error?:string};if(!response.ok)throw Error(body.error||'Could not load tokens.');
+    const body=await response.json() as DiscoveryResult&{error?:string};if(!response.ok)throw Error(body.error||'The token directory is temporarily unavailable. Please try again.');
     if(live){setResult({key,data:body});setError('');}
-   }catch(e){if(live&&!signal.aborted)setError(e instanceof Error?e.message:'Could not load tokens.');}
-  },{intervalMs:60_000});
-  return()=>{live=false;stop();};
+   }catch(e){if(live&&!signal.aborted)setError(e instanceof Error?e.message:'The token directory is temporarily unavailable. Please try again.');}
+  };
+  const first=new AbortController(),timer=setTimeout(()=>first.abort(),12000);
+  void load(first.signal).finally(()=>{if(live&&first.signal.aborted)setError(current=>current||'The token directory is temporarily unavailable. Please try again.');});
+  const stop=visible?startViewerPolling((signal:AbortSignal)=>load(signal),{intervalMs:60_000}):()=>{};
+  return()=>{live=false;clearTimeout(timer);first.abort();stop();};
  },[key,search,filter,sort,page,quote,retry,visible]);
  const filters:[DiscoveryFilter,string][]=[['all','All tokens'],['new','New'],['near','About to graduate'],['graduated','Graduated']];
  function changeFilter(next:DiscoveryFilter){setFilter(next);setPage(1);setError('');}
