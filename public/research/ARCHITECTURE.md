@@ -1,6 +1,6 @@
 # Architecture and implementation assessment
 
-> **Historical research: the early p/xmr regtest prototype.** This note describes a fakechain/regtest-only experiment with test funds, no mainnet execution and no XMR20 compatibility. It is not Grainpad's production Monero path. Grainpad's current Monero architecture is the separate `GRN1` launch-provenance record on Monero mainnet (trading and token state remain on Solana); see `docs/MONERO_RECORD.md` in the public repository. The prototype's safety guards described below are unchanged.
+> **Historical research: the early p/xmr regtest prototype.** This note describes a fakechain/regtest demonstration with test funds; the archive also supports an explicit stagenet path and preserves mainnet guards and no XMR20 compatibility. It is not Grainpad's production Monero path. Grainpad's current Monero architecture is the separate `GRN1` launch-provenance record on Monero mainnet (trading and token state remain on Solana); see `docs/MONERO_RECORD.md` in the access-controlled repository. The prototype's safety guards described below are unchanged.
 
 ## What works now
 
