@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { buildMetadataPublication, contentHash, rawCid, rawCidHash, metadataHashFromUri, assertPublicationBinding, assertMetadataClaim } from '../lib/metadata-publication.mjs';
 import { persistMetadata } from '../lib/metadata-persistence.mjs';
 const origin = 'https://grainpad.fun', bytes = new TextEncoder().encode('hello world');
-const draft = { name: 'Example', symbol: 'EX', description: 'Project', imageType: 'image/png', website: 'https://example.com/' };
+const draft = { name: 'Example', symbol: 'EX', description: 'Project', imageType: 'image/png', mint: 'CzvYJXb3e4KtTd2xZviV9nMUSAC1jary4wLY4cVhwgrn' };
 const publish = () => buildMetadataPublication(draft, bytes, origin, 'ipfs-raw-v1');
 function service(provider, corrupt = false) {
   const stored = new Map();
