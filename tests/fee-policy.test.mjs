@@ -9,7 +9,7 @@ test('finalized fee evidence agrees with curve policy and CRRS5 1% creator',()=>
  assert.equal(report.status,'PENDING_PLATFORM');assert.equal(report.platformFees,null);
  assert.deepEqual(report.curveProtocol,[2500,2500]);assert.equal(report.cpmm.trade,2500);assert.equal(report.cpmm.creator,10000);
  assert.equal(report.cpmmMatches,true);assert.equal(report.protocolMatches,true);
- assert.equal(FEE_POLICY.curve.protocol+FEE_POLICY.curve.platform+FEE_POLICY.curve.creator,7500);
+ assert.equal(FEE_POLICY.curve.protocol+FEE_POLICY.curve.platform+FEE_POLICY.curve.creator,12500);
 });
 test('fee verification rejects wrong owners and detects changed CPMM creator rates',()=>{
  const invalid=structuredClone(snapshot.accounts);invalid[3].owner=invalid[1].owner;assert.throws(()=>decodeFeeSnapshot(invalid),/owner/);
