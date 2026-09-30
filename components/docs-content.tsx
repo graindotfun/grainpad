@@ -9,8 +9,8 @@ import { KineticText } from "@/components/kinetic-text";
 import { DOCS, docsDate } from "@/lib/docs-config";
 import {WxmrWarning} from "@/components/wxmr-warning";
 import { SITE } from "@/lib/site-config";
-import { MoneroRecordStatus } from "@/components/monero-record-panel";
-import { GRN1, MONERO_NARRATIVE, MONERO_PROOF_STATUS, MONERO_RECORD_FACTS, MONERO_RECORD_LIMITS } from "@/lib/monero-record-status.mjs";
+import { MoneroLiveRecord, MoneroProofLists, MoneroRecordStatus } from "@/components/monero-record-panel";
+import { GRN1, MONERO_NARRATIVE, MONERO_RECORD_FACTS, MONERO_RECORD_LIMITS, moneroProofStatus } from "@/lib/monero-record-status.mjs";
 import type { PlatformStatus } from "@/lib/platform-policy";
 
 const sections = [
@@ -137,10 +137,11 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
         <Section index={8}>
           <p>{MONERO_NARRATIVE}</p>
           <MoneroRecordStatus/>
+          <MoneroLiveRecord/>
           <ul className="monero-limits">{MONERO_RECORD_FACTS.map(line => <li key={line}>{line}</li>)}</ul>
           <h3>What it is not</h3>
           <ul className="monero-limits">{MONERO_RECORD_LIMITS.map(line => <li key={line}>{line}</li>)}</ul>
-          <div className="docs-callout"><strong>Not yet proven on mainnet</strong><ul className="monero-limits">{MONERO_PROOF_STATUS.notYet.map(line => <li key={line}>{line}</li>)}</ul><p>{MONERO_PROOF_STATUS.caveat}</p></div>
+          <div className="docs-callout"><strong>Proof status</strong><MoneroProofLists/><p>{moneroProofStatus().caveat}</p></div>
           <a className="docs-related" href={GRN1.spec} target="_blank" rel="noreferrer">Read the {GRN1.magic} v{GRN1.version} specification</a>
         </Section>
         <Section index={9}>
