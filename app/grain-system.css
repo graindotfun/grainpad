@@ -1,0 +1,52 @@
+/* Grainpad system primitives: record surface, corner-label panels, lowercase display titles,
+   masking tape (lifecycle and verification states only), segmented controls and stale values. */
+:root{
+ --record-paper:#f3ecdf;--record-ink:#23211c;--record-muted:#6d6556;--record-line:#dccfb6;--record-rule:#e8dfcd;
+ --tape-paper:#e9dcbf;--tape-ink:#4b4232;
+ --chart-grid:#ffffff1c;--chart-tick:#8d979b;--chart-surface:#15191b;
+ --buy:#4fbf8b;--sell:#ef6a5b;
+}
+html[data-theme="light"]{--chart-grid:#23211c1f;--chart-tick:#7b7261;--chart-surface:#fff;--buy:#2f7a55;--sell:#b43d33;--record-paper:#fbf6ec}
+
+/* Cream record: public, finalized information reads like paper in both themes. */
+.record-surface{background:var(--record-paper);color:var(--record-ink);border-color:var(--record-line)}
+.record-surface :is(a){color:inherit}
+
+/* Corner-label panel header: small mono labels pinned to the panel's top corners. */
+.corner-head{display:flex;align-items:center;gap:10px;margin:-4px 0 14px;min-height:20px}
+.corner-label{font:500 10.5px/1 var(--font-code);letter-spacing:.09em;text-transform:uppercase;color:var(--market-muted,var(--brand-muted))}
+.corner-label:first-child::before{content:"";display:inline-block;width:6px;height:6px;margin:0 7px 1px 0;background:var(--xmr-orange);vertical-align:middle}
+.corner-label.is-right{margin-left:auto;text-align:right}
+.record-surface .corner-label{color:var(--record-muted)}
+
+/* Lowercase display headline with the orange period of the wordmark. */
+.display-title{margin:0;font-size:clamp(30px,3.2vw,44px);line-height:.95;font-weight:500;letter-spacing:-.045em;text-transform:lowercase}
+.display-title>span{color:var(--xmr-orange)}
+
+/* Masking tape. Reserved for lifecycle and verification states. */
+.record-tape{display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 10px;background:var(--tape-paper);color:var(--tape-ink);font:500 10px/1.4 var(--font-code);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transform:rotate(-1.2deg);box-shadow:0 1px 0 #0000001a;clip-path:polygon(0 8%,4% 0,96% 6%,100% 0,98% 50%,100% 94%,95% 100%,4% 92%,0 100%,2% 50%);opacity:.95;vertical-align:middle;margin-left:10px}
+
+/* Segmented control shared by source, interval and filter switches. */
+.segmented{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--market-border,var(--brand-line));border-radius:9px;background:var(--market-inset,var(--secondary))}
+.segmented button{min-height:30px;min-width:38px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--market-muted,var(--brand-muted));font:500 11px/1 var(--font-code);letter-spacing:.03em;cursor:pointer}
+.segmented button:hover{color:var(--foreground)}
+.segmented button[aria-pressed=true]{background:var(--market-panel,var(--card));color:var(--foreground);box-shadow:0 0 0 1px var(--market-border,var(--brand-line))}
+.segmented button:focus-visible{outline:2px solid var(--xmr-orange);outline-offset:1px}
+.record-surface .segmented{background:#0000000a;border-color:var(--record-line)}
+.record-surface .segmented button{color:var(--record-muted)}
+.record-surface .segmented button[aria-pressed=true]{background:#fff;color:var(--record-ink);box-shadow:0 0 0 1px var(--record-line)}
+
+/* Stale data: values dim; one chip next to the headline explains why. */
+[data-stale] .stale-value{opacity:.5;transition:opacity .2s}
+.delay-chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border:1px dashed currentColor;border-radius:999px;color:#d9a441;font:500 10.5px/1 var(--font-code);letter-spacing:.03em;white-space:nowrap}
+.delay-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+html[data-theme="light"] .delay-chip{color:#94601c}
+
+/* Tabular numerals wherever figures line up. */
+:is(.market-module,.public-tape,.discovery-card,.token-swap,.reality-check) :is(dd,strong,output,.ledger-amount,.ledger-seq){font-variant-numeric:tabular-nums}
+
+/* Footer: between phone and desktop the link list becomes a left-aligned grid instead of a right-flush run. */
+@media(min-width:701px) and (max-width:1180px){
+ .footer-top{flex-wrap:wrap;row-gap:24px}
+ .footer-top nav{flex-basis:100%;max-width:none;margin-left:0;display:grid;grid-template-columns:repeat(4,minmax(0,max-content));justify-content:start;gap:12px 32px}
+}

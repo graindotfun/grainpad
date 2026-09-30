@@ -12,6 +12,8 @@ import "./premium.css";
 import "./token-market.css";
 import "./token-discovery.css";
 import "./product-workspace.css";
+import "./grain-system.css";
+import "./token-page.css";
 import {ContractAddressBar} from "@/components/contract-address-bar";
 
 export const metadata: Metadata = {
