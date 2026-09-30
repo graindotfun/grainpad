@@ -10,9 +10,9 @@ test('stock monerod uses a separate get_transactions HTTP endpoint and raw resul
     const body=JSON.parse(text);calls.push({path:request.url,body});
     response.setHeader('content-type','application/json');
     if(request.url==='/node/get_transactions'&&!body.jsonrpc){
-      response.end(JSON.stringify({status:'OK',txs:[{tx_hash:'ab'.repeat(32)}]}));
+      response.end(JSON.stringify({status:'OK',untrusted:false,txs:[{tx_hash:'ab'.repeat(32)}]}));
     }else if(request.url==='/node/json_rpc'&&body.method==='get_info'){
-      response.end(JSON.stringify({jsonrpc:'2.0',id:'0',result:{status:'OK',height:110,mainnet:true,nettype:'mainnet'}}));
+      response.end(JSON.stringify({jsonrpc:'2.0',id:'0',result:{status:'OK',untrusted:false,height:110,mainnet:true,nettype:'mainnet'}}));
     }else response.end(JSON.stringify({jsonrpc:'2.0',id:'0',error:{code:-32601,message:'Method not found'}}));
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
