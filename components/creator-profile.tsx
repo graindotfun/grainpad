@@ -1,26 +1,30 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
+import {WalletAvailability} from './wallet-availability';
 import {Button} from './ui/button';
 import {Input} from './ui/input';
-import {walletProviders,type Wallet} from '@/lib/wallet';
+import {walletProviders,watchWalletIdentity,type Wallet} from '@/lib/wallet';
 import {metadataLink} from '@/lib/metadata-shared';
 import {profileMessage} from '@/lib/creator-profile.mjs';
 type Launch={name:string;symbol:string;image:string;description:string;website:string;twitter:string;telegram:string;creator:string;createdAt:string};
 type Update={description:string;website:string;twitter:string;telegram:string;banner:string;signer:string;updatedAt:number}|null;
 type View={launch:Launch;update:Update;notice:string};
 export function CreatorProfile({mint}:{mint:string}){
+ const selected=useRef<Wallet|null>(null),cleanup=useRef<(()=>void)|null>(null),[choices,setChoices]=useState<ReturnType<typeof walletProviders>>([]);
+ useEffect(()=>()=>cleanup.current?.(),[]);
  const [data,setData]=useState<View|null>(null),[error,setError]=useState(''),[owner,setOwner]=useState(''),[busy,setBusy]=useState(false);
  const [description,setDescription]=useState(''),[website,setWebsite]=useState(''),[twitter,setTwitter]=useState(''),[telegram,setTelegram]=useState(''),[banner,setBanner]=useState('');
  useEffect(()=>{const c=new AbortController();fetch(`/api/profile/${mint}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw Error('Creator profile is unavailable.');const body=await r.json() as View;setData(body);setDescription(body.update?.description??body.launch.description);setWebsite(body.update?.website??'');setTwitter(body.update?.twitter??body.launch.twitter);setTelegram(body.update?.telegram??body.launch.telegram);}).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[mint]);
- async function connect(){const choice=walletProviders()[0];if(!choice){setError('Connect a wallet from the swap panel, then return here.');return;}const wallet=choice.wallet as Wallet;await wallet.connect();setOwner(wallet.publicKey?.toBase58()||'');}
+ async function connect(wallet:Wallet){setError('');try{await wallet.connect();if(!wallet.publicKey)throw Error('Wallet did not provide an address.');cleanup.current?.();selected.current=wallet;setOwner(wallet.publicKey.toBase58());setChoices([]);cleanup.current=watchWalletIdentity(wallet,()=>{selected.current=null;setOwner('');setError('Wallet changed. Choose it again before signing.');});}catch(e){setError(e instanceof Error?e.message:'Connection failed.');}}
  async function save(){
   if(!owner){setError('Connect the creator wallet.');return;}
   setBusy(true);setError('');
   try{
-   const wallet=walletProviders().find(item=>item.wallet.publicKey?.toBase58()===owner)?.wallet;
+   const wallet=selected.current;
    if(!wallet?.publicKey)throw Error('Connect the creator wallet again.');
    let bannerHash='',bannerBase64='';
    if(banner.startsWith('data:')){bannerBase64=banner.split(',')[1]||'';const bytes=Uint8Array.from(atob(bannerBase64),char=>char.charCodeAt(0));bannerHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');}
+   // eslint-disable-next-line react-hooks/purity -- Expiry is created only in the async user signing handler.
    const payload={origin:location.origin,mint,signer:owner,description,website:metadataLink(website,'website'),twitter:metadataLink(twitter,'twitter'),telegram:metadataLink(telegram,'telegram'),bannerHash,expires:Date.now()+10*60*1000};
    const signed=await wallet.signMessage(new TextEncoder().encode(profileMessage(payload)));
    const signature=signed instanceof Uint8Array?signed:signed.signature;
@@ -44,6 +48,7 @@ export function CreatorProfile({mint}:{mint:string}){
  <label>X / Twitter<Input value={twitter} onChange={e=>setTwitter(e.target.value)}/></label>
  <label>Telegram<Input value={telegram} placeholder="https://t.me/your_project" onChange={e=>setTelegram(e.target.value)}/></label>
  <label>Banner<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>setBanner(String(reader.result));reader.readAsDataURL(file);}}/></label>
- {!owner?<Button variant="outline" onClick={()=>void connect()}>Connect creator wallet</Button>:<Button disabled={busy} onClick={()=>void save()}>{busy?'Waiting for signature…':'Sign profile update'}</Button>}
+ {!owner?<Button variant="outline" onClick={()=>setChoices(walletProviders())}>Connect creator wallet</Button>:<Button disabled={busy} onClick={()=>void save()}>{busy?'Waiting for signature…':'Sign profile update'}</Button>}
+ {choices.map(c=><Button key={c.name} variant="outline" onClick={()=>void connect(c.wallet)}>{c.name}</Button>)}<WalletAvailability/>
  </details></section>;
 }

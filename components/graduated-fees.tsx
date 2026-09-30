@@ -4,10 +4,11 @@ import {displayUnits} from '@/lib/token-units.mjs';
 import {WxmrWarning} from './wxmr-warning';
 import {Field,FieldGroup,FieldLabel,FieldDescription} from '@/components/ui/field';
 import {GrainSelect} from '@/components/grain-select';
-import {Input} from '@/components/ui/input';import {Button} from '@/components/ui/button';import {walletProviders,type Wallet} from '@/lib/wallet';import type {prepareGraduatedClaim} from '@/lib/graduated-fees';
+import {Input} from '@/components/ui/input';import {Button} from '@/components/ui/button';import {walletProviders,watchWalletIdentity,type Wallet} from '@/lib/wallet';import type {prepareGraduatedClaim} from '@/lib/graduated-fees';
 type Quote=Awaited<ReturnType<typeof prepareGraduatedClaim>>;
 export function GraduatedFees(){
  const [mint,setMint]=useState(''),[nft,setNft]=useState(''),[kind,setKind]=useState<'creator'|'lp'>('creator'),[limit,setLimit]=useState('0.005'),[owner,setOwner]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[signature,setSignature]=useState(''),[quote,setQuote]=useState<Quote|null>(null),[choices,setChoices]=useState<ReturnType<typeof walletProviders>>([]);const wallet=useRef<Wallet|null>(null);
+ useEffect(()=>{const w=wallet.current;if(!w)return;return watchWalletIdentity(w,()=>{wallet.current=null;setOwner('');setQuote(null);setError('Wallet changed. Reconnect and prepare a fresh claim.');});},[owner]);
  // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore external receipt/draft state or invalidate stale approval before interaction.
  useEffect(()=>{setSignature(localStorage.getItem('grainpad-graduated-fee-signature')||'');},[]);
  async function prepare(){setBusy(true);setError('');setQuote(null);try{if(!wallet.current?.publicKey)throw Error('Connect your wallet.');await import('@/lib/browser-buffer.mjs');const {prepareGraduatedClaim}=await import('@/lib/graduated-fees');setQuote(await prepareGraduatedClaim(wallet.current.publicKey.toBase58(),mint,kind,nft,limit));}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}}

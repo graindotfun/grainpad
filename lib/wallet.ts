@@ -1,12 +1,15 @@
+import {getWallets} from '@wallet-standard/app';
+import {discoverWalletProviders} from './wallet-adapters.mjs';
 import type {PublicKey,VersionedTransaction} from '@solana/web3.js';
 export type Wallet={publicKey:PublicKey|null;connect:()=>Promise<unknown>;disconnect?:()=>Promise<void>;signMessage:(m:Uint8Array,encoding?:string)=>Promise<{signature:Uint8Array}|Uint8Array>;signTransaction:(t:VersionedTransaction)=>Promise<VersionedTransaction>;on?:(event:string,handler:()=>void)=>void;removeListener?:(event:string,handler:()=>void)=>void};
 export function walletProviders():{name:string;wallet:Wallet}[]{
- const w=window as unknown as {phantom?:{solana?:Wallet};solflare?:Wallet;solana?:Wallet};
- const list:{name:string;wallet:Wallet}[]=[];
- if(w.phantom?.solana)list.push({name:'Phantom',wallet:w.phantom.solana});
- if(w.solflare)list.push({name:'Solflare',wallet:w.solflare});
- if(w.solana&&!list.some(p=>p.wallet===w.solana))list.push({name:'Browser wallet',wallet:w.solana});
- return list;
+ if(typeof window==='undefined')return [];
+ return discoverWalletProviders(window,[...getWallets().get()]) as {name:string;wallet:Wallet}[];
+}
+/** Selecting/connecting identifies an account; it is not a login signature or transaction approval. */
+export function watchWalletIdentity(wallet:Wallet,onInvalidated:()=>void){
+ const invalidate=()=>onInvalidated();wallet.on?.('accountChanged',invalidate);wallet.on?.('disconnect',invalidate);
+ return()=>{wallet.removeListener?.('accountChanged',invalidate);wallet.removeListener?.('disconnect',invalidate);};
 }
 /** Mobile browsers inject no Solana wallet; these universal links reopen the page in a wallet's in-app browser, which does. */
 export function walletBrowseLinks(pageUrl:string){
