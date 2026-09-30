@@ -1,0 +1,22 @@
+.monero-status{list-style:none;display:flex;flex-wrap:wrap;gap:10px;margin:0 0 28px;padding:0}
+.monero-status li{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:3px;padding:7px 11px;font:12px/1.4 var(--font-code);letter-spacing:.04em}
+.monero-status li.is-done svg{color:var(--grain-orange)}
+.monero-status li.is-pending{color:var(--muted-foreground);border-style:dashed}
+.monero-records .check-line{align-items:flex-start;line-height:1.6}
+.monero-records .check-line svg{flex:none;margin-top:4px}
+.monero-limits{margin:0;padding-left:18px;list-style:disc;font-size:14px;line-height:1.7;color:var(--muted-foreground)}
+.monero-limits li+li{margin-top:8px}
+.lab-history{margin-top:72px;padding-top:40px;border-top:1px solid var(--line)}
+.lab-history .page-heading h2{font-size:clamp(32px,3.6vw,52px);font-weight:500;letter-spacing:-.045em;line-height:1.08;margin:0}
+.docs-section-body .monero-limits{color:inherit;font-size:inherit;margin:0 0 12px}.docs-section-body .monero-limits+h3{margin-top:24px}
+.monero-live{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin:0 0 28px;border:1px solid var(--line);border-left:2px solid var(--grain-orange);border-radius:3px;padding:6px 20px}
+.monero-live>div{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.monero-live>div:last-child{border-bottom:0}
+.monero-live dt{font:12px/1.6 var(--font-code);letter-spacing:.04em;color:var(--muted-foreground)}
+.monero-live dd{margin:0;overflow-wrap:anywhere;font-size:14px;line-height:1.6}
+.docs-callout .limitations-grid{grid-template-columns:minmax(0,1fr);gap:0}
+@media(max-width:700px){.monero-live>div{grid-template-columns:minmax(0,1fr);gap:4px}}
+.monero-limits li{overflow-wrap:anywhere}
+.monero-records .limitations-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:760px){.monero-records .limitations-grid{grid-template-columns:minmax(0,1fr)}}
+.monero-live a,.monero-live .address-line{overflow-wrap:anywhere;word-break:break-all}

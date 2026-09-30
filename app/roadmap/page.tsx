@@ -9,7 +9,7 @@ import "../transparency/transparency.css";
 
 export const metadata: Metadata = {
   title: "Roadmap — Grainpad",
-  description: "Grainpad's planned Monero open-source support and exploratory research.",
+  description: "Grainpad's Monero launch records, planned Monero open-source support and exploratory research.",
   alternates: { canonical: `${SITE.origin}/roadmap` },
 };
 
