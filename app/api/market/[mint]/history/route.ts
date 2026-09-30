@@ -45,16 +45,18 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
   let createdAt:string|undefined;
   try{const indexed=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();createdAt=indexed?JSON.parse(indexed.record).createdAt:undefined;}catch{createdAt=undefined;}
   if(!rows.length&&geckoFallbackAllowed(createdAt,coverage,rows.length)){
-   const result=await sharedMarketCache(db,`history:v2:${market.pool}:${mint}:${kind}:${kind==='candles'?interval:'recent'}`,async()=>{
-    if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Market provider is busy. Please retry shortly.');
-    const period=geckoIntervals[interval];
-    const path=kind==='trades'?'trades':`ohlcv/${period.timeframe}?aggregate=${period.aggregate}&limit=240&currency=usd&token=base`;
-    const response=await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${market.pool}/${path}`,{signal:AbortSignal.timeout(7000)});
-    if(!response.ok)throw Error('Market history is temporarily unavailable.');
-    const body=await response.json();
-    return kind==='trades'?parseTrades(body,mint,market.quote.mint):parseCandles(body);
-   },{ttl:60_000,maxStale:300_000,refresh:viewer});
-   if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
+   try{
+    const result=await sharedMarketCache(db,`history:v2:${market.pool}:${mint}:${kind}:${kind==='candles'?interval:'recent'}`,async()=>{
+     if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Market provider is busy. Please retry shortly.');
+     const period=geckoIntervals[interval];
+     const path=kind==='trades'?'trades':`ohlcv/${period.timeframe}?aggregate=${period.aggregate}&limit=240&currency=usd&token=base`;
+     const response=await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${market.pool}/${path}`,{signal:AbortSignal.timeout(7000)});
+     if(!response.ok)throw Error('Market history is temporarily unavailable.');
+     const body=await response.json();
+     return kind==='trades'?parseTrades(body,mint,market.quote.mint):parseCandles(body);
+    },{ttl:60_000,maxStale:300_000,refresh:viewer});
+    if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
+   }catch{/* A failed external fallback is not indexed history, and it is not zero trades. */}
   }
   return Response.json({rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source,unit,quote:market.quote.symbol,coverage},{headers});
  }catch{return Response.json({error:'Market history is temporarily unavailable. Please try again shortly.'},{status:503,headers});}

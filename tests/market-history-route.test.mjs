@@ -29,8 +29,11 @@ test('native candles are served without GeckoTerminal, which remains a fallback 
   globalThis.marketHistoryTest.native={rows:[],events:[],coverage:{status:'no-trades',notice:'No trades yet. The launch account shows creation only.'}};
   r=await call('interval=1h');assert.equal((await r.json()).coverage.status,'no-trades');assert.equal(fetched,0);
   globalThis.marketHistoryTest.native={rows:[],events:[],coverage:{status:'not-indexed',notice:'Trade history is not indexed yet. That is not the same as no trades.'}};
-  r=await call('interval=1h',false);assert.equal(r.status,503);assert.equal(fetched,0);
-  globalThis.marketHistoryTest.budget=false;r=await call('interval=1h');assert.equal(r.status,503);assert.equal(fetched,0);
-  globalThis.marketHistoryTest.budget=true;r=await call('interval=1h');assert.equal(r.status,200);const body=await r.json();assert.equal(body.source,'geckoterminal');assert.equal(body.rows[0].close,2);assert.equal(fetched,1);
+  r=await call('interval=1h',false);assert.equal(r.status,200);const missed=await r.json();assert.equal(missed.source,'grainpad');assert.equal(missed.coverage.status,'not-indexed');assert.deepEqual(missed.rows,[]);assert.equal(fetched,0);
+  globalThis.marketHistoryTest.budget=false;r=await call('interval=1h');assert.equal(r.status,200);assert.equal((await r.json()).coverage.status,'not-indexed');assert.equal(fetched,0);
+  globalThis.fetch=async()=>{fetched++;throw Error('GeckoTerminal down');};
+  globalThis.marketHistoryTest.budget=true;r=await call('interval=1h');assert.equal(r.status,200);const down=await r.json();assert.equal(down.source,'grainpad');assert.equal(down.coverage.status,'not-indexed');assert.equal(down.rows.length,0);assert.equal(fetched,1);
+  globalThis.fetch=async url=>{fetched++;assert.ok(String(url).includes('/pools/'+pool+'/ohlcv/hour?aggregate=1'));return {ok:true,json:async()=>({data:{attributes:{ohlcv_list:[[100,1,3,.5,2,10]]}}})}};
+  r=await call('interval=1h');assert.equal(r.status,200);const body=await r.json();assert.equal(body.source,'geckoterminal');assert.equal(body.rows[0].close,2);
  }finally{globalThis.fetch=original;}
 });
