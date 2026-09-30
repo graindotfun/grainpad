@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {displayUnits} from '@/lib/token-units.mjs';
 import {WxmrWarning} from './wxmr-warning';
 import {Field,FieldGroup,FieldLabel,FieldDescription} from '@/components/ui/field';
-import {NativeSelect} from '@/components/ui/native-select';
+import {GrainSelect} from '@/components/grain-select';
 import {Input} from '@/components/ui/input';import {Button} from '@/components/ui/button';import {walletProviders,type Wallet} from '@/lib/wallet';import type {prepareGraduatedClaim} from '@/lib/graduated-fees';
 type Quote=Awaited<ReturnType<typeof prepareGraduatedClaim>>;
 export function GraduatedFees(){
@@ -15,7 +15,7 @@ export function GraduatedFees(){
  return <section className="panel official-settings" id="graduated-claims"><p className="eyebrow">AFTER GRADUATION</p><h2>CPMM creator fees.</h2><p>The 1% CPMM creator fee goes to each token’s creator. Fees from the initial locked LP go to the holder of its Fee Key NFT. Grainpad’s configuration assigns that Fee Key to the platform wallet, so token creators do not hold one. A claim cannot withdraw the locked liquidity.</p><FieldGroup className="claim-fields">
   <Field><FieldLabel htmlFor="graduated-mint">Token mint</FieldLabel><Input id="graduated-mint" value={mint} onChange={e=>{setMint(e.target.value);setQuote(null);}}/></Field>
   <div className="claim-field-row">
-   <Field><FieldLabel htmlFor="graduated-source">Fee source</FieldLabel><NativeSelect id="graduated-source" value={kind} onChange={e=>{setKind(e.target.value as 'creator'|'lp');setQuote(null);}}><option value="creator">CPMM creator fees</option><option value="lp">Platform Fee Key · locked LP</option></NativeSelect></Field>
+   <Field><FieldLabel htmlFor="graduated-source">Fee source</FieldLabel><GrainSelect id="graduated-source" size="field" value={kind} onValueChange={value=>{setKind(value as 'creator'|'lp');setQuote(null);}} options={[{value:'creator',label:'CPMM creator fees'},{value:'lp',label:'Platform Fee Key · locked LP'}]}/></Field>
    <Field><FieldLabel htmlFor="graduated-limit">Maximum transaction cost · SOL</FieldLabel><Input id="graduated-limit" value={limit} onChange={e=>{setLimit(e.target.value);setQuote(null);}}/></Field>
   </div>
   {kind==='lp'&&<Field><FieldLabel htmlFor="graduated-nft">Fee Key NFT mint</FieldLabel><Input id="graduated-nft" aria-describedby="graduated-nft-help" value={nft} onChange={e=>{setNft(e.target.value);setQuote(null);}}/><FieldDescription id="graduated-nft-help">Only the platform Fee Key holder can claim. Find it under locked positions in the Raydium portfolio of that wallet.</FieldDescription></Field>}
