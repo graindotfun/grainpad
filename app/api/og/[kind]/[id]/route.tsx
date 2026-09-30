@@ -62,11 +62,13 @@ const Line=({children}:{children:React.ReactNode})=><div style={{display:'flex',
 async function tokenCard(t:ShareToken,kind:string){
  const image=await tokenImage(t.record.image),graduated=t.route==='cpmm',path=`grainpad.fun/token/${short(t.record.mint)}`;
  const state=graduated?'Graduated':t.route==='graduating'?'Migrating':t.route==='curve'?'On the curve':undefined;
- const mcap=t.usd?.marketCap!=null?formatUsd(t.usd.marketCap,3):formatPrice(t.marketCapQuote,t.quote,3);
- const price=t.usd?.price!=null?formatPrice(t.usd.price,'USD'):formatPrice(t.priceQuote,t.quote);
+ // Native curve figures lead until graduation; external USD is used after it, or when no native figure exists.
+ const nativeFirst=!graduated&&t.marketCapQuote!=null;
+ const mcap=nativeFirst||t.usd?.marketCap==null?formatPrice(t.marketCapQuote,t.quote,3):formatUsd(t.usd.marketCap,3);
+ const price=!graduated&&t.priceQuote!=null||t.usd?.price==null?formatPrice(t.priceQuote,t.quote):formatPrice(t.usd.price,'USD');
  if(kind==='receipt')return <Frame corner="Launch receipt" state={state} path={`${path}/receipt`}><Identity t={t} image={image} creator={false}/><Stats items={[['Launched',t.record.createdAt.slice(0,10)],['Pair',t.quote],['Creator',short(t.record.creator)]]}/><Line>On-chain facts, creator declarations and observed buys, kept apart on one public record.</Line></Frame>;
  if(kind==='room')return <Frame corner="Room · crew" state={state} path={`${path}/room`}><Identity t={t} image={image}/><Stats items={[['Tasks',String(t.crew.tasks)],['Contributors',String(t.crew.contributors)],['Paid · verified',String(t.crew.payments)]]}/><Line>Pick a task. Ship the work. Get credited under your wallet.</Line></Frame>;
- const stats:[string,string][]=graduated?[['Market cap',mcap],['24h volume',formatUsd(t.usd?.volume,3)],['Price',price]]:[[t.usd?.marketCap!=null?'Market cap':'Curve MC',mcap],['Price',price]];
+ const stats:[string,string][]=graduated?[['Market cap',mcap],['24h volume',formatUsd(t.usd?.volume,3)],['Price',price]]:[[nativeFirst||t.usd?.marketCap==null?'Curve MC':'Market cap',mcap],['Price',price]];
  const hasFigures=stats.some(([,v])=>v!=='—');
  return <Frame corner={`Token · ${t.quote} pair`} state={state} path={path}>
   <Identity t={t} image={image}/>
