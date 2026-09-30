@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default function TransparencyPage() {
   const donations = readDonations(donationData);
   return <main className="shell record-shell grain-updates">
-    <a className="skip-content" href="#main-content">Skip to transparency</a><SiteHeader textOnly/>
+    <a className="skip-content" href="#main-content">Skip to transparency</a><SiteHeader/>
     <header className="page-heading record-heading" id="main-content"><div><p className="eyebrow">GRAINPAD / PUBLIC RECORD</p><h1>Transparency<span>.</span></h1></div><a href="/roadmap" className="record-link">View roadmap</a></header>
     <section className="record-commitment" aria-labelledby="commitment-heading">
       <h2 id="commitment-heading">Commitment</h2>
@@ -34,6 +34,6 @@ export default function TransparencyPage() {
     </section>
     <section className="record-commitment" aria-labelledby="graduation-heading"><h2 id="graduation-heading">Graduation</h2><div className="record-graduation"><GraduationCoverage/></div></section>
     <MoneroDisclaimer/>
-    <SiteFooter textOnly showResearchDisclaimer={false}/>
+    <SiteFooter showResearchDisclaimer={false}/>
   </main>;
 }
