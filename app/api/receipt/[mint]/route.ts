@@ -8,7 +8,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{mint:string
  const declaration=await db.prepare("SELECT body,created_at,signature,author,payload FROM room_event WHERE mint=? AND kind='declare-buy' ORDER BY created_at DESC,id DESC LIMIT 1").bind(mint).first<{body:string;created_at:number;signature:string;author:string;payload:string}>();
  const snapshot=await db.prepare('SELECT value,updated_at FROM market_cache WHERE key=?').bind(`market:v3:${grainpadPlatformId()}:${mint}`).first<{value:string;updated_at:number}>();
  const receipt=publicReceipt(JSON.parse(saved.record),{officialMint:official?.mint??null,indexedAt:saved.indexed_at});
- let monero=receiptMonero(null);try{const row=await db.prepare('SELECT tx_hash,height,confirmations,status FROM monero_launch_record WHERE mint=? ORDER BY confirmations DESC LIMIT 1').bind(mint).first();if(row)monero=receiptMonero(row);}catch{monero=receiptMonero(null);}
+ let monero=receiptMonero(null);try{const row=await db.prepare("SELECT tx_hash,height,confirmations,status,record FROM monero_launch_record WHERE mint=? AND status!='rejected' ORDER BY confirmations DESC LIMIT 1").bind(mint).first();if(row)monero=receiptMonero(row,{mintHex:Buffer.from(new PublicKey(mint).toBytes()).toString('hex'),metadataHash:JSON.parse(saved.record).metadataHash||null});}catch{monero=receiptMonero(null);}
  const launch=await db.prepare("SELECT record FROM chain_event WHERE mint=? AND kind='launch' ORDER BY slot LIMIT 1").bind(mint).first<{record:string}>();
  const first=await db.prepare("SELECT record FROM chain_event WHERE mint=? AND kind='buy' ORDER BY slot,id LIMIT 20").bind(mint).all<{record:string}>();
  const launchEvent=launch?JSON.parse(launch.record):null,tape=await eventHistory(db,mint);
