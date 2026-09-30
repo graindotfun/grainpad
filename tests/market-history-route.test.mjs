@@ -11,7 +11,7 @@ await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.te
   '@/lib/server-cache':'export const sharedMarketCache=async(db,key,load,options)=>{globalThis.marketHistoryTest.refresh=options.refresh;if(!options.refresh)throw Error("No visible viewer");return {data:await load(),updatedAt:123,stale:false};};',
   '@/lib/shared-market-cache.mjs':'export const takeBudget=async()=>globalThis.marketHistoryTest.budget!==false;',
   '@/lib/native-history.mjs':'export const readNativeHistory=async()=>globalThis.marketHistoryTest.native;export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
-  '@/lib/realtime-ingest.mjs':'export const confirmedCatchup=async()=>[];',
+  '@/lib/realtime-ingest.mjs':'export const confirmedCatchup=async()=>[];export const mergeIndexedAndConfirmed=(indexed=[])=>indexed;',
   '@/lib/server-rpc':'export const chain=async()=>[];',
   '@/lib/platform-policy':'export const grainpadPlatformId=()=>({toBase58:()=>"platform"});'
  };b.onResolve({filter:/^@\/lib\//},a=>a.path in stubs?{path:a.path,namespace:'stub'}:null);b.onLoad({filter:/.*/,namespace:'stub'},a=>({contents:stubs[a.path],loader:'js'}));
