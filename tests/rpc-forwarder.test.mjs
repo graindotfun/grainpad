@@ -49,3 +49,9 @@ test('internal signed-send policy reads retain the display lane but bypass its d
  assert.equal((await forward('mainnet-beta',body('getLatestBlockhash'),{lane:'display',submissionValidation:true})).result,42);
  assert.equal(f.budgets.at(-1).lane,'display');assert.equal(f.budgets.at(-1).dailyExempt,true);
 });
+
+test('primary-only recovery cannot turn fallback absence into renewal evidence',async()=>{
+ const seen=[];const forward=createRpcForwarder({database:()=>({}),env:{SOLANA_RPC_URL:'https://primary.example',SOLANA_READ_RPC_URL:'https://fallback.example'},reserve:async()=>true,acquire:async()=>async()=>{},fetcher:async url=>{seen.push(url);throw Error('primary unavailable');}});
+ const result=await forward('mainnet-beta',{jsonrpc:'2.0',id:1,method:'getSignatureStatuses',params:[['synthetic'],{searchTransactionHistory:true}]},{primaryOnly:true,submissionValidation:true});
+ assert(result.error);assert.deepEqual(seen,['https://primary.example']);
+});
