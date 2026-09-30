@@ -10,7 +10,7 @@
 .claim-wallet-options{display:grid;gap:12px}
 .claim-wallet-option{width:100%;min-width:0;display:flex;align-items:center;gap:15px;padding:18px;background:#0e151a;border:1px solid #3b4b57;border-radius:7px;text-align:left;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
 .claim-wallet-option:hover:not(:disabled){background:#1a252e;border-color:#7d94a5;transform:translateY(-1px)}
-.claim-wallet-option:focus-visible{outline:2px solid var(--grain-orange-hover);outline-offset:3px}.claim-wallet-option:disabled{cursor:wait;opacity:.7}
+.claim-wallet-option:focus-visible{outline:2px solid var(--grain-orange);outline-offset:3px}.claim-wallet-option:disabled{cursor:wait;opacity:.7}
 .claim-wallet-icon{display:grid;place-items:center;flex:none;width:45px;height:45px;border-radius:10px;background:#283745;color:#d4e3ed}
 .claim-wallet-option[data-provider=phantom] .claim-wallet-icon{background:#292438;color:#c9b6ff}
 .claim-wallet-option[data-provider=solflare] .claim-wallet-icon{background:#34271b;color:#ffa34d}
