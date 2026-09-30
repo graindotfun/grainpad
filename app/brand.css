@@ -156,3 +156,6 @@
 @media(max-width:700px){.index-row{grid-template-columns:minmax(0,1fr) 68px}.index-row.is-official{padding-right:8px}.index-view svg{flex:none}}
 /* Footer links stay whole; the row wraps instead of breaking labels. */
 .footer-top nav{flex-wrap:wrap;justify-content:flex-end;row-gap:10px;max-width:760px}.footer-top nav a{white-space:nowrap}.footer-top>span{white-space:nowrap}
+/* Trading fee, holder tax, creator earnings and holder rewards, from the approved policy (components/economics-breakdown.tsx). */
+.economics-breakdown{display:grid;gap:10px;margin:14px 0}.economics-breakdown>div{border-top:1px solid var(--brand-line);padding-top:8px}.economics-breakdown dt{font-weight:600}.economics-breakdown dd{margin:4px 0 0;color:var(--muted-foreground);font-size:.92em}
+@media(min-width:760px){.economics-breakdown{grid-template-columns:repeat(2,minmax(0,1fr))}}
