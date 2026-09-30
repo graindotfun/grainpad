@@ -6,7 +6,7 @@ export type DiscoveryResult={coverage?:string;totalIndexed?:number;tokens:Discov
 export type CacheRow={key:string;value:string;updated_at:number};
 const number=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)?v:null;
 const nonnegative=(v:unknown)=>{const n=number(v);return n!==null&&n>=0?n:null;};
-type DisplaySnapshot={mint?:string;launchPool?:string;quote?:{mint?:string;symbol?:string};route?:string;pool?:string;available?:boolean;native?:{marketCapUsd?:number|null;volume24hUsd?:number|null;change24h?:number|null;changeCoverage?:string};stats?:{marketCap?:number;volume?:number;change?:number};progress?:{raised:string;target:string}};
+type DisplaySnapshot={mint?:string;launchPool?:string;quote?:{mint?:string;symbol?:string};route?:string;pool?:string;available?:boolean;native?:{marketCapUsd?:number|null;volume24hUsd?:number|null;volumeCoverage?:string;change24h?:number|null;changeCoverage?:string};stats?:{marketCap?:number;volume?:number;change?:number};progress?:{raised:string;target:string}};
 function parse(row:CacheRow|undefined,now:number):DisplaySnapshot|null {
  if(!row||row.updated_at>now||now-row.updated_at>300_000)return null;
  try{const v=JSON.parse(row.value);return v&&typeof v==='object'&&!Array.isArray(v)?v:null;}catch{return null;}
