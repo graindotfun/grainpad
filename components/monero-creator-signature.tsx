@@ -6,7 +6,7 @@ import {Input} from './ui/input';
 // A separate reviewed owner decision is needed to enable this message-signing surface.
 export const MONERO_CREATOR_SIGNING_ENABLED=false;
 type Intent={mint:string;creator:string;metadataHash:string;nonce:string;messageHex:string;state:string};
-async function api(body:object):Promise<Intent>{const response=await fetch('/api/monero-publication',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await response.json();if(!response.ok)throw Error(result.error||'Publication review unavailable.');return result;}
+async function api(body:object):Promise<Intent>{const response=await fetch('/api/monero-publication',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await response.json() as Intent&{error?:string};if(!response.ok)throw Error(result.error||'Publication review unavailable.');if(!result.mint||!result.creator||!result.metadataHash||!result.nonce||!result.messageHex||!/^(?:[0-9a-f]{2})+$/.test(result.messageHex))throw Error('Invalid publication review.');return result;}
 export function MoneroCreatorSignature({wallet}:{wallet:React.RefObject<Wallet|null>}){
  const [mint,setMint]=useState(''),[intent,setIntent]=useState<Intent|null>(null),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[ack,setAck]=useState(false);
  async function review(){setBusy(true);setNotice('');try{setIntent(await api({action:'intent',mint}));setAck(false);}catch(e){setNotice(e instanceof Error?e.message:'Review unavailable.');}finally{setBusy(false);}}
