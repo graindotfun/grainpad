@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {ArrowUpRight} from 'lucide-react';
 import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import {formatAmount,formatUnits,recordNumber,relativeTime,shortAddress} from '@/lib/price-format';
+import {tapeLedgerRows} from '@/lib/tape-ledger.mjs';
 import {Button} from './ui/button';
 /** `seq` is the event's position in the token's full indexed history. Integration point: the indexer does not
  * return it yet, so numbers are derived only once the whole history is loaded and are otherwise withheld.
@@ -39,8 +40,8 @@ function Ledger({mint,symbol,feed}:Props&{feed:TapeState}){
  const generation=useRef(0);
  useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
  const data=feed.data,next=cursor===undefined?data?.nextCursor??null:cursor;
- const all=[...new Map([...(data?.events||[]),...older].map(e=>[e.id,e])).values()].sort((a,b)=>b.slot-a.slot||b.id.localeCompare(a.id));
- const complete=!!data&&next===null,numbered:TapeEvent[]=[...feed.pending,...all.map((e,i)=>({...e,seq:e.seq??(complete?all.length-i:undefined)}))];
+ const {finalized:all,confirmed}=tapeLedgerRows(data?.events||[],older,feed.pending);
+ const complete=!!data&&next===null,numbered:TapeEvent[]=[...confirmed,...all.map((e,i)=>({...e,seq:e.seq??(complete?all.length-i:undefined)}))];
  const events=numbered.filter(e=>filter==='all'||filter==='trades'&&(e.kind==='buy'||e.kind==='sell')||filter==='fees'&&e.kind.startsWith('fee-'));
  async function earlier(){
   if(shown<events.length){setShown(n=>n+PAGE);return;}
@@ -49,8 +50,8 @@ function Ledger({mint,symbol,feed}:Props&{feed:TapeState}){
   catch(e){setMoreError(e instanceof Error?e.message:'Earlier records are unavailable.');}finally{setLoading(false);}
  }
  return <section id="public-tape" className="panel corner-panel public-tape" aria-labelledby="tape-heading">
-  <div className="corner-head"><span className="corner-label">Tape</span><span className="corner-label is-right">{data?`${all.length}${next?'+':''} records`:'indexed'}</span></div>
-  <div className="tape-head"><h2 id="tape-heading" className="display-title">tape<span>.</span></h2><p>Every finalized trade and fee for this token, curve to Raydium, in one public ledger.</p></div>
+  <div className="corner-head"><span className="corner-label">Tape</span><span className="corner-label is-right">{data?`${all.length}${next?'+':''} finalized · ${confirmed.length} confirmed`:'indexed'}</span></div>
+  <div className="tape-head"><h2 id="tape-heading" className="display-title">tape<span>.</span></h2><p>Observed trades and fees, curve to Raydium. Confirmed rows stay separate until the finalized index catches up.</p></div>
   <div className="segmented" role="group" aria-label="Event type">{[['all','All'],['trades','Trades'],['fees','Fees']].map(([value,label])=><button key={value} aria-pressed={filter===value} onClick={()=>{setFilter(value);setShown(PAGE);}}>{label}</button>)}</div>
   {feed.error&&!data&&<p role="status" className="ledger-empty">{feed.error}</p>}
   {!data&&!feed.error&&<p role="status" className="ledger-empty">Reading the ledger…</p>}

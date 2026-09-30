@@ -8,6 +8,7 @@ import {NETWORKS} from './site-config';
 import {grainpadPlatformId} from './platform-policy';
 import {readMarket} from './market-core.mjs';
 import {baseTokenProgram} from './transfer-tax.mjs';
+import {quoteIndicativeTrade} from './trade-indicative.mjs';
 import {prepareCurveTrade,parseUnits} from './trade-core.mjs';
 export async function inspectTrade(mintAddress:string){
  (globalThis as unknown as {Buffer:typeof Buffer}).Buffer??=Buffer;
@@ -29,4 +30,12 @@ export async function readTradeBalances(ownerAddress:string,mintAddress:string){
  const tokenProgram=baseTokenProgram(market.pool),baseAta=getAssociatedTokenAddressSync(mint,owner,false,tokenProgram),quoteAta=getAssociatedTokenAddressSync(quoteMint,owner);
  const [sol,accounts]=await Promise.all([connection.getBalance(owner,'confirmed'),connection.getMultipleAccountsInfo([baseAta,quoteAta],'confirmed')]);
  return {owner:ownerAddress,base:(accounts[0]?unpackAccount(baseAta,accounts[0],tokenProgram).amount:0n).toString(),quote:market.quote.native?String(sol):(accounts[1]?unpackAccount(quoteAta,accounts[1],TOKEN_PROGRAM_ID).amount:0n).toString(),sol:String(sol),quoteSymbol:market.quote.symbol};
+}
+
+/** Read-only market estimate. It cannot be submitted or signed. */
+export async function readIndicativeTrade(mintAddress:string,side:'buy'|'sell',text:string,slippage:string,signal?:AbortSignal){
+ signal?.throwIfAborted();
+ const connection=rpc('mainnet-beta');await assertNetwork(connection,'mainnet-beta');signal?.throwIfAborted();
+ const mint=new PublicKey(mintAddress),market=await readMarket(connection,mint,grainpadPlatformId());signal?.throwIfAborted();
+ return quoteIndicativeTrade(market,mint,side,text,slippage);
 }

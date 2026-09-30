@@ -45,6 +45,8 @@
 .market-module{padding:20px 22px 18px!important;min-width:0}
 .market-headline{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
 .market-price{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;margin:0}
+.market-metric-note{font-size:12px;line-height:1.5;color:var(--chart-tick);margin:8px 0 0;max-width:560px}
+.market-metric-toggle{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:transparent;color:var(--chart-tick);padding:6px 8px;border-radius:4px;font:11px var(--font-code);cursor:pointer}.market-metric-toggle:disabled{opacity:.5;cursor:default}.market-metric-toggle:focus-visible{outline:2px solid var(--xmr-orange);outline-offset:2px}
 .market-price strong{font-size:clamp(30px,3.4vw,42px);line-height:1.05;font-weight:450;letter-spacing:-.035em;overflow-wrap:anywhere}
 .market-subline{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 0;color:var(--market-muted);font-size:12px}
 .market-subline .is-up{color:var(--buy)}.market-subline .is-down{color:var(--sell)}
