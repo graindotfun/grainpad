@@ -12,6 +12,7 @@ export function middleware(request: NextRequest) {
   if (headers["Content-Security-Policy"]) requestHeaders.set("Content-Security-Policy", headers["Content-Security-Policy"]);
   const response = NextResponse.next({request: {headers: requestHeaders}});
   for (const [name, value] of Object.entries(headers)) response.headers.set(name, value);
+  response.headers.set("X-Kernel", "saw that");
   // HTML containing a per-request nonce must not enter a shared page cache.
   if (headers["Content-Security-Policy"] && request.headers.get("Accept")?.includes("text/html")) response.headers.set("Cache-Control", "private, no-store");
   return response;
