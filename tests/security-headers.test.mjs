@@ -10,6 +10,7 @@ test('public pages send framing, transport and script limits; local dev does not
  assert.equal(policy.split(';').map(part=>part.trim()).find(part=>part.startsWith('script-src')),`script-src 'self' 'nonce-${nonce}'`);
  assert.doesNotMatch(policy,/unsafe-eval/);
  assert.equal(headers['X-Frame-Options'],'DENY');
+ assert.equal(headers['X-Content-Type-Options'],'nosniff');assert.equal(headers['Referrer-Policy'],'strict-origin-when-cross-origin');assert.match(headers['Permissions-Policy'],/camera=\(\)/);
  assert.match(headers['Strict-Transport-Security'],/max-age=31536000/);
  assert.equal(documentSecurityHeaders('www.grainpad.fun',nonce)['X-Frame-Options'],'DENY');
 });
