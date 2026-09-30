@@ -11,7 +11,8 @@ const worker = {
   return handler.fetch(new Request(request, {headers}), env, context);
  },
  async scheduled(_controller: ScheduledController, env: {INDEXER_SECRET?: string}, context: ExecutionContext) {
-  await runScheduledIndexer(handler, env, context);
+  const results=await Promise.allSettled([runScheduledIndexer(handler,env,context),runScheduledIndexer(handler,env,context,'monero')]);
+  if(results.some(result=>result.status==='rejected'))throw Error('Scheduled reader failed. Inspect protected job health.');
  },
 };
 export default worker;
