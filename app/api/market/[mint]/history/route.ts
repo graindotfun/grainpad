@@ -3,8 +3,14 @@ import {database} from '@/lib/server-owner';
 import {sharedMarketCache} from '@/lib/server-cache';
 import {takeBudget} from '@/lib/shared-market-cache.mjs';
 import {parseCandles,parseTrades} from '@/lib/market-display';
+import {geckoFallbackAllowed,readNativeHistory} from '@/lib/native-history.mjs';
+import {confirmedCatchup,mergeIndexedAndConfirmed} from '@/lib/realtime-ingest.mjs';
+import {buildCandles,recentTradeRows} from '@/lib/native-market.mjs';
+import {chain} from '@/lib/server-rpc';
+import {grainpadPlatformId} from '@/lib/platform-policy';
+const intervals:Record<string,number>={'1m':60,'5m':300,'1h':3600,'1d':86400};
+const geckoIntervals:Record<string,{timeframe:string;aggregate:number}>={'1m':{timeframe:'minute',aggregate:1},'5m':{timeframe:'minute',aggregate:5},'1h':{timeframe:'hour',aggregate:1},'1d':{timeframe:'day',aggregate:1}};
 export const dynamic='force-dynamic';
-const intervals:Record<string,{timeframe:string;aggregate:number}>={'1m':{timeframe:'minute',aggregate:1},'5m':{timeframe:'minute',aggregate:5},'1h':{timeframe:'hour',aggregate:1},'1d':{timeframe:'day',aggregate:1}};
 export async function GET(request:Request,{params}:{params:Promise<{mint:string}>}){
  const headers={'Cache-Control':'no-store'};
  try{
@@ -12,15 +18,44 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
   if(!['candles','trades'].includes(kind)||!intervals[interval])return Response.json({error:'Unsupported history request.'},{status:400,headers});
   const viewer=request.headers.get('X-Grainpad-Viewer')==='visible';
   const market=await serverMarket(mint,{viewer});
-  if(!market.chart.available)return Response.json({rows:[],available:false,stale:false,pool:market.pool},{headers});
-  const db=database(),period=intervals[interval];
-  const result=await sharedMarketCache(db,`history:v1:${market.pool}:${mint}:${kind}:${kind==='candles'?interval:'recent'}`,async()=>{
-   if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Market provider is busy. Please retry shortly.');
-   const path=kind==='trades'?'trades':`ohlcv/${period.timeframe}?aggregate=${period.aggregate}&limit=240&currency=usd&token=base`;
-   const response=await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${market.pool}/${path}`,{signal:AbortSignal.timeout(7000)});
-   if(!response.ok)throw Error('Market history is temporarily unavailable.');
-   const body=await response.json();return kind==='trades'?parseTrades(body,mint,market.quote.mint):parseCandles(body);
-  },{ttl:60_000,maxStale:300_000,refresh:viewer});
-  return Response.json({rows:result.data,available:true,stale:result.stale||market.stale||market.chart.stale,updatedAt:result.updatedAt,pool:market.pool},{headers});
+  const db=database();
+  const native=await readNativeHistory(db,mint,{kind,seconds:intervals[interval],activity:market.activity});
+  let rows=native.rows,coverage=native.coverage;
+  const source='grainpad',unit='quote';
+  if(viewer&&coverage.status!=='indexed'&&coverage.status!=='no-trades'){
+   try{
+    const extra=await sharedMarketCache(db,`catchup:v1:${mint}`,async()=>{
+     if(!await takeBudget(db,'catchup-minute',1,20,60_000))return {events:[]};
+     const saved=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();
+     if(!saved)return {events:[]};
+     const record=JSON.parse(saved.record);
+     record.pool=market.pool;
+     const knownRows=await db.prepare(`SELECT signature FROM chain_event WHERE mint=? AND kind IN ('buy','sell') ORDER BY slot DESC LIMIT 80`).bind(mint).all<{signature:string}>();
+     const events=await confirmedCatchup((method:string,params:unknown[])=>chain('mainnet-beta',method,params),record,new Set((knownRows.results||[]).map(row=>row.signature)));
+     return {events};
+    },{ttl:8_000,maxStale:20_000,refresh:true});
+    const events=extra.data?.events||[];
+    if(events.length){
+     const merged=mergeIndexedAndConfirmed(native.events,events);
+     rows=kind==='candles'?buildCandles(merged,intervals[interval]).candles:recentTradeRows(merged,300).trades;
+     coverage={...coverage,status:'partial',notice:'Includes confirmed transactions that are not finalized in the index yet. Missing history is not shown as zero.'};
+    }
+  }catch{/* The indexed tape remains the answer when the short catch-up cannot run. */}
+  }
+  let createdAt:string|undefined;
+  try{const indexed=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();createdAt=indexed?JSON.parse(indexed.record).createdAt:undefined;}catch{createdAt=undefined;}
+  if(!rows.length&&geckoFallbackAllowed(createdAt,coverage,rows.length)){
+   const result=await sharedMarketCache(db,`history:v2:${market.pool}:${mint}:${kind}:${kind==='candles'?interval:'recent'}`,async()=>{
+    if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Market provider is busy. Please retry shortly.');
+    const period=geckoIntervals[interval];
+    const path=kind==='trades'?'trades':`ohlcv/${period.timeframe}?aggregate=${period.aggregate}&limit=240&currency=usd&token=base`;
+    const response=await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${market.pool}/${path}`,{signal:AbortSignal.timeout(7000)});
+    if(!response.ok)throw Error('Market history is temporarily unavailable.');
+    const body=await response.json();
+    return kind==='trades'?parseTrades(body,mint,market.quote.mint):parseCandles(body);
+   },{ttl:60_000,maxStale:300_000,refresh:viewer});
+   if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
+  }
+  return Response.json({rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source,unit,quote:market.quote.symbol,coverage},{headers});
  }catch{return Response.json({error:'Market history is temporarily unavailable. Please try again shortly.'},{status:503,headers});}
 }

@@ -1,18 +1,20 @@
-import {poolStats,type MarketStats} from './market-display';
-import {chartAvailability} from './chart-identity.mjs';
+import type {MarketStats} from './market-display';
 import {quoteAsset} from './quote-assets.mjs';
+import {composeNative} from './native-market.mjs';
+import {indexedSummary} from './native-history.mjs';
+import {loadQuoteUsd,quoteUsdFor} from './quote-usd.mjs';
 import {PublicKey} from '@solana/web3.js';
 import {database} from './server-owner';
 import {chain} from './server-rpc';
 import {POLICY,grainpadPlatformId} from './platform-policy';
 import {NETWORKS} from './site-config';
 import {sharedMarketCache} from './server-cache';
-import {takeBudget} from './shared-market-cache.mjs';
 import {readMarketSnapshot} from './market-snapshot.mjs';
 import {creationOnly} from './trade-activity.mjs';
 import {isOwnPlatform} from './launch-identity.mjs';
 
-export type MarketView={transferTaxBps?:number;quoteStats?:{price:number|null;marketCap:number|null}|null;creator?:string;progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};updatedAt:number;stale:boolean;slot:number};
+export type NativeQuote={priceQuote:number|null;marketCapQuote:number|null;liquidityQuote:number|null;liquidityKind:string|null;volume24hQuote:number|null;volumeCoverage:string;change24h:number|null;changeCoverage:string;priceUsd:number|null;marketCapUsd:number|null;liquidityUsd:number|null;volume24hUsd:number|null;usd:{symbol:string;price:number;source:string;updatedAt:number;freshness:string;note:string}|null;source:'grainpad'};
+export type MarketView={transferTaxBps?:number;quoteStats?:{price:number|null;marketCap:number|null}|null;liquidity?:{quote:number|null;kind:string|null};native?:NativeQuote;creator?:string;progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};links?:{gecko:string;dexscreener:string};updatedAt:number;stale:boolean;slot:number};
 export async function serverMarket(address:string,{viewer=false}:{viewer?:boolean}={}):Promise<MarketView>{
  const mint=new PublicKey(address).toBase58(),platform=grainpadPlatformId().toBase58(),db=database();
  // Unregistered/foreign mints cannot create cache entries or spend RPC budget.
@@ -35,21 +37,13 @@ export async function serverMarket(address:string,{viewer=false}:{viewer?:boolea
     }
    }catch{/* History unavailable is unknown, never zero. */}
   }
-  return {...snapshot,activity};
- },{refresh:viewer});
- let chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats}={available:false,pool:cached.data.pool,stale:false};
- try{
-  const result=await sharedMarketCache(db,`chart:v3:${cached.data.pool}`,async()=>{
-   if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Chart provider limit.');
-   const r=await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${cached.data.pool}`,{signal:AbortSignal.timeout(6000)});
-   if(r.status===404)return {available:false,pool:cached.data.pool};
-   if(!r.ok)throw Error('Chart provider unavailable.');
-   const body=await r.json() as {data?:{id:string;attributes:Record<string,unknown>&{address:string};relationships:{base_token:{data:{id:string}};quote_token:{data:{id:string}}}}};
-   const identity=chartAvailability(body,cached.data.pool,mint,cached.data.quote.mint);
-   return {...identity,...(identity.available?{stats:poolStats(body.data!.attributes)}:{})};
-  },{ttl:60_000,maxStale:300_000,refresh:viewer});
-  chart={...result.data,stale:result.stale};
- }catch{chart.stale=true;}
+  let indexed={volume24hQuote:null as number|null,volumeCoverage:'unavailable',change24h:null as number|null,changeCoverage:'unavailable'};
+  try{indexed=await indexedSummary(db,mint);}catch{/* Spot price still comes from the account snapshot. */}
+  let usd=null;
+  try{usd=quoteUsdFor(await loadQuoteUsd(db,{refresh:viewer}),snapshot.quote.symbol);}catch{usd=null;}
+  return {...snapshot,activity,native:composeNative(snapshot,indexed,usd)};
+ },{ttl:15_000,maxStale:300_000,refresh:viewer});
+ const chart={available:false,pool:cached.data.pool,stale:false,reason:'grainpad-native' as const};
  const official=await db.prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();
- return {...cached.data,creator:record.creator,name:record.name,symbol:record.symbol,image:record.image,official:official?.mint===mint,stats:chart.stats,chart,updatedAt:cached.updatedAt,stale:cached.stale};
+ return {...cached.data,creator:record.creator,name:record.name,symbol:record.symbol,image:record.image,official:official?.mint===mint,chart,links:{gecko:`https://www.geckoterminal.com/solana/pools/${cached.data.pool}`,dexscreener:`https://dexscreener.com/solana/${mint}`},updatedAt:cached.updatedAt,stale:cached.stale};
 }
