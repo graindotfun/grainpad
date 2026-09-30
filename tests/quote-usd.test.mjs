@@ -20,11 +20,11 @@ test('freshness expires instead of presenting an old quote price as current',()=
 });
 test('wXMR has no XMR substitute when Jupiter does not price the mint',async()=>{
  const prices=await fetchQuoteUsd(async url=>{
-  if(String(url).includes('lite-api.jup.ag'))return {ok:true,json:async()=>({[QUOTES.SOL.mint]:{usdPrice:100}})};
-  if(String(url).includes('coinbase'))return {ok:true,json:async()=>({data:{amount:'90',base:'SOL',currency:'USD'}})};
+  if(String(url).includes('lite-api.jup.ag'))return Response.json({[QUOTES.SOL.mint]:{usdPrice:100}});
+  if(String(url).includes('coinbase'))return Response.json({data:{amount:'90',base:'SOL',currency:'USD'}});
   throw Error('unexpected');
  });
  assert.equal(prices.SOL.price,100);assert.equal(prices.wXMR,null);
- const fallback=await fetchQuoteUsd(async url=>String(url).includes('coinbase')?{ok:true,json:async()=>({data:{amount:'90',base:'SOL',currency:'USD'}})}:{ok:false,json:async()=>({})});
+ const fallback=await fetchQuoteUsd(async url=>String(url).includes('coinbase')?Response.json({data:{amount:'90',base:'SOL',currency:'USD'}}):new Response('{}',{status:503}));
  assert.equal(fallback.SOL.source,'coinbase-sol-usd');assert.equal(fallback.wXMR,null);
 });
