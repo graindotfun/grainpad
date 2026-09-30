@@ -68,7 +68,9 @@ async function tokenCard(t:ShareToken,kind:string){
  const price=!graduated&&t.priceQuote!=null||t.usd?.price==null?formatPrice(t.priceQuote,t.quote):formatPrice(t.usd.price,'USD');
  if(kind==='receipt')return <Frame corner="Launch receipt" state={state} path={`${path}/receipt`}><Identity t={t} image={image} creator={false}/><Stats items={[['Launched',t.record.createdAt.slice(0,10)],['Pair',t.quote],['Creator',short(t.record.creator)]]}/><Line>On-chain facts, creator declarations and observed buys, kept apart on one public record.</Line></Frame>;
  if(kind==='room')return <Frame corner="Room · crew" state={state} path={`${path}/room`}><Identity t={t} image={image}/><Stats items={[['Tasks',String(t.crew.tasks)],['Contributors',String(t.crew.contributors)],['Paid · verified',String(t.crew.payments)]]}/><Line>Pick a task. Ship the work. Get credited under your wallet.</Line></Frame>;
- const stats:[string,string][]=graduated?[['Market cap',mcap],['24h volume',formatUsd(t.usd?.volume,3)],['Price',price]]:[[nativeFirst||t.usd?.marketCap==null?'Curve MC':'Market cap',mcap],['Price',price]];
+ // USD from #39's share data carries its source; an external figure is labeled as such on the card.
+ const ext=t.usd?.source==='geckoterminal'?' · GeckoTerminal':'';
+ const stats:[string,string][]=graduated?[[`Market cap${t.usd?.marketCap!=null?ext:''}`,mcap],[`24h volume${ext}`,formatUsd(t.usd?.volume,3)],[`Price${t.usd?.price!=null?ext:''}`,price]]:[[nativeFirst||t.usd?.marketCap==null?'Curve MC':`Market cap${ext}`,mcap],['Price',price]];
  const hasFigures=stats.some(([,v])=>v!=='—');
  return <Frame corner={`Token · ${t.quote} pair`} state={state} path={path}>
   <Identity t={t} image={image}/>

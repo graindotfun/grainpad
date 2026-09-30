@@ -11,9 +11,8 @@ import {formatMarketCap,formatChange} from '@/lib/token-market';
 import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import type {DiscoveryResult,DiscoveryToken,DiscoveryFilter,DiscoverySort} from '@/lib/token-discovery';
 function age(date:string){const elapsed=Math.max(0,Date.now()-Date.parse(date)),minutes=Math.floor(elapsed/60000);return minutes<1?'Just now':minutes<60?`${minutes}m ago`:minutes<1440?`${Math.floor(minutes/60)}h ago`:`${Math.floor(minutes/1440)}d ago`;}
-/** Optional fields from the native market pass (integration point): a short native price series for the sparkline
- * and the source of the market figures. Cards render honestly without them. */
-type CardToken=DiscoveryToken&{sparkline?:number[]|null;figuresSource?:string};
+/** `sparkline` is an integration point: #39 does not return a per-row price series yet, so cards draw a dashed baseline. */
+type CardToken=DiscoveryToken&{sparkline?:number[]|null};
 function Sparkline({points}:{points?:number[]|null}){
  const values=(points||[]).filter(v=>Number.isFinite(v));
  if(values.length<2)return <svg className="dc-spark is-empty" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="20" x2="100" y2="20"/></svg>;
@@ -50,18 +49,18 @@ export function TokenDiscovery({initialQuote='all',roomMode=false,sectionNumber=
  useEffect(()=>{const timer=setTimeout(()=>{setSearch(query);setPage(1)},250);return()=>clearTimeout(timer);},[query]);
  useEffect(()=>{const element=section.current;if(!element)return;const observer=new IntersectionObserver(([entry])=>setVisible(entry.isIntersecting),{rootMargin:'350px'});observer.observe(element);return()=>observer.disconnect();},[]);
  useEffect(()=>{
+  if(!visible)return;
   let live=true;
-  const load=async(signal:AbortSignal)=>{
+  // A first load that never answers becomes a recoverable error instead of an endless skeleton.
+  const timer=setTimeout(()=>{if(live)setError(current=>current||'The token directory is temporarily unavailable. Please try again.');},12_000);
+  const stop=startViewerPolling(async(signal:AbortSignal)=>{
    try{
     const response=await fetch(`/api/discovery?q=${encodeURIComponent(search)}&filter=${filter}&sort=${sort}&page=${page}&quote=${quote}`,{signal,cache:'no-store'});
     const body=await response.json() as DiscoveryResult&{error?:string};if(!response.ok)throw Error(body.error||'The token directory is temporarily unavailable. Please try again.');
-    if(live){setResult({key,data:body});setError('');}
+    if(live){clearTimeout(timer);setResult({key,data:body});setError('');}
    }catch(e){if(live&&!signal.aborted)setError(e instanceof Error?e.message:'The token directory is temporarily unavailable. Please try again.');}
-  };
-  const first=new AbortController(),timer=setTimeout(()=>first.abort(),12000);
-  void load(first.signal).finally(()=>{if(live&&first.signal.aborted)setError(current=>current||'The token directory is temporarily unavailable. Please try again.');});
-  const stop=visible?startViewerPolling((signal:AbortSignal)=>load(signal),{intervalMs:60_000}):()=>{};
-  return()=>{live=false;clearTimeout(timer);first.abort();stop();};
+  },{intervalMs:60_000});
+  return()=>{live=false;clearTimeout(timer);stop();};
  },[key,search,filter,sort,page,quote,retry,visible]);
  const filters:[DiscoveryFilter,string][]=[['all','All tokens'],['new','New'],['near','About to graduate'],['graduated','Graduated']];
  function changeFilter(next:DiscoveryFilter){setFilter(next);setPage(1);setError('');}

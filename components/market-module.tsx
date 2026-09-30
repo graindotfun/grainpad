@@ -6,31 +6,29 @@ import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import {formatNumber,formatPercent,formatPrice,formatUnits,formatUsd,relativeTime} from '@/lib/price-format';
 import type {MarketView} from '@/lib/server-market';
 import type {Candle} from '@/lib/market-display';
-import type {TapeState} from './native-tape';
 export type MarketSource='grainpad'|'usd';
 export type SeriesPoint={time:number;value:number};
 export const INTERVALS:[string,number][]=[['1m',60],['5m',300],['1h',3600],['1d',86400]];
-/** Response of /api/market/[mint]/history. `source`, `unit` and `coverage` are optional so this module works with
- * the current GeckoTerminal-only route and with the native-history route when it lands (integration point). */
-type History={rows:Candle[];available:boolean;stale:boolean;updatedAt?:number;pool:string;source?:string;unit?:string;coverage?:{status:string;notice:string}};
-/** External USD candles. Fetched only while the USD source is selected. */
-function useUsdHistory(market:MarketView|null,mint:string,interval:string,enabled:boolean){
- const key=`${mint}:${market?.pool}:${interval}`,[state,setState]=useState<{key:string;data?:History;error?:string}>({key:''});
+/** /api/market/[mint]/history (PR #39 contract). `source`/`unit` say which series this is: Grainpad's indexed quote
+ * candles by default, GeckoTerminal USD only as the labeled fallback for launches the index has not seen. */
+export type Coverage={status:'indexed'|'partial'|'not-indexed'|'no-trades'|'external-fallback'|string;notice:string};
+type History={rows:Candle[];available:boolean;stale:boolean;updatedAt?:number;pool:string;source?:string;unit?:string;quote?:string;coverage?:Coverage};
+function useHistory(market:MarketView|null,mint:string,interval:string,external:boolean){
+ const key=`${mint}:${market?.pool}:${interval}:${external}`,[state,setState]=useState<{key:string;data?:History;error?:string}>({key:''});
  useEffect(()=>{
-  if(!enabled||!market?.chart.available)return;
+  if(!market)return;
   return startViewerPolling(async(signal:AbortSignal)=>{
-   try{const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&interval=${interval}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
-    const body=await r.json() as History&{error?:string};if(!r.ok)throw Error(body.error||'USD history unavailable.');
+   try{const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&interval=${interval}${external?'&source=external':''}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
+    const body=await r.json() as History&{error?:string};if(!r.ok)throw Error(body.error||'Price history unavailable.');
     if(body.pool!==market.pool)throw Error('Pool changed. Refreshing market…');
     setState({key,data:body});
-   }catch(e){if(!signal.aborted)setState(previous=>({key,data:previous.key===key?previous.data:undefined,error:e instanceof Error?e.message:'USD history unavailable.'}));}
-  },{intervalMs:60_000});
- },[key,mint,interval,enabled,market?.pool,market?.chart.available]);
+   }catch(e){if(!signal.aborted)setState(previous=>({key,data:previous.key===key?previous.data:undefined,error:e instanceof Error?e.message:'Price history unavailable.'}));}
+  },{intervalMs:30_000});
+ },[key,mint,interval,external,market?.pool,!!market]);// eslint-disable-line react-hooks/exhaustive-deps -- market identity is the pool; other fields refresh every poll.
  const current:{data?:History;error?:string}=state.key===key?state:{};
- // A route that answers with Grainpad quote candles is not a USD series; never label it as one.
- const usd=!current.data||(current.data.unit??'usd')==='usd'&&(current.data.source??'geckoterminal')==='geckoterminal';
- return usd?current:{data:undefined,error:'USD series not available.'};
+ return current;
 }
+const isUsd=(h?:History)=>(h?.unit??'quote')==='usd';
 const tickTime=(seconds:number,interval:number)=>new Date(seconds*1000).toLocaleString('en-US',interval>=86400?{month:'short',day:'numeric'}:{hour:'2-digit',minute:'2-digit',hour12:false});
 /** The one chart spec for every source: right axis, mono ticks, dashed horizontal grid, orange line, marked last point. */
 export function GrainChart({points,interval,unit,label}:{points:SeriesPoint[];interval:number;unit:'usd'|string;label:string}){
@@ -49,47 +47,45 @@ export function GrainChart({points,interval,unit,label}:{points:SeriesPoint[];in
  </div>;
 }
 function Stat({label,value,note}:{label:string;value:string;note?:string}){return <div className="market-stat"><dt>{label}</dt><dd>{value}{note&&<small>{note}</small>}</dd></div>;}
-/** Indexed quote volume over 24h, only when the loaded events reach back 24h. Otherwise withheld, never zero. */
-function indexedVolume(tape:TapeState,decimals:number){
- const data=tape.data;if(!data)return null;const since=Date.now()/1000-86400,events=data.events;
- const reaches=!data.nextCursor||events.some(e=>e.blockTime!==null&&e.blockTime<since);if(!reaches)return null;
- let total=0n;for(const e of events)if((e.kind==='buy'||e.kind==='sell')&&e.blockTime!==null&&e.blockTime>=since&&e.quoteAmount)total+=BigInt(e.quoteAmount);
- return formatUnits(total.toString(),decimals,3);
-}
-type Props={market:MarketView|null;mint:string;error?:string;tape:TapeState;seconds:number;setSeconds:(n:number)=>void};
-/** One market module, two sources. Grainpad's indexed record is the default; external USD is a toggle when a pool index has it. */
-export function MarketModule({market,mint,error,tape,seconds,setSeconds}:Props){
- const usdAvailable=!!market?.chart.available,[choice,setChoice]=useState<MarketSource|null>(null);
- const source:MarketSource=choice==='usd'&&usdAvailable?'usd':choice==='grainpad'||!usdAvailable||market?.route!=='cpmm'?'grainpad':'usd';
- const interval=INTERVALS.find(([,s])=>s===seconds)?.[0]||'5m',usd=useUsdHistory(market,mint,interval,source==='usd');
+const COVERAGE_LABEL:Record<string,string>={indexed:'indexed',partial:'partial index','not-indexed':'not indexed yet','no-trades':'no trades yet','external-fallback':'external fallback'};
+type Props={market:MarketView|null;mint:string;error?:string;seconds:number;setSeconds:(n:number)=>void};
+/** One market module. Grainpad's native figures and indexed candles are the default; an external USD pool series is a
+ * toggle only when a pool index has it (market.chart.available), and the index's own GeckoTerminal fallback is labeled. */
+export function MarketModule({market,mint,error,seconds,setSeconds}:Props){
+ const usdAvailable=!!market?.chart.available,[choice,setChoice]=useState<MarketSource>('grainpad');
+ const source:MarketSource=choice==='usd'&&usdAvailable?'usd':'grainpad';
+ const interval=INTERVALS.find(([,s])=>s===seconds)?.[0]||'5m',history=useHistory(market,mint,interval,source==='usd');
  const [now,setNow]=useState(()=>Date.now());useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),15_000);return()=>clearInterval(id);},[]);
- const q=market?.quote,unit=q?.symbol||'SOL',stats=market?.stats;
- const native=(tape.data?.candles||[]).map(c=>({time:c.time,value:c.close})).filter(p=>Number.isFinite(p.value)&&p.value>0);
- const external=(usd.data?.rows||[]).map(c=>({time:c.time,value:c.close}));
- const points=source==='usd'?external:native;
- // Headline: curve spot price while the curve is open, otherwise the last indexed execution price.
- const nativePrice=market?.quoteStats?.price??native.at(-1)?.value??null;
- const headline=source==='usd'?formatPrice(stats?.price??external.at(-1)?.value,'USD'):formatPrice(nativePrice,unit);
- const change=source==='usd'?stats?.change:null;
- const delayedMs=market?.stale?now-market.updatedAt:source==='usd'&&(usd.data?.stale||market?.chart.stale)&&usd.data?.updatedAt?now-usd.data.updatedAt:0;
- const stale=delayedMs>0;
+ const q=market?.quote,unit=q?.symbol||'SOL',n=market?.native,graduated=market?.route==='cpmm';
+ const rows=history.data?.rows||[],usdSeries=isUsd(history.data),seriesUnit=usdSeries?'usd':unit;
+ const points=rows.map(c=>({time:c.time,value:c.close})).filter(p=>Number.isFinite(p.value)&&p.value>0);
+ const coverage=history.data?.coverage;
+ const priceQuote=n?.priceQuote??market?.quoteStats?.price??null;
+ const headline=source==='usd'?formatPrice(market?.stats?.price??points.at(-1)?.value,'USD'):formatPrice(priceQuote??(usdSeries?null:points.at(-1)?.value),unit);
+ const change=source==='usd'?market?.stats?.change??null:n?.changeCoverage==='24h'?n.change24h:null;
+ const usdNote=(value:number|null|undefined)=>value!=null&&n?.usd&&n.usd.freshness!=='expired'?`≈ ${formatUsd(value,3)}`:undefined;
+ const delayedMs=market?.stale?now-market.updatedAt:history.data?.stale&&history.data.updatedAt?now-history.data.updatedAt:0,stale=delayedMs>0;
  const raised=market?.progress&&q?formatUnits(market.progress.raised,q.decimals,3):null,target=market?.progress&&q?formatUnits(market.progress.target,q.decimals,3):null;
  const pct=market?.progress&&Number(market.progress.target)>0?Math.min(100,Math.max(0,Number(market.progress.raised)/Number(market.progress.target)*100)):null;
- const volume=q?indexedVolume(tape,q.decimals):null;
- const statItems:[string,string,string?][]=[
-  ['Market cap',source==='usd'||market?.route==='cpmm'&&stats?.marketCap!=null?formatUsd(stats?.marketCap):formatPrice(market?.quoteStats?.marketCap,unit)],
-  market?.route==='cpmm'?['Liquidity',formatUsd(stats?.liquidity),stats?.liquidity!=null?'external':undefined]:['Curve reserve',raised?`${raised} ${unit}`:'—'],
-  ['24h volume',volume?`${volume} ${unit}`:stats?.volume!=null?formatUsd(stats.volume):'—',volume?'indexed':stats?.volume!=null?'external':undefined],
+ const liquidity=n?.liquidityQuote??null,volume=n?.volumeCoverage==='unavailable'?null:n?.volume24hQuote??null;
+ const statItems:[string,string,string?][]=source==='usd'?[
+  ['Market cap',formatUsd(market?.stats?.marketCap)],['Liquidity',formatUsd(market?.stats?.liquidity)],['24h volume',formatUsd(market?.stats?.volume)],['Pair',unit],
+ ]:[
+  ['Market cap',formatPrice(n?.marketCapQuote??market?.quoteStats?.marketCap,unit,3),usdNote(n?.marketCapUsd)],
+  [n?.liquidityKind==='cpmm-reserves-at-spot'||graduated?'Pool liquidity':'Curve reserve',liquidity!=null?formatPrice(liquidity,unit,3):raised?`${raised} ${unit}`:'—',usdNote(n?.liquidityUsd)],
+  ['24h volume',volume!=null?formatPrice(volume,unit,3):'—',n?.volumeCoverage==='partial'?'partial':volume!=null?'indexed':undefined],
   ['Pair',unit],
  ];
- const empty=error?'Market unavailable':!market?'Reading the pool…':source==='usd'?usd.error?'USD history unavailable':!usd.data?'Loading USD history…':'No USD history in this interval':tape.error&&!tape.data?'Ledger unavailable':!tape.data?'Reading the ledger…':market.activity==='none'?'Waiting for the first trade':'No indexed trades in this interval';
+ const emptyTitle=error?'Market unavailable':!market?'Reading the pool…':history.error&&!history.data?'Price history unavailable':!history.data?'Reading the index…':coverage?.status==='no-trades'?'No trades yet':coverage?.status==='not-indexed'?'Trade history not indexed yet':'No indexed trades in this interval';
+ const emptyNote=error?'Check the token address or try again shortly.':coverage?.notice||'Empty periods stay empty. Missing history is never drawn as zero.';
+ const seriesLabel=source==='usd'?'USD · external pool index':usdSeries?'USD · GeckoTerminal fallback':`on-chain · ${unit}`;
  return <section className="panel corner-panel market-module" aria-labelledby="market-heading" data-stale={stale||undefined}>
-  <div className="corner-head"><span className="corner-label">Market</span><span className="corner-label is-right">{source==='usd'?'USD · GeckoTerminal':`on-chain · ${unit}`}</span></div>
+  <div className="corner-head"><span className="corner-label">Market</span><span className="corner-label is-right">{seriesLabel}</span></div>
   <div className="market-headline">
    <div>
     <h2 id="market-heading" className="sr-only">Market</h2>
     <p className="market-price"><strong className="stale-value">{headline}</strong>{stale&&<span className="delay-chip" role="status" title={market?`Last updated ${new Date(market.updatedAt).toLocaleTimeString()}`:undefined}>delayed {relativeTime(now-delayedMs,now)}</span>}</p>
-    <p className="market-subline">{source==='usd'?<>{change!=null&&<span className={change>=0?'is-up':'is-down'}>{formatPercent(change,{signed:true})} 24h</span>}<span>USD price from an external pool index</span></>:<span>{market?.quoteStats?.price!=null?'Curve spot price, before fees':native.length?'Last indexed execution price':'Price appears with the first indexed trade'}{stats?.price!=null&&<> · ≈ {formatPrice(stats.price,'USD')}</>}</span>}</p>
+    <p className="market-subline">{change!=null&&<span className={change>=0?'is-up':'is-down'}>{formatPercent(change,{signed:true})} 24h</span>}<span>{source==='usd'?'USD price from an external pool index':priceQuote!=null?<>{graduated?'Pool spot price':'Curve spot price'}, before fees{n?.priceUsd!=null&&n.usd?.freshness!=='expired'&&<> · ≈ {formatPrice(n.priceUsd,'USD')}</>}</>:points.length&&!usdSeries?'Last indexed execution price':'Price appears with the first trade'}</span></p>
    </div>
    <div className="market-controls">
     {usdAvailable&&<div className="segmented" role="group" aria-label="Price source"><button aria-pressed={source==='grainpad'} onClick={()=>setChoice('grainpad')}>On-chain</button><button aria-pressed={source==='usd'} onClick={()=>setChoice('usd')}>USD</button></div>}
@@ -97,8 +93,8 @@ export function MarketModule({market,mint,error,tape,seconds,setSeconds}:Props){
    </div>
   </div>
   <dl className="market-stats stale-value">{statItems.map(([label,value,note])=><Stat key={label} label={label} value={value} note={note}/>)}</dl>
-  <div className="market-chart-frame">{points.length?<GrainChart points={points} interval={seconds} unit={source==='usd'?'usd':unit} label={source==='usd'?'USD price':`Price in ${unit}`}/>:<div className="market-empty" role="status"><strong>{empty}</strong><span>{error?'Check the token address or try again shortly.':source==='usd'?'Swaps use a separate on-chain quote.':'Empty periods stay empty. Missing history is never drawn as zero.'}</span></div>}</div>
-  <div className="market-foot"><span>{source==='usd'?'External USD series. Swaps quote from chain.':`Grainpad index · ${unit} per token · execution prices include fees`}</span>{source==='usd'&&market?<a href={`https://www.geckoterminal.com/solana/pools/${market.pool}`} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>:null}</div>
+  <div className="market-chart-frame">{points.length?<GrainChart points={points} interval={seconds} unit={seriesUnit} label={usdSeries?'USD price':`Price in ${unit}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
+  <div className="market-foot"><span>{usdSeries?(history.data?.source==='geckoterminal'&&source!=='usd'?'GeckoTerminal USD fallback · not the Grainpad record':'External USD series. Swaps quote from chain.'):`Grainpad index · ${unit} per token · execution prices include fees`}{coverage&&coverage.status!=='indexed'&&points.length>0&&<> · <span className="coverage-note" title={coverage.notice}>{COVERAGE_LABEL[coverage.status]||coverage.status}</span></>}</span>{usdSeries&&market?<a href={market.links?.gecko||`https://www.geckoterminal.com/solana/pools/${market.pool}`} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>:null}</div>
   {market&&pct!==null&&<div className="lifecycle-progress">
    <div><span>{market.route==='cpmm'?'Graduated':market.route==='graduating'?'Curve complete':'Bonding curve'}</span>{market.route==='curve'&&pct>=80&&<span className="record-tape">Near graduation</span>}{market.route!=='curve'&&<span className="record-tape">{market.route==='cpmm'?'On Raydium':'Migrating'}</span>}<strong>{market.route==='cpmm'?'100%':formatPercent(pct)}</strong></div>
    <div className="progress-track" role="progressbar" aria-label="Graduation progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(market.route==='cpmm'?100:pct)}><i style={{transform:`scaleX(${(market.route==='cpmm'?100:pct)/100})`}}/></div>

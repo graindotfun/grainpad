@@ -30,12 +30,12 @@ export function CreatorProfile({mint}:{mint:string}){
   }catch(e){setError(e instanceof Error?e.message:'Profile update failed.');}finally{setBusy(false);}
  }
  const launch=data?.launch,update=data?.update;
- return <section className="panel product-panel" aria-label="Creator metadata"><div className="product-section-heading"><div><p className="eyebrow">CREATOR METADATA</p><h2>Launch record and later edits</h2></div></div>
+ return <section className="panel corner-panel product-panel creator-profile" aria-label="Creator metadata"><div className="corner-head"><span className="corner-label">Creator</span><span className="corner-label is-right">launch record · signed edits</span></div><h2 className="display-title">the creator<span>.</span></h2>
  {error&&<p role="status" className="feedback error">{error}</p>}
  {launch&&<dl className="product-facts"><div><dt>Launch description</dt><dd>{launch.description||'Not provided'}</dd></div><div><dt>Website</dt><dd>{launch.website?<a href={launch.website}>{launch.website}</a>:'Not provided'}</dd></div><div><dt>X</dt><dd>{launch.twitter?<a href={launch.twitter}>{launch.twitter}</a>:'Not provided'}</dd></div><div><dt>Telegram</dt><dd>{launch.telegram?<a href={launch.telegram}>{launch.telegram}</a>:'Not provided at launch'}</dd></div></dl>}
  {update&&<div><p className="small muted">Creator update · signed by {update.signer.slice(0,4)}…{update.signer.slice(-4)} · {new Date(update.updatedAt).toLocaleString()}</p>
  {/* eslint-disable-next-line @next/next/no-img-element -- Creator banners are content-addressed uploads, not the site image optimizer. */}
- {update.banner&&<img src={update.banner} alt="" style={{width:'100%',maxHeight:180,objectFit:'cover',borderRadius:12}}/>}
+ {update.banner&&<img className="creator-banner" src={update.banner} alt=""/>}
  <p>{update.description}</p><p className="small">{[update.website,update.twitter,update.telegram].filter(Boolean).join(' · ')||'No updated links'}</p></div>}
  <p className="small muted">{data?.notice}</p>
  <details><summary>Edit display metadata</summary><p className="small muted">This signs an off-chain Grainpad update. It does not change the token’s on-chain metadata.</p>
