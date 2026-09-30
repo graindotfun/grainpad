@@ -1,3 +1,4 @@
+import {acquireResourceLease} from '@/lib/resource-leases.mjs';
 import {renderPng} from '@/lib/og/render';
 import {Buffer} from 'buffer';
 import albertSans from '@/lib/og/albert-sans-500.ttf?inline';
@@ -93,15 +94,21 @@ async function crewCard(wallet:string){
 }
 export async function GET(request:Request,{params}:{params:Promise<{kind:string;id:string}>}){
  const {kind,id}=await params;
- const cache=(globalThis as unknown as {caches?:{default?:Cache}}).caches?.default,key=new Request(new URL(request.url).toString());
+ if(!validMint(id)||!['token','receipt','room','crew'].includes(kind))return new Response('Not found',{status:404});
+ const cache=(globalThis as unknown as {caches?:{default?:Cache}}).caches?.default,key=new Request(`${SITE.origin}/api/og/${kind}/${id}`);
  const hit=await cache?.match(key).catch(()=>undefined);if(hit)return hit;
+ let release:(()=>Promise<void>)|null=null;
  try{
-  if(!validMint(id)||!['token','receipt','room','crew'].includes(kind))return new Response('Not found',{status:404});
+  release=await acquireResourceLease(database(),'og-render',{slots:2,ttlMs:60_000});
+  if(!release)return new Response('Share card busy',{status:429,headers:{'Retry-After':'10','Cache-Control':'no-store'}});
+  // Fixed ten cold attempts per rolling minute, including nonexistent IDs.
+  // Do not release these quota tokens early; cached hits bypass this path.
+  if(!await acquireResourceLease(database(),'og-cold',{slots:10,ttlMs:60_000}))return new Response('Share card busy',{status:429,headers:{'Retry-After':'60','Cache-Control':'no-store'}});
   let element;
   if(kind==='crew')element=await crewCard(id);
   else{const t=await shareToken(id);if(!t)return new Response('Not found',{status:404});element=await tokenCard(t,kind);}
   const bytes=await renderPng(element,{width:1200,height:630,fonts}),response=new Response(bytes as Uint8Array<ArrayBuffer>,{headers:{'Content-Type':'image/png','Cache-Control':'public, max-age=600, s-maxage=600','X-Content-Type-Options':'nosniff'}});
   await cache?.put(key,response.clone()).catch(()=>undefined);
   return response;
- }catch(error){console.error('grainpad_og',JSON.stringify({kind,message:error instanceof Error?error.message.slice(0,300):'render failed'}));return new Response('Share card unavailable',{status:503,headers:{'Cache-Control':'no-store'}});}
+ }catch(error){console.error('grainpad_og',JSON.stringify({kind,message:error instanceof Error?error.message.slice(0,300):'render failed'}));return new Response('Share card unavailable',{status:503,headers:{'Cache-Control':'no-store'}});}finally{await release?.();}
 }
