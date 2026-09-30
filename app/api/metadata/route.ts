@@ -33,7 +33,7 @@ export async function POST(request:Request){
   assertMetadataText(draft);
   if(typeof draft.imageBase64!=="string"||draft.imageBase64.length>2_700_000)throw new Error("Choose an image below 2 MB.");
   if(!Number.isSafeInteger(draft.expires)||draft.expires<Date.now()||draft.expires>Date.now()+15*60*1000)throw new Error("Metadata signature expired. Please sign again.");
-  const website=metadataLink(draft.website,"website"),twitter=metadataLink(draft.twitter,"twitter");
+  const website=metadataLink(draft.website,"website"),twitter=metadataLink(draft.twitter,"twitter"),telegram=draft.telegram===undefined?undefined:metadataLink(draft.telegram,"telegram");
   if(draft.declaredCreatorBuy!==undefined&&(!['SOL','wXMR'].includes(draft.quoteAsset||'')||typeof draft.declaredCreatorBuy!=='string'||!/^\d{1,12}(\.\d{1,9})?$/.test(draft.declaredCreatorBuy)))throw Error('Creator buy declaration must be an amount in the selected quote asset.');
   const payload=metadataPayload(draft);const hash=await sha256(payload);
   const owner=bs58.decode(draft.owner),sig=bs58.decode(body.signature);
@@ -45,7 +45,7 @@ export async function POST(request:Request){
   const db=database();
   if(!await takeBudget(db,`metadata-ip:${ipHash}`,1,UPLOADS_PER_IP_HOUR,3_600_000))return fail(Error('Too many metadata uploads from this network. Try again later.'),429);
   if(!await takeBudget(db,'metadata-global',1,UPLOADS_PER_HOUR,3_600_000))return fail(Error('Metadata uploads are busy. Try again shortly.'),429);
-  const publication=await buildMetadataPublication({...draft,website,twitter},bytes,SITE.origin);
+  const publication=await buildMetadataPublication({...draft,website,twitter,...(telegram!==undefined?{telegram}:{})},bytes,SITE.origin);
   assertPublicationBinding(draft,publication);
   const {metadata,metadataHash:metaHash}=publication;const json=JSON.stringify(metadata);
   if(!await consumeRequestBudget(database(),'upload-global',2000,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-ip:'+ipHash,40,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-owner:'+draft.owner,20,{windowMs:86_400_000}))throw Error('Metadata upload budget reached. Please retry tomorrow.');
