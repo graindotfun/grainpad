@@ -37,7 +37,6 @@
 .dc-foot button{display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:0;background:none;border:0;color:inherit;font:inherit;cursor:pointer;white-space:nowrap}
 .dc-foot button:hover{color:var(--xmr-orange)}
 .dc-foot time{white-space:nowrap}
-.discovery-quote{margin:0 0 12px}
 html[data-theme="light"] .discovery-card.dc{background:#fff;border-color:#e3dacb}
 @media(max-width:480px){
  .token-discovery .discovery-grid{grid-template-columns:minmax(0,1fr);gap:10px}
@@ -50,3 +49,17 @@ html[data-theme="light"] .discovery-card.dc{background:#fff;border-color:#e3dacb
 }
 .token-discovery .discovery-skeleton>div{padding:14px;border-radius:14px;min-height:196px}
 .token-discovery .discovery-skeleton>div>div{aspect-ratio:auto;width:56px;height:56px;border-radius:12px}
+
+/* Discovery controls: one row of Grainpad Selects between the subtitle and the filter pills, with even 18px steps. */
+.token-discovery .discovery-explore-heading{margin-bottom:18px}
+.discovery-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;margin:0 0 18px}
+.discovery-controls .grain-select-label{color:var(--discovery-muted)}
+@media(max-width:700px){
+ .token-discovery .discovery-explore-heading{margin:0 4px 16px}
+ .discovery-controls{margin:0 4px 16px;gap:10px}
+}
+@media(max-width:560px){
+ .discovery-controls{flex-direction:column;align-items:stretch}
+ .discovery-controls .grain-select{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px}
+ .discovery-controls .grain-select-trigger{width:100%;min-width:0}
+}
