@@ -49,3 +49,11 @@ test('internal signed-send policy reads retain the display lane but bypass its d
  assert.equal((await forward('mainnet-beta',body('getLatestBlockhash'),{lane:'display',submissionValidation:true})).result,42);
  assert.equal(f.budgets.at(-1).lane,'display');assert.equal(f.budgets.at(-1).dailyExempt,true);
 });
+
+test('scheduled cancellation does not share a public inflight read and cancels response body',async()=>{
+ const f=fixture(),controller=new AbortController();let cancelled=false;
+ f.options.fetcher=async(_url,options)=>{f.calls.push(options);if(options.signal?.aborted)throw Error('aborted');if(!options.signal||f.calls.length===1)return new Promise(resolve=>setTimeout(()=>resolve(Response.json({jsonrpc:'2.0',id:1,result:42})),30));
+ return new Response(new ReadableStream({start(stream){options.signal.addEventListener('abort',()=>{cancelled=true;stream.error(Error('aborted'));},{once:true});},cancel(){cancelled=true;}}));};
+ const forward=createRpcForwarder(f.options);const publicRead=forward('mainnet-beta',body('getBalance'));const scheduled=forward('mainnet-beta',body('getBalance'),{signal:controller.signal});setTimeout(()=>controller.abort(),10);
+ assert.equal((await publicRead).result,42);await scheduled;assert.ok(f.calls.length>=2);assert.equal(cancelled,true);
+});

@@ -21,7 +21,8 @@ export async function POST(request:Request){try{
  assertMintSuffix(mint.toBase58());
  const existing=await database().prepare("SELECT mint FROM official_token WHERE id=1").first<{mint:string}>();
  if(existing){if(existing.mint!==mint.toBase58())throw Error("An official token is already published. Replacing it requires a reviewed site update.");return GET();}
- const saved=await bucket().get(`launches/mainnet-beta/${mint.toBase58()}`);
+ const indexed=await database().prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint.toBase58()).first<{record:string}>();
+ const saved=indexed?{json:async<T>()=>JSON.parse(indexed.record) as T}:await bucket().get(`launches/mainnet-beta/${mint.toBase58()}`);
  if(!saved)throw Error("Register the confirmed Grainpad launch in the launch workspace first.");
  const launch=await saved.json<{mint:string;pool:string;creator:string;platformId:string;symbol:string;name:string}>();
  if(launch.creator!==SITE.projectWallet||launch.platformId!==grainpadPlatformId().toBase58()||launch.symbol!==SITE.tokenSymbol||launch.name!==SITE.tokenName)throw Error("This is not the owner's GRAIN launch on Grainpad.");
