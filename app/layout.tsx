@@ -40,6 +40,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#0d1012"/>
         {/* eslint-disable-next-line @next/next/no-sync-scripts -- Tiny same-origin theme initializer must run before paint to prevent theme flash. */}
         <script src="/theme-init.js"/>
+        <script src="/kernel.js" defer/>
       </head>
       <body className="antialiased"><ContractAddressBar/>{children}</body>
     </html>
