@@ -58,16 +58,16 @@ test('a bad signature, the wrong mint and the wrong metadata hash are rejected',
 test('duplicates, nine confirmations and an oversized nonce are rejected',async()=>{
   const record=packed();
   const index=emptyIndex();
-  const first=observeTransaction(index,{txHash:tx(3),extra:extraOf(record),inBlock:true,height:100,chainHeight:108,expectedMint:mint,expectedHash:hash,expectedCreator:fields.creator});
+  const first=observeTransaction(index,{txHash:tx(3),extra:extraOf(record),inBlock:true,height:100,chainHeight:109,expectedMint:mint,expectedHash:hash,expectedCreator:fields.creator});
   assert.equal(first.status,'pending');
   assert.equal(first.confirmations,9);
   assert.equal(CONFIRMATIONS_REQUIRED,10);
-  assert.equal(confirmationsFor(100,108),9);
+  assert.equal(confirmationsFor(100,109),9);
   const again=observeTransaction(index,{txHash:tx(4),extra:extraOf(record),inBlock:true,height:100,chainHeight:120});
   assert.equal(again.status,'duplicate');
   const same=observeTransaction(index,{txHash:tx(3),extra:extraOf(record),inBlock:true,height:100,chainHeight:120});
   assert.equal(same.status,'duplicate');
-  assert.equal(advance(index,tx(3),100,109).status,'verified');
+  assert.equal(advance(index,tx(3),100,110).status,'verified');
   assert.throws(()=>encodeNonce(Buffer.alloc(255)),/255/);
   assert.equal(DOMAIN[0],103);
   assert.ok(!MAGIC.equals(Buffer.from('XMR2')));
