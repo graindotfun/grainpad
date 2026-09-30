@@ -55,3 +55,10 @@ test('primary-only recovery cannot turn fallback absence into renewal evidence',
  const result=await forward('mainnet-beta',{jsonrpc:'2.0',id:1,method:'getSignatureStatuses',params:[['synthetic'],{searchTransactionHistory:true}]},{primaryOnly:true,submissionValidation:true});
  assert(result.error);assert.deepEqual(seen,['https://primary.example']);
 });
+test('scheduled cancellation does not share a public inflight read and cancels response body',async()=>{
+ const f=fixture(),controller=new AbortController();let cancelled=false;
+ f.options.fetcher=async(_url,options)=>{f.calls.push(options);if(options.signal?.aborted)throw Error('aborted');if(!options.signal||f.calls.length===1)return new Promise(resolve=>setTimeout(()=>resolve(Response.json({jsonrpc:'2.0',id:1,result:42})),30));
+ return new Response(new ReadableStream({start(stream){options.signal.addEventListener('abort',()=>{cancelled=true;stream.error(Error('aborted'));},{once:true});},cancel(){cancelled=true;}}));};
+ const forward=createRpcForwarder(f.options);const publicRead=forward('mainnet-beta',body('getBalance'));const scheduled=forward('mainnet-beta',body('getBalance'),{signal:controller.signal});setTimeout(()=>controller.abort(),10);
+ assert.equal((await publicRead).result,42);await scheduled;assert.ok(f.calls.length>=2);assert.equal(cancelled,true);
+});

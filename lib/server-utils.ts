@@ -1,8 +1,9 @@
+import {executionStorage} from './indexer-execution.mjs';
 import { env } from "cloudflare:workers";
 export function bucket(): R2Bucket {
   const binding = (env as unknown as { BUCKET?: R2Bucket }).BUCKET;
   if (!binding) throw new Error("Storage is temporarily unavailable. Your draft has not been lost.");
-  return binding;
+  return executionStorage(binding) as R2Bucket;
 }
 export {assertSameOrigin as sameOrigin,readLimitedJSON as limitedJSON} from "./request-boundary.mjs";
 export function fail(error: unknown, status=400) {
