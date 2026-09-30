@@ -1,3 +1,4 @@
+import {simulationCostProof} from './simulation-cost.mjs';
 import {sessionRpcFetch} from "./browser-rpc-session.mjs";
 import {rebroadcastSigned} from './rebroadcast.mjs';
 import './browser-buffer.mjs';
@@ -65,13 +66,8 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  const built=buildRewardsLaunch({owner,mint:mint.publicKey,platform:platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quote.mint});
  const transaction=new VersionedTransaction(new TransactionMessage({payerKey:owner,recentBlockhash:(await connection.getLatestBlockhash('confirmed')).blockhash,instructions:[ComputeBudgetProgram.setComputeUnitLimit({units:600000}),ComputeBudgetProgram.setComputeUnitPrice({microLamports:10000}),...built.instructions]}).compileToV0Message());
  const latest=await connection.getLatestBlockhash("confirmed");transaction.message.recentBlockhash=latest.blockhash;
- const before=await connection.getBalance(owner,"confirmed");
- const sim=await connection.simulateTransaction(transaction,{sigVerify:false,commitment:"confirmed",accounts:{encoding:"base64",addresses:[owner.toBase58()]}});
- if(sim.value.err)throw Error(`Simulation failed. Your wallet may need SOL for account creation. ${JSON.stringify(sim.value.err)}`);
- const after=sim.value.accounts?.[0]?.lamports;if(after===undefined||after===null)throw Error("Could not estimate wallet cost.");
- const fee=await connection.getFeeForMessage(transaction.message,"confirmed");if(fee.value===null)throw Error("Fee quote expired. Prepare again.");
- // RPC simulation debits the fee; use the observed debit exactly once.
- const estimatedLamports=Math.max(0,before-after);
+ const cost=await simulationCostProof(connection,transaction,owner,{sigVerify:false,addresses:[owner.toBase58()]}),sim=cost.sim,before=cost.before,after=cost.after,fee={value:cost.fee};
+ const estimatedLamports=cost.debit;
  if(BigInt(estimatedLamports)>maxLamports)throw Error(`Estimated cost ${formatSOL(estimatedLamports)} SOL exceeds your limit. Nothing was sent.`);
  if(before-estimatedLamports<5000000)throw Error("NO-GO: launch would leave less than the required 0.005 SOL reserve.");
  const prepared:PreparedLaunch={rewards:{taxBps:input.taxBps!,collector:String(collector)},targetAccount:mint.publicKey.toBase58(),operationKind:"launch",minimumBalanceLamports:5000000,measuredDebitLamports:Math.max(0,before-after),networkFeeLamports:fee.value,balanceBeforeLamports:before,transaction,network:input.network,owner:input.owner,mint:mint.publicKey.toBase58(),pool:built.pool.toBase58(),metadataHash:input.metadataHash,name:input.name,symbol:input.symbol,platformName:"Grainpad",quoteAsset:quote.symbol,quoteMint:quote.mint,quoteDecimals:quote.decimals,estimatedLamports,maxLamports,createdAt:Date.now(),lastValidBlockHeight:latest.lastValidBlockHeight,blockhash:latest.blockhash,fees:{protocol:config.tradeFeeRate.toString(),platform:platform.feeRate.toString(),creator:platform.creatorFeeRate.toString()},simulationLogs:sim.value.logs||[]};
@@ -99,7 +95,6 @@ async function preflightOperation(reviewed:PreparedOperation,connection:Connecti
  }
 
  // Always simulate the exact message again immediately before the user wallet prompt.
- const before=await connection.getBalance(new PublicKey(p.owner),'confirmed');
  if(refreshable){
   attempt.update('refreshing_blockhash');
   if(p.transaction.signatures.some(signature=>signature.some(Boolean)))throw Error('Only an unsigned review can receive a fresh blockhash. Nothing was sent.');
@@ -111,17 +106,16 @@ async function preflightOperation(reviewed:PreparedOperation,connection:Connecti
   attempt.update('blockhash_refreshed',{blockhash:p.blockhash,lastValidBlockHeight:p.lastValidBlockHeight,reviewCreatedAt:p.createdAt});
  }
  const simulationAddresses=p.operationKind==='platform'?[p.owner,grainpadPlatformId().toBase58()]:[p.owner];
- const sim=await connection.simulateTransaction(p.transaction,{sigVerify:false,commitment:'confirmed',accounts:{encoding:'base64',addresses:simulationAddresses}});
- if(sim.value.err)throw Error(`NO-GO: fresh simulation failed. ${JSON.stringify(sim.value.err)}`);
+ const cost=await simulationCostProof(connection,p.transaction,new PublicKey(p.owner),{sigVerify:false,addresses:simulationAddresses,minContextSlot:p.setupSlot??1,allowPayerCredit:p.operationKind!=='platform'&&p.operationKind!=='launch'}),sim=cost.sim,before=cost.before;
  if(p.operationKind==='platform'){
   const {rpcAccount}=await import('./launch-rules.mjs');const post=rpcAccount(sim.value.accounts?.[1]);
   if(!post?.owner.equals(new PublicKey(POLICY.program)))throw Error('NO-GO: simulated platform owner changed.');
   assertGrainpadPolicy(decodePlatform(post.data));
   if(sim.value.unitsConsumed!==p.simulationUnits)throw Error('NO-GO: setup compute changed; review before signing.');
  }
- const after=sim.value.accounts?.[0]?.lamports,fee=(await connection.getFeeForMessage(p.transaction.message,'confirmed')).value;
+ const after=cost.after,fee=cost.fee;
  if(after==null||fee==null)throw Error('NO-GO: simulation cost unavailable.');
- const conservativeDebit=Math.max(0,before-after);
+ const conservativeDebit=cost.debit;
  if(p.operationKind==='platform'&&(conservativeDebit!==p.measuredDebitLamports||fee!==p.networkFeeLamports))throw Error('Setup cost changed. Stop and review before any wallet request.');
  if(conservativeDebit>p.estimatedLamports||BigInt(conservativeDebit)>p.maxLamports)throw Error('Cost changed. Prepare and review a fresh quote before signing.');
  if(after<(p.minimumBalanceLamports||0))throw Error('NO-GO: required SOL reserve would be breached.');
@@ -171,20 +165,13 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
  assertBlockhashWindow(p.lastValidBlockHeight,currentHeight,true);
  if(!refreshable)assertReviewFresh(p,true);
  attempt.update('post_sign_simulation');
- const returnedFee=(await connection.getFeeForMessage(signed.message,'confirmed')).value;
- if(returnedFee==null)throw Error('Returned transaction fee is unavailable.');
- const sendBalance=await connection.getBalance(new PublicKey(p.owner),'confirmed');
  const setupKeys=p.operationKind==='platform'?(await import('./platform-setup.mjs')).setupAccounts():[];
  // An instruction cannot write an account absent from its message. Request every
  // setup account included by the wallet, then overlay those results on the coherent snapshot.
  const returnedSetupIndices=setupKeys.flatMap((key:PublicKey,index:number)=>signed.message.staticAccountKeys.some(k=>k.equals(key))?[index]:[]);
  const returnedAddresses=p.operationKind==='platform'?[p.owner,...returnedSetupIndices.map(i=>setupKeys[i].toBase58())]:simulationAddresses;
- const finalSim=await connection.simulateTransaction(signed,{sigVerify:true,commitment:'confirmed',accounts:{encoding:'base64',addresses:returnedAddresses}});
+ const finalCost=await simulationCostProof(connection,signed,new PublicKey(p.owner),{sigVerify:true,addresses:returnedAddresses,minContextSlot:sim.context.slot,allowPayerCredit:p.operationKind!=='platform'&&p.operationKind!=='launch'}),finalSim=finalCost.sim,returnedFee=finalCost.fee,sendBalance=finalCost.before,sendAfter=finalCost.after,sendDebit=finalCost.debit;
  attempt.update('post_sign_simulation',{postSignSimulationSlot:finalSim.context?.slot,postSignSimulationError:finalSim.value.err,postSignSimulationUnits:finalSim.value.unitsConsumed,postSignSimulationLogs:(finalSim.value.logs||[]).slice(-25)});
- if(finalSim.value.err)throw Error(`NO-GO: post-sign simulation failed. ${JSON.stringify(finalSim.value.err)}`);
- const sendAfter=finalSim.value.accounts?.[0]?.lamports;
- if(sendAfter==null)throw Error('NO-GO: post-sign simulation cost unavailable.');
- const sendDebit=Math.max(0,sendBalance-sendAfter);
  if(p.operationKind==='platform'){
   const {rpcAccount}=await import('./launch-rules.mjs');const post=rpcAccount(finalSim.value.accounts?.[1]);
   if(!post?.owner.equals(new PublicKey(POLICY.program)))throw Error('NO-GO: post-sign simulated platform owner changed.');
@@ -196,7 +183,7 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
   const returnedState=[...setupBefore];
   returnedSetupIndices.forEach((at,i)=>{returnedState[at]=rpcAccount(returnedAccounts[i]);});
   if(classifySetup(returnedState)!==(p.setupStep==='1a'?'1b':'complete'))throw Error('NO-GO: returned transaction changed the required setup end state.');
-  if(p.setupStep==='1a'&&!returnedAccounts.every((account,i)=>sameSimulatedAccount(account,returnedSetupIndices[i]===0?sim.value.accounts?.[1]:setupBefore![returnedSetupIndices[i]])))throw Error('NO-GO: returned transaction changed simulated rule, allowlist or configuration accounts.');
+  if(p.setupStep==='1a'&&!returnedAccounts.every((account:Parameters<typeof rpcAccount>[0],i:number)=>sameSimulatedAccount(account,returnedSetupIndices[i]===0?sim.value.accounts?.[1]:setupBefore![returnedSetupIndices[i]])))throw Error('NO-GO: returned transaction changed simulated rule, allowlist or configuration accounts.');
   // All four rule/allowlist accounts must still be absent during guarded 1a.
   if(p.setupStep==='1a'&&(await readSetup(connection)).state!=='1a')throw Error('NO-GO: setup state changed during wallet review.');
   if(sendDebit-returnedFee!==(p.measuredDebitLamports||0)-(p.networkFeeLamports||0))throw Error('NO-GO: wallet additions changed non-fee SOL movements.');
