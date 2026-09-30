@@ -1,12 +1,13 @@
 'use client';
 import {useState} from 'react';
 import type {Wallet} from '@/lib/wallet';
+import {canonicalCreatorMessage} from '@/lib/monero-creator-message.mjs';
 import {Button} from './ui/button';
 import {Input} from './ui/input';
 // A separate reviewed owner decision is needed to enable this message-signing surface.
 export const MONERO_CREATOR_SIGNING_ENABLED=false;
 type Intent={mint:string;creator:string;metadataHash:string;nonce:string;messageHex:string;state:string};
-async function api(body:object):Promise<Intent>{const response=await fetch('/api/monero-publication',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await response.json() as Intent&{error?:string};if(!response.ok)throw Error(result.error||'Publication review unavailable.');if(!result.mint||!result.creator||!result.metadataHash||!result.nonce||!result.messageHex||!/^(?:[0-9a-f]{2})+$/.test(result.messageHex))throw Error('Invalid publication review.');return result;}
+async function api(body:{action:string;mint:string;signature?:string}):Promise<Intent>{const response=await fetch('/api/monero-publication',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await response.json() as Intent&{error?:string};if(!response.ok)throw Error(result.error||'Publication review unavailable.');if(!result.mint||!result.creator||!result.metadataHash||!result.nonce||!result.messageHex||!/^(?:[0-9a-f]{2})+$/.test(result.messageHex))throw Error('Invalid publication review.');canonicalCreatorMessage(result,body.mint);return result;}
 export function MoneroCreatorSignature({wallet}:{wallet:React.RefObject<Wallet|null>}){
  const [mint,setMint]=useState(''),[intent,setIntent]=useState<Intent|null>(null),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[ack,setAck]=useState(false);
  async function review(){setBusy(true);setNotice('');try{setIntent(await api({action:'intent',mint}));setAck(false);}catch(e){setNotice(e instanceof Error?e.message:'Review unavailable.');}finally{setBusy(false);}}
@@ -15,7 +16,7 @@ export function MoneroCreatorSignature({wallet}:{wallet:React.RefObject<Wallet|n
   const w=wallet.current;if(!intent||!ack||w?.publicKey?.toBase58()!==intent.creator)throw Error('Matching creator wallet and review required.');
   const fresh=await api({action:'intent',mint:intent.mint});
   if(fresh.messageHex!==intent.messageHex||fresh.creator!==intent.creator)throw Error('Publication intent changed. Review again.');
-  const bytes=Uint8Array.from(fresh.messageHex.match(/../g)||[],x=>parseInt(x,16));
+  const bytes=canonicalCreatorMessage(fresh,intent.mint,w.publicKey.toBase58());
   const result=await w.signMessage(bytes),signature='signature' in result?result.signature:result;
   await api({action:'signature',mint:intent.mint,signature:Array.from(signature,b=>b.toString(16).padStart(2,'0')).join('')});setNotice('Creator signature saved. Native-XMR publication remains separately locked.');
  }catch(e){setNotice(e instanceof Error?e.message:'Signing unavailable.');}finally{setBusy(false);}}
