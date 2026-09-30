@@ -59,23 +59,26 @@ function Progress({pct,label}:{pct:number;label:string}){
  return <div style={{display:'flex',flexDirection:'column',marginTop:30,width:640}}><div style={{display:'flex',justifyContent:'space-between'}}><Mono size={16}>{label}</Mono><Mono size={16} color={C.ink}>{pct>=100?'complete':`${pct.toFixed(1)}%`}</Mono></div><div style={{display:'flex',height:8,background:C.track,marginTop:10,width:'100%',borderRadius:8}}><div style={{display:'flex',height:8,width:`${Math.max(2,pct)}%`,background:C.orange,borderRadius:8}}/></div></div>;
 }
 const Line=({children}:{children:React.ReactNode})=><div style={{display:'flex',marginTop:36,fontSize:28,color:C.muted,maxWidth:700}}>{children}</div>;
+function ageText(seconds:number|null){if(seconds===null)return '';if(seconds<3600)return seconds<60?'just launched':`${Math.floor(seconds/60)}m old`;return seconds<86400?`${Math.floor(seconds/3600)}h old`:`${Math.floor(seconds/86400)}d old`;}
 async function tokenCard(t:ShareToken,kind:string){
- const image=await tokenImage(t.record.image),graduated=t.route==='cpmm',path=`grainpad.fun/token/${short(t.record.mint)}`;
- const state=graduated?'Graduated':t.route==='graduating'?'Migrating':t.route==='curve'?'On the curve':undefined;
+ const image=await tokenImage(t.record.image),graduated=t.route==='cpmm'||t.lifecycle==='raydium_live',path=`grainpad.fun/token/${short(t.record.mint)}`;
+ // Lifecycle and age come from #39's share data; masking tape marks the lifecycle state only.
+ const state=graduated?'Graduated':t.lifecycle==='migration_pending'?'Migrating':t.lifecycle==='curve_complete'?'Curve complete':t.lifecycle==='curve_live'?'On the curve':undefined;
+ const age=ageText(t.ageSeconds);
  // Native curve figures lead until graduation; external USD is used after it, or when no native figure exists.
  const nativeFirst=!graduated&&t.marketCapQuote!=null;
  const mcap=nativeFirst||t.usd?.marketCap==null?formatPrice(t.marketCapQuote,t.quote,3):formatUsd(t.usd.marketCap,3);
  const price=!graduated&&t.priceQuote!=null||t.usd?.price==null?formatPrice(t.priceQuote,t.quote):formatPrice(t.usd.price,'USD');
- if(kind==='receipt')return <Frame corner="Launch receipt" state={state} path={`${path}/receipt`}><Identity t={t} image={image} creator={false}/><Stats items={[['Launched',t.record.createdAt.slice(0,10)],['Pair',t.quote],['Creator',short(t.record.creator)]]}/><Line>On-chain facts, creator declarations and observed buys, kept apart on one public record.</Line></Frame>;
+ if(kind==='receipt')return <Frame corner="Launch receipt" state={state} path={`${path}/receipt`}><Identity t={t} image={image} creator={false}/><Stats items={[['Launched',t.record.createdAt.slice(0,10)],['Trades',t.trades===null?'—':String(t.trades)],['Creator',short(t.record.creator)]]}/><Line>On-chain facts, creator declarations and observed buys, kept apart on one public record.</Line></Frame>;
  if(kind==='room')return <Frame corner="Room · crew" state={state} path={`${path}/room`}><Identity t={t} image={image}/><Stats items={[['Tasks',String(t.crew.tasks)],['Contributors',String(t.crew.contributors)],['Paid · verified',String(t.crew.payments)]]}/><Line>Pick a task. Ship the work. Get credited under your wallet.</Line></Frame>;
  // USD from #39's share data carries its source; an external figure is labeled as such on the card.
  const ext=t.usd?.source==='geckoterminal'?' · GeckoTerminal':'';
  const stats:[string,string][]=graduated?[[`Market cap${t.usd?.marketCap!=null?ext:''}`,mcap],[`24h volume${ext}`,formatUsd(t.usd?.volume,3)],[`Price${t.usd?.price!=null?ext:''}`,price]]:[[nativeFirst||t.usd?.marketCap==null?'Curve MC':`Market cap${ext}`,mcap],['Price',price]];
  const hasFigures=stats.some(([,v])=>v!=='—');
- return <Frame corner={`Token · ${t.quote} pair`} state={state} path={path}>
+ return <Frame corner={`Token · ${t.quote} pair${age?` · ${age}`:''}`} state={state} path={path}>
   <Identity t={t} image={image}/>
   <Stats items={stats}/>
-  {!hasFigures&&<Line>Fresh on the curve. The first trade opens the record.</Line>}
+  {!hasFigures&&<Line>{t.trades===0?'No trades yet. The first trade opens the record.':'Fresh on the curve. Figures appear with the first indexed snapshot.'}</Line>}
   {t.progressPct!==null&&!graduated&&<Progress pct={t.progressPct} label={`Curve · ${t.raised} / ${t.target} ${t.quote}`}/>}
  </Frame>;
 }

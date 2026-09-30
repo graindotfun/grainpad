@@ -22,7 +22,7 @@ function Sparkline({points}:{points?:number[]|null}){
 }
 function DiscoveryCard({token,roomMode=false}:{token:CardToken;roomMode?:boolean}){
  const [copied,setCopied]=useState(false),[copyError,setCopyError]=useState(false);
- const lifecycle=token.state==='graduated'?'Graduated':token.state==='graduating'?'Migrating':token.state==='curve'&&token.progress!==null&&token.progress>=80?'Near graduation':null;
+ const lifecycle=token.lifecycle==='raydium_live'?'Graduated':token.lifecycle==='migration_pending'?'Migrating':token.lifecycle==='curve_complete'?'Curve complete':token.state==='curve'&&token.progress!==null&&token.progress>=80?'Near graduation':null;
  const progress=token.state==='graduated'?100:token.progress;
  return <article className={`discovery-card dc is-${token.state} ${token.official?'is-grain':''}`}>
  <a className="dc-main" href={`/token/${token.mint}${roomMode?'/room':''}`} aria-label={`Open ${token.name} ${roomMode?'Room':'token market'}`}>
