@@ -22,12 +22,12 @@ function literals(text){
  for(const m of text.matchAll(/\[\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\]/g)){if(orangeHsl(hsl(+m[1],+m[2],+m[3])))found.push({literal:m[0],index:m.index});}
  return found;
 }
-/** Literals that may stay, each with a reason. A literal is judged by the declaration it sits in. */
+/** Literals that may stay, each with a reason. A literal is judged by the declaration it sits in. The canonical orange
+ * itself is a literal only in the token and in lib/brand-colors.mjs (GRAIN_ORANGE, GRAIN_ORANGE_RGB for canvas code). */
 const TOKEN_DEFINITIONS=/--(grain-orange|grain-orange-ink|grain-warning)\s*:\s*$/;
 const ALLOWED=[
  {why:'token definitions (canonical orange, light-theme text ink, warning amber)',test:({before})=>TOKEN_DEFINITIONS.test(before)},
  {why:'GRAIN_ORANGE constant for renderers without CSS variables',test:({file})=>file==='lib/brand-colors.mjs'},
- {why:'hero canvas palette: canonical orange in rgb() form, parsed by the canvas',test:({file,literal,before})=>/^(rgba?\(|\[)\s*255[\s,]+102[\s,]+0\b/.test(literal)&&(/--grain-accent\s*:\s*$/.test(before)||/components\/genesis-(field|preview)\.tsx$/.test(file))},
  {why:'Solflare wallet icon: third-party brand colour',test:({line})=>/solflare/i.test(line)},
 ];
 function lineAt(text,index){const start=text.lastIndexOf('\n',index)+1,end=text.indexOf('\n',index);return text.slice(start,end<0?undefined:end);}
@@ -64,4 +64,26 @@ test('the light-theme ink orange is only used for text',()=>{
     const icon=prop==='color'&&/\bsvg\b|icon|glyph|chevron/.test(selector.split(',').pop());
     if(nonText||icon)offenders.push(`${file}: ${selector.slice(-80)} { ${prop}: ${value.trim()} }`);}}}
  assert.deepEqual(offenders,[],'Icons, borders, rails, rings and backgrounds use var(--grain-orange); ink is for text on light surfaces.');
+});
+
+/** Stylesheets in the order app/layout.tsx loads them; route stylesheets follow. */
+function cssInLoadOrder(){
+ const layout=readFileSync(join(root,'app/layout.tsx'),'utf8');
+ const ordered=[...layout.matchAll(/import\s+["']\.\/([\w./-]+\.css)["']/g)].map(m=>`app/${m[1]}`);
+ return [...ordered,...sources.filter(f=>f.endsWith('.css')&&!ordered.includes(f))];
+}
+test('a solid brand-orange paint is never faded into a second orange by opacity',()=>{
+ // Cascades each selector across the stylesheets: #ff6600 at opacity .75 renders as rgb(251,134,55), a new solid orange.
+ const solid=/^var\(--(grain-orange|xmr-orange)\)(\s*!important)?$/,state=new Map();
+ for(const file of cssInLoadOrder()){const text=readFileSync(join(root,file),'utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  for(const rule of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)){
+   for(const selector of rule[1].split(',').map(x=>x.trim().replace(/\s+/g,' ')).filter(Boolean)){
+    const st=state.get(selector)??{};
+    for(const decl of rule[2].split(';')){const i=decl.indexOf(':');if(i<0)continue;const prop=decl.slice(0,i).trim(),value=decl.slice(i+1).trim();
+     if(prop==='background'||prop==='background-color')st.bg=solid.test(value)?file:undefined;
+     else if(prop==='color')st.color=solid.test(value)?file:undefined;
+     else if(prop==='opacity')st.opacity={value:Number(value.replace('!important','')),file};}
+    state.set(selector,st);}}}
+ const offenders=[...state].filter(([,st])=>(st.bg||st.color)&&st.opacity&&st.opacity.value<1).map(([sel,st])=>`${sel}: --grain-orange from ${st.bg||st.color}, opacity ${st.opacity.value} from ${st.opacity.file}`);
+ assert.deepEqual(offenders,[],`Keep solid brand orange at opacity 1, or paint a transparent tint (color-mix with transparent) instead:\n${offenders.join('\n')}`);
 });
