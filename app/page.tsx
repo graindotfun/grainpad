@@ -13,6 +13,7 @@ import {TokenTape} from "@/components/token-tape";
 import {LaunchDisclosure} from "@/components/launch-disclosure";
 import {SiteFooter} from "@/components/site-footer";
 import type {PlatformStatus} from "@/lib/platform-policy";
+import {MONERO_NARRATIVE,moneroRecordSummary} from "@/lib/monero-record-status.mjs";
 
 export default function Home(){
  const overview=useSiteOverview();
@@ -41,7 +42,7 @@ export default function Home(){
   </section>
   <TokenDiscovery/>
   <section className="principles-section" aria-labelledby="principles-heading"><div className="principles-title"><p className="overline"><span className="section-number">03 /</span> CLEAR BY DESIGN</p><h2 id="principles-heading">The details<br/>are the difference<span>.</span></h2><a href="/docs" className="underlined-link">Read the Docs <ArrowUpRight size={17}/></a></div><div className="principles-list"><div><span>01</span><h3>No initial team allocation.</h3><p>This creation flow assigns no token supply to the team and makes no initial purchase.</p></div><div><span>02</span><h3>Conditions you can inspect.</h3><p>Platform configuration, fee destinations and activation status are available to check.</p></div><div><span>03</span><h3>Your signature. Your decision.</h3><p>Preparing a launch is separate from signing it. Nothing launches without your approval.</p></div></div></section>
-  <section className="research-card" aria-labelledby="research-heading"><div><p className="overline"><FlaskConical size={15}/> SEPARATE RESEARCH</p><h2 id="research-heading">Inside the lab.</h2><p>A p/xmr-inspired Monero regtest experiment. Test funds only, with no XMR backing or affiliation with Monero or p/xmr.</p></div><a className="underlined-link" href="/lab">Explore the research</a></section>
+  <section className="research-card" aria-labelledby="research-heading"><div><p className="overline"><FlaskConical size={15}/> MONERO LAB</p><h2 id="research-heading">Inside the lab.</h2><p>{MONERO_NARRATIVE} {moneroRecordSummary()} The lab shows the record format beside the earlier regtest-only p/xmr research. No XMR backing, no bridge, and no affiliation with Monero or p/xmr.</p></div><a className="underlined-link" href="/lab">Open the Monero lab</a></section>
   <section className="home-disclosures" aria-label="Launch disclosures"><LaunchDisclosure/></section>
   <section className="closing-cta" aria-labelledby="closing-heading"><div><p className="overline">YOUR NEXT BEGINNING</p><h2 id="closing-heading">One idea.<br/>Make it yours.</h2><p>Shape your token. Review the conditions. You make the call.</p></div><a href="/launch" className="action-button action-light">Create a token</a></section>
   <SiteFooter/>

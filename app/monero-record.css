@@ -1,0 +1,11 @@
+.monero-status{list-style:none;display:flex;flex-wrap:wrap;gap:10px;margin:0 0 28px;padding:0}
+.monero-status li{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:3px;padding:7px 11px;font:12px/1.4 var(--font-code);letter-spacing:.04em}
+.monero-status li.is-done svg{color:var(--grain-orange)}
+.monero-status li.is-pending{color:var(--muted-foreground);border-style:dashed}
+.monero-records .check-line{align-items:flex-start;line-height:1.6}
+.monero-records .check-line svg{flex:none;margin-top:4px}
+.monero-limits{margin:0;padding-left:18px;list-style:disc;font-size:14px;line-height:1.7;color:var(--muted-foreground)}
+.monero-limits li+li{margin-top:8px}
+.lab-history{margin-top:72px;padding-top:40px;border-top:1px solid var(--line)}
+.lab-history .page-heading h2{font-size:clamp(32px,3.6vw,52px);font-weight:500;letter-spacing:-.045em;line-height:1.08;margin:0}
+.docs-section-body .monero-limits{color:inherit;font-size:inherit;margin:0 0 12px}.docs-section-body .monero-limits+h3{margin-top:24px}
