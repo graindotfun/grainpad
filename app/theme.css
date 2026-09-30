@@ -20,7 +20,7 @@ html[data-theme="light"]{
  --secondary:#f1ede7;--secondary-foreground:#23211c;--muted:#f2eee8;--muted-foreground:#6d6556;
  --accent:#efeae2;--accent-foreground:#23211c;--destructive:#aa352c;--border:#dfd6c7;--input:#cdbfa6;
  --charcoal:#d5c8b3;--brand-line:#e1d9cb;--brand-muted:#6d6556;--brand-faint:#7b7261;--line:#e1d9cb;
- --light-soft:#f3f0ea;--light-ink:#23211c;--light-muted:#6d6556;--light-accent:#a64205;
+ --light-soft:#f3f0ea;--light-ink:#23211c;--light-muted:#6d6556;--light-accent:var(--grain-orange-ink);--grain-warning:#94601c;
 }
 html[data-theme="light"] .theme-toggle{background:#fff;border-color:#d8cdb9;color:#504a3f}
 html[data-theme="light"] .theme-toggle:hover{background:#f1ece5;border-color:#928774;color:#23211c}
@@ -37,8 +37,8 @@ html[data-theme="light"] .skip-content{background:#23211c;color:#fff}
 html[data-theme="light"] :is(.hero-description,.hero-status,.hero-baseline,.technology-note,.raydium-name>span,.action-text,.overline,.index-network,.index-footnote,.index-row small,.principles-list p,.closing-invitation>p:not(.overline),.footer-top>span,.footer-bottom p,.footer-bottom>span,.brand-footer){color:var(--light-muted)}
 html[data-theme="light"] :is(.action-text:hover,.hero-status:hover,.hero-baseline a:hover,.desktop-nav a:hover){color:var(--light-ink)}
 html[data-theme="light"] .hero-network{background:#f2eee8;border-color:#d6cab6;color:#4f493e}
-html[data-theme="light"] .hero-soft{-webkit-text-stroke-color:#bb4d08}
-html[data-theme="light"] .hero-soft:hover{color:#bb4d08}
+html[data-theme="light"] .hero-soft{-webkit-text-stroke-color:var(--grain-orange-ink)}
+html[data-theme="light"] .hero-soft:hover{color:var(--grain-orange-ink)}
 html[data-theme="light"] .hero-dot{-webkit-text-stroke:inherit}
 html[data-theme="light"] .hero-baseline>span>i{border-color:#918672}
 html[data-theme="light"] .technology-name{color:#4e483e}
@@ -66,7 +66,8 @@ html[data-theme="light"] .equation-rule i{background:#d5c9b5}
 html[data-theme="light"] .research-content .action-dark{background:#37332c;color:#fff}
 html[data-theme="light"] .research-content .action-dark:hover{background:#524b40}
 html[data-theme="light"] .footer-wordmark{color:var(--background);-webkit-text-stroke-color:#988e7c}
-html[data-theme="light"] .footer-wordmark>span{color:var(--light-accent)}
+/* Wordmark and headline periods are the brand mark: canonical orange in both themes. */
+html[data-theme="light"] .footer-wordmark>span{color:var(--grain-orange)}
 
 /* The canvas has its own theme palette; surrounding controls use the same ink. */
 html[data-theme="light"] .genesis-lab{background:#f5f2ed;border-color:#d8cdbb;box-shadow:0 18px 55px #514a3f10}
@@ -91,13 +92,13 @@ html[data-theme="light"] :is(.page-heading>p,.panel>p,.setup-note,.muted,.limita
 html[data-theme="light"] .page-heading .eyebrow{color:var(--light-accent)}
 html[data-theme="light"] .form-panel label{color:#514b40}
 html[data-theme="light"] :is(.form-panel input,.form-panel textarea,.form-panel select,.form-panel .upload-label,.curve-panel input){background:#faf9f7;color:#23211c;border-color:#cbbca3}
-html[data-theme="light"] :is(.form-panel input:focus,.form-panel textarea:focus,.form-panel select:focus,.curve-panel input:focus){background:#fff;border-color:#b94a04}
+html[data-theme="light"] :is(.form-panel input:focus,.form-panel textarea:focus,.form-panel select:focus,.curve-panel input:focus){background:#fff;border-color:var(--grain-orange-ink)}
 html[data-theme="light"] :is(input::placeholder,textarea::placeholder){color:#827867}
 html[data-theme="light"] .form-panel .upload-label:hover{background:#fff4ea}
 html[data-theme="light"] .upload-label small{color:#7a705f}
-html[data-theme="light"] .panel-title .step{color:#a54309;border-color:#d3a584;background:#fff4eb}
+html[data-theme="light"] .panel-title .step{color:var(--grain-orange-ink);border-color:#d3a584;background:#fff4eb}
 html[data-theme="light"] :is(.transaction-review,.section-two){border-color:#e1d9ca}
-html[data-theme="light"] .activation-note{background:#fff2e5;color:#774116}
+html[data-theme="light"] .activation-note{background:#fff2e5;color:var(--grain-orange-ink)}
 html[data-theme="light"] .feedback.error{background:#fff0ec;border-color:#dba79a;color:#9b3527}
 html[data-theme="light"] .feedback.success{background:#edf6ee;border-color:#a1c0a6;color:#35633e}
 html[data-theme="light"] .feedback{border-color:#d6cab6}
@@ -118,7 +119,7 @@ html[data-theme="light"] .lab-stats article{border-color:#dbd0be}
 html[data-theme="light"] .lab-stats :is(.eyebrow,article>span:last-child){color:#6f6657}
 html[data-theme="light"] .root-block{background:#f5f2ed;border-color:#ddd3c2}
 html[data-theme="light"] .root-block code{color:#5a5346}
-html[data-theme="light"] .math-result{color:#a64205}
+html[data-theme="light"] .math-result{color:var(--grain-orange-ink)}
 
 /* Shared wallet choices and status colors. */
 html[data-theme="light"] :is(.claim-wallet-heading h3,.claim-wallet-identity strong){color:#39342c}
@@ -148,7 +149,8 @@ html[data-theme="light"] .contract-bar{background:#efebe3;border-color:#e0d7c8;c
 html[data-theme="light"] :is(.contract-label>span,.contract-pending,.contract-network,.contract-explorer){color:#746b5c}
 html[data-theme="light"] .contract-address{color:#3f3a32}
 html[data-theme="light"] .contract-copy{color:#534c41;border-color:#ccbda4}
-html[data-theme="light"] .contract-copy:hover{color:#171714;border-color:#ff6600}
-html[data-theme="light"] :is(.section-number,.principles-list>div>span,.principles-title h2>span,.research-content h2>span,.economics-grid strong span){color:var(--light-accent)}
+html[data-theme="light"] .contract-copy:hover{color:#171714;border-color:var(--grain-orange)}
+html[data-theme="light"] :is(.section-number,.principles-list>div>span,.economics-grid strong span){color:var(--light-accent)}
+html[data-theme="light"] :is(.principles-title h2>span,.research-content h2>span){color:var(--grain-orange)}
 html[data-theme="light"] .solana-logo{filter:brightness(.4)}
-html[data-theme="light"] :is(button,a,input,textarea,select):focus-visible{outline-color:#a64205}
+html[data-theme="light"] :is(button,a,input,textarea,select):focus-visible{outline-color:var(--grain-orange-ink)}

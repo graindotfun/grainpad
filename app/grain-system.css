@@ -38,9 +38,9 @@ html[data-theme="light"]{--chart-grid:#23211c1f;--chart-tick:#7b7261;--chart-sur
 
 /* Stale data: values dim; one chip next to the headline explains why. */
 [data-stale] .stale-value{opacity:.5;transition:opacity .2s}
-.delay-chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border:1px dashed currentColor;border-radius:999px;color:#d9a441;font:500 10.5px/1 var(--font-code);letter-spacing:.03em;white-space:nowrap}
+.delay-chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border:1px dashed currentColor;border-radius:999px;color:var(--grain-warning);font:500 10.5px/1 var(--font-code);letter-spacing:.03em;white-space:nowrap}
 .delay-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-html[data-theme="light"] .delay-chip{color:#94601c}
+html[data-theme="light"] .delay-chip{color:var(--grain-warning)}
 
 /* Tabular numerals wherever figures line up. */
 :is(.market-module,.public-tape,.discovery-card,.token-swap,.reality-check) :is(dd,strong,output,.ledger-amount,.ledger-seq){font-variant-numeric:tabular-nums}
@@ -50,3 +50,11 @@ html[data-theme="light"] .delay-chip{color:#94601c}
  .footer-top{flex-wrap:wrap;row-gap:24px}
  .footer-top nav{flex-basis:100%;max-width:none;margin-left:0;display:grid;grid-template-columns:repeat(4,minmax(0,max-content));justify-content:start;gap:12px 32px}
 }
+
+/* /lab: the specification panel and the stats band share the panel inset (32px, 25px at ≤1000px, 23px at ≤430px),
+   so headings and copy line up with the panels above instead of sitting on the card edge. */
+.limitations>h2{margin-top:0}
+.lab-stats{padding-left:32px;padding-right:32px}
+@media(max-width:1000px){.lab-stats{padding-left:25px;padding-right:25px}.lab-stats article,.lab-stats article:first-child{padding:23px 18px}.lab-stats article:first-child{padding-left:0}}
+@media(max-width:700px){.lab-stats article,.lab-stats article:first-child{padding:22px 0}}
+@media(max-width:430px){.lab-stats{padding-left:23px;padding-right:23px}}

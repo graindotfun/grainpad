@@ -4,6 +4,7 @@ import albertSans from '@/lib/og/albert-sans-500.ttf?inline';
 import plexMono from '@/lib/og/ibm-plex-mono-500.woff?inline';
 import sphere from '@/lib/og/grain-sphere.jpg?inline';
 import {formatPrice,formatUsd} from '@/lib/price-format';
+import {GRAIN_ORANGE} from '@/lib/brand-colors.mjs';
 import {shareToken,validMint,type ShareToken} from '@/lib/share-data';
 import {crewRecord} from '@/lib/launch-room.mjs';
 import {database} from '@/lib/server-owner';
@@ -11,7 +12,7 @@ import {bucket} from '@/lib/server-utils';
 import {SITE} from '@/lib/site-config';
 export const dynamic='force-dynamic';
 /** Designed share cards. Data comes from D1 and existing caches only; rendering never reads the chain. */
-const C={paper:'#f3ecdf',ink:'#23211c',muted:'#6d6556',line:'#dccfb6',tape:'#e9dcbf',tapeInk:'#4b4232',orange:'#ff6600',track:'#e2d6bf'};
+const C={paper:'#f3ecdf',ink:'#23211c',muted:'#6d6556',line:'#dccfb6',tape:'#e9dcbf',tapeInk:'#4b4232',orange:GRAIN_ORANGE,track:'#e2d6bf'};
 const font=(uri:string)=>Buffer.from(uri.slice(uri.indexOf(',')+1),'base64');
 const fonts=[{name:'Albert',data:font(albertSans),weight:500 as const,style:'normal' as const},{name:'Plex',data:font(plexMono),weight:500 as const,style:'normal' as const}];
 const short=(s:string)=>`${s.slice(0,4)}…${s.slice(-4)}`;

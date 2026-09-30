@@ -180,7 +180,7 @@
 @media(prefers-reduced-motion:reduce){.token-market-page .token-swap{transition:none!important}}
 .market-stats .market-stat dd{text-align:left}
 .ledger-row.is-provisional{background:repeating-linear-gradient(-45deg,transparent 0 6px,#0000000a 6px 7px)}
-.ledger-row.is-provisional .ledger-seq{color:#94601c;letter-spacing:.04em}
+.ledger-row.is-provisional .ledger-seq{color:var(--grain-warning);letter-spacing:.04em}
 .coverage-note{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
 .creator-profile{padding:20px 22px 18px!important}
 .creator-profile .display-title{margin-bottom:14px}
