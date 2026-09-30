@@ -154,3 +154,5 @@
 
 .token-market-page .form-panel>.text-link{display:flex;margin-top:18px}.index-row.is-official{padding-left:16px}
 @media(max-width:700px){.index-row{grid-template-columns:minmax(0,1fr) 68px}.index-row.is-official{padding-right:8px}.index-view svg{flex:none}}
+/* Footer links stay whole; the row wraps instead of breaking labels. */
+.footer-top nav{flex-wrap:wrap;justify-content:flex-end;row-gap:10px;max-width:760px}.footer-top nav a{white-space:nowrap}.footer-top>span{white-space:nowrap}
