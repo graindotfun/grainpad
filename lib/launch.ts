@@ -6,7 +6,7 @@ import { Connection, PublicKey, Keypair, VersionedTransaction, TransactionMessag
 import {quoteAsset} from "./quote-assets.mjs";
 import {buildRewardsLaunch} from "./rewards-launch.mjs";
 import {readRewardsIssuanceState} from "./rewards-issuance.mjs";
-import {REWARDS_POLICY} from "./rewards-policy.mjs";
+import {isLaunchTaxBps} from "./rewards-policy.mjs";
 import { NETWORKS, type Network } from "./site-config";
 import {assertMintSuffix} from "./vanity-suffix";
 import {POLICY,grainpadPlatformId,decodePlatform,assertGrainpadPolicy} from "./platform-policy";
@@ -57,7 +57,7 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  if(maxLamports<=BigInt("0"))throw Error("Set a maximum launch cost before preparing the transaction.");
  const quote=quoteAsset(input.quoteAsset);
  if(quote.symbol!=='wXMR')throw Error('Holder reward launches must be paired with wXMR.');
- if(!REWARDS_POLICY.transferFeeBps.includes(input.taxBps!))throw Error('Choose an approved transfer-tax rate.');
+ if(!isLaunchTaxBps(input.taxBps))throw Error('Choose a transfer tax from 1.0% to 3.0% in 0.1% steps.');
  if(input.mintKeypair.publicKey.toBase58()==='Db91fm8AxxfoFySAp6Jg3KVcfZHUTAR7bJDJb5WLMgrn')throw Error('The official GRAIN purchase route needs a separate reviewed configuration.');
  const {platformId,platform,config,collector}=await readRewardsIssuanceState(connection);
  const mint=input.mintKeypair;
@@ -95,7 +95,7 @@ async function preflightOperation(reviewed:PreparedOperation,connection:Connecti
  if(p.targetAccount&&await connection.getAccountInfo(new PublicKey(p.targetAccount),'confirmed'))throw Error('Target already exists: creation skipped. Verify the existing account; do not create twice.');
  if(p.operationKind==='launch'){
   const state=await readRewardsIssuanceState(connection);
-  if(!p.rewards||p.rewards.collector!==String(state.collector)||!REWARDS_POLICY.transferFeeBps.includes(p.rewards.taxBps))throw Error('Rewards configuration changed. Prepare a new launch review.');
+  if(!p.rewards||p.rewards.collector!==String(state.collector)||!isLaunchTaxBps(p.rewards.taxBps))throw Error('Rewards configuration changed. Prepare a new launch review.');
  }
 
  // Always simulate the exact message again immediately before the user wallet prompt.
