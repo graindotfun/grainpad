@@ -18,7 +18,7 @@ body{background:var(--background)}
 .hero-actions{margin-top:28px;gap:28px}
 .action-button{border-radius:var(--button-radius);min-height:56px;padding:12px 15px 12px 22px;gap:26px;font-size:14px;font-weight:550}
 .action-button>svg{width:31px;height:31px;padding:6px;box-sizing:content-box;border-radius:50%;border:1px solid #17171730}
-.action-light{background:var(--grain-orange);color:#141414}.action-light:hover{background:var(--grain-orange-hover);transform:translateY(-2px)}
+.action-light{background:var(--grain-orange);color:#141414}.action-light:hover{background:var(--grain-orange);box-shadow:0 0 0 4px var(--grain-orange-ring);transform:translateY(-2px)}
 .action-text{color:#b6c1c7;font-size:13px}.hero-actions .action-text{gap:12px}.hero-status{color:#99a4ad;font-size:12px;margin-top:20px}
 .hero-baseline{margin-top:38px;padding:22px 0;color:#89969f;font-size:12px;letter-spacing:.1em}.hero-baseline>span{display:flex;align-items:center;gap:11px}.hero-baseline>span>i{height:12px;width:12px;border:1px solid #707d85;transform:rotate(45deg)}
 /* Interactive canvas is local artwork, never a market chart or a transaction state. */
