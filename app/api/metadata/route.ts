@@ -1,3 +1,4 @@
+import {canonicalTokenWebsite} from '@/lib/token-website.mjs';
 import {validateImage} from '@/lib/image-validation.mjs';
 import {env} from 'cloudflare:workers';
 import {buildMetadataPublication,assertPublicationBinding} from '@/lib/metadata-publication.mjs';
@@ -33,7 +34,7 @@ export async function POST(request:Request){
   assertMetadataText(draft);
   if(typeof draft.imageBase64!=="string"||draft.imageBase64.length>2_700_000)throw new Error("Choose an image below 2 MB.");
   if(!Number.isSafeInteger(draft.expires)||draft.expires<Date.now()||draft.expires>Date.now()+15*60*1000)throw new Error("Metadata signature expired. Please sign again.");
-  const website=metadataLink(draft.website,"website"),twitter=metadataLink(draft.twitter,"twitter"),telegram=draft.telegram===undefined?undefined:metadataLink(draft.telegram,"telegram");
+  const website=canonicalTokenWebsite(draft.mint);if(draft.website!==undefined&&draft.website!==''&&draft.website!==website)throw Error('Token website cannot be overridden.');const twitter=metadataLink(draft.twitter,"twitter"),telegram=draft.telegram===undefined?undefined:metadataLink(draft.telegram,"telegram");
   if(draft.declaredCreatorBuy!==undefined&&(!['SOL','wXMR'].includes(draft.quoteAsset||'')||typeof draft.declaredCreatorBuy!=='string'||!/^\d{1,12}(\.\d{1,9})?$/.test(draft.declaredCreatorBuy)))throw Error('Creator buy declaration must be an amount in the selected quote asset.');
   const payload=metadataPayload(draft);const hash=await sha256(payload);
   const owner=bs58.decode(draft.owner),sig=bs58.decode(body.signature);
@@ -41,7 +42,7 @@ export async function POST(request:Request){
   const bytes=Uint8Array.from(atob(draft.imageBase64),c=>c.charCodeAt(0));
   const {type}=validateImage(bytes,draft.imageType);
   const storage=bucket();const imageHash=await sha256(bytes);
-  const reserved=launchRegistrationIdentity({name:draft.name,symbol:draft.symbol,imageHash,website,twitter},draft.owner);if(reserved)throw Error(reserved);
+  const reserved=launchRegistrationIdentity({name:draft.name,symbol:draft.symbol,imageHash,website,twitter,mint:draft.mint},draft.owner);if(reserved)throw Error(reserved);
   const db=database();
   if(!await takeBudget(db,`metadata-ip:${ipHash}`,1,UPLOADS_PER_IP_HOUR,3_600_000))return fail(Error('Too many metadata uploads from this network. Try again later.'),429);
   if(!await takeBudget(db,'metadata-global',1,UPLOADS_PER_HOUR,3_600_000))return fail(Error('Metadata uploads are busy. Try again shortly.'),429);
@@ -53,7 +54,7 @@ export async function POST(request:Request){
   const persistence=await persistMetadata(publication,[bindings.METADATA_PRIMARY,bindings.METADATA_SECONDARY]);
   if(!await storage.head(`assets/${imageHash}`))await storage.put(`assets/${imageHash}`,bytes,{httpMetadata:{contentType:type,cacheControl:"public, max-age=31536000, immutable"}});
   if(!await storage.head(`assets/${metaHash}`))await storage.put(`assets/${metaHash}`,json,{httpMetadata:{contentType:"application/json",cacheControl:"public, max-age=31536000, immutable"}});
-  await storage.put(`owners/${metaHash}/${draft.owner}`,JSON.stringify({createdAt:new Date().toISOString(),metadata,uri:publication.uri,profile:publication.profile,imageHash,signedPayloadHash:hash,persistence}));
+  await storage.put(`owners/${metaHash}/${draft.owner}`,JSON.stringify({createdAt:new Date().toISOString(),mint:draft.mint,metadata,uri:publication.uri,profile:publication.profile,imageHash,signedPayloadHash:hash,persistence}));
   return Response.json({uri:publication.uri,metadataHash:metaHash,image:`${SITE.origin}/api/assets/${imageHash}`});
  }catch(error){return fail(error);}
 }

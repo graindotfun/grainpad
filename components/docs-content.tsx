@@ -9,6 +9,8 @@ import { KineticText } from "@/components/kinetic-text";
 import { DOCS, docsDate } from "@/lib/docs-config";
 import {WxmrWarning} from "@/components/wxmr-warning";
 import { SITE } from "@/lib/site-config";
+import { MoneroLiveRecord, MoneroProofLists, MoneroRecordStatus } from "@/components/monero-record-panel";
+import { GRN1, MONERO_NARRATIVE, MONERO_RECORD_FACTS, MONERO_RECORD_LIMITS, moneroProofStatus } from "@/lib/monero-record-status.mjs";
 import type { PlatformStatus } from "@/lib/platform-policy";
 
 const sections = [
@@ -16,7 +18,8 @@ const sections = [
   ["launch-parameters", "Launch parameters"], ["fees", "Fees"],
   ["graduation", "Graduation"], ["grain-and-treasury", "$GRAIN and Treasury"],
   ["trust-model", "How Grainpad is managed"], ["verification", "Verification"],
-  ["pxmr-research", "p/xmr research"], ["official-links", "Official links"],
+  ["monero-records", "Monero launch records"], ["pxmr-research", "Early p/xmr research"],
+  ["official-links", "Official links"],
 ] as const;
 type ReadState = "loading" | "ready" | "unavailable";
 type TokenRecord = { mint: string };
@@ -81,7 +84,8 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
       <article className="docs-article" aria-label="Grainpad technical documentation">
         <Section index={0}>
           <p>Grainpad is a Solana token launchpad built on Raydium LaunchLab, inspired by p/xmr. Grainpad does not have its own bonding-curve program. Tokens launch on a bonding curve and are configured to migrate to a Raydium CPMM pool at graduation.</p>
-          <p>Grainpad is not a Monero protocol, is not backed by XMR, and is not affiliated with Monero or the p/xmr author. The Solana launchpad and the <a href="#pxmr-research">p/xmr research</a> are separate projects.</p>
+          <p>{MONERO_NARRATIVE} See <a href="#monero-records">Monero launch records</a> for what is recorded and its current status.</p>
+          <p>Grainpad is not backed by XMR, operates no bridge, and is not affiliated with Monero or the p/xmr author. The earlier <a href="#pxmr-research">p/xmr research</a> is a separate, regtest-only prototype.</p>
         </Section>
         <Section index={1}>
           <ol className="docs-flow"><li>Set the token name, symbol, description and artwork, then connect Phantom or Solflare.</li><li>Generate the mint address and approve the metadata message. This message publishes the token identity; it does not authorize a payment.</li><li>Review the simulated creation cost, your spending limit, the mint address and current launch conditions.</li><li>Sign the launch transaction in your wallet. Grainpad verifies the on-chain pool and metadata before adding the token to its directory.</li></ol>
@@ -131,14 +135,24 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
           <p>The <code>grn</code> suffix is enforced only for launches through grainpad.fun. It is an identity convention, not authentication. Anyone can generate an address ending in <code>grn</code>. Verify the token’s pool, its platform configuration and its Grainpad listing.</p>
         </Section>
         <Section index={8}>
-          <p>Separately from the launchpad, Grainpad maintains a research implementation of the p/xmr registry. It has been tested on Monero regtest only, using test funds.</p>
-          <p>There is no live Monero engine, native XMR settlement or XMR redemption. The research does not back $GRAIN or any token launched on Solana. An independent Grainpad curve, GRAIN as a quote asset and holder discounts are research only. We do not claim the same protocol or exact curve as p/xmr.</p>
-          <p><a href="/rewards">wXMR holder rewards and tax-funded GRAIN burns</a> are required before token launches open. They are being implemented and are not active yet.</p>
-          <a className="docs-related" href="/lab">Explore the research, source and test records</a>
-          <p>Read the <a href="/roadmap">Monero roadmap</a> and the <a href="/transparency">donation commitment and public receipts</a>.</p>
+          <p>{MONERO_NARRATIVE}</p>
+          <MoneroRecordStatus/>
+          <MoneroLiveRecord/>
+          <ul className="monero-limits">{MONERO_RECORD_FACTS.map(line => <li key={line}>{line}</li>)}</ul>
+          <h3>What it is not</h3>
+          <ul className="monero-limits">{MONERO_RECORD_LIMITS.map(line => <li key={line}>{line}</li>)}</ul>
+          <div className="docs-callout"><strong>Proof status</strong><MoneroProofLists/><p>{moneroProofStatus().caveat}</p></div>
+          <a className="docs-related" href={GRN1.spec} target="_blank" rel="noreferrer">Read the {GRN1.magic} v{GRN1.version} specification</a>
         </Section>
         <Section index={9}>
-          <p>The official GRAIN CA is published only on grainpad.fun and @GrainXMR after verification. Until then, no official CA is published. Display or trading support on Axiom, GMGN, Photon, Padre, Dexscreener and other external interfaces is not guaranteed.</p><p>Primary references: <a href="https://github.com/raydium-io/raydium-idl/blob/master/raydium_launchpad/raydium_launchpad.json" target="_blank" rel="noreferrer">LaunchLab IDL</a>, <a href="https://docs.raydium.io/products/launchlab/platform-config" target="_blank" rel="noreferrer">platform configuration</a>, <a href="https://docs.raydium.io/products/launchlab/instructions" target="_blank" rel="noreferrer">migration instructions</a>.</p><ul className="docs-links"><li><span>Website</span><a href={SITE.origin} target="_blank" rel="noreferrer">grainpad.fun</a></li><li><span>X / Twitter</span><a href={SITE.twitter} target="_blank" rel="noreferrer">x.com/GrainXMR</a></li><li><span>Public record</span><a href="/treasury">Treasury</a></li><li><span>Configuration</span><a href="/platform">Platform status</a></li><li><span>Research</span><a href="/lab">p/xmr research lab</a></li></ul>
+          <p>Before the Monero record layer, Grainpad built a research implementation of the p/xmr registry. It is historical research, not the production record path. It ran on Monero regtest (fakechain) only, using test funds, with no mainnet execution and no XMR20 compatibility.</p>
+          <p>There is no live Monero engine, native XMR settlement or XMR redemption. The research does not back $GRAIN or any token launched on Solana. An independent Grainpad curve, GRAIN as a quote asset and holder discounts are research only. We do not claim the same protocol or exact curve as p/xmr.</p>
+          <p><a href="/rewards">wXMR holder rewards and tax-funded GRAIN burns</a> are required before token launches open. They are being implemented and are not active yet.</p>
+          <a className="docs-related" href="/lab">Open the Monero lab: records and early research</a>
+          <p>Read the <a href="/roadmap">Monero roadmap</a> and the <a href="/transparency">donation commitment and public receipts</a>.</p>
+        </Section>
+        <Section index={10}>
+          <p>The official GRAIN CA is published only on grainpad.fun and @GrainXMR after verification. Until then, no official CA is published. Display or trading support on Axiom, GMGN, Photon, Padre, Dexscreener and other external interfaces is not guaranteed.</p><p>Primary references: <a href="https://github.com/raydium-io/raydium-idl/blob/master/raydium_launchpad/raydium_launchpad.json" target="_blank" rel="noreferrer">LaunchLab IDL</a>, <a href="https://docs.raydium.io/products/launchlab/platform-config" target="_blank" rel="noreferrer">platform configuration</a>, <a href="https://docs.raydium.io/products/launchlab/instructions" target="_blank" rel="noreferrer">migration instructions</a>.</p><ul className="docs-links"><li><span>Website</span><a href={SITE.origin} target="_blank" rel="noreferrer">grainpad.fun</a></li><li><span>X / Twitter</span><a href={SITE.twitter} target="_blank" rel="noreferrer">x.com/GrainXMR</a></li><li><span>Public record</span><a href="/treasury">Treasury</a></li><li><span>Configuration</span><a href="/platform">Platform status</a></li><li><span>Research</span><a href="/lab">Monero lab</a></li></ul>
         </Section>
       </article>
     </div>

@@ -1,8 +1,9 @@
 import {PLATFORM_SETTINGS} from "./platform-settings.mjs";
 import {OFFICIAL_ARTWORK} from "./official-artwork.mjs";
+import {MONERO_NARRATIVE,moneroRecordSummary} from "./monero-record-status.mjs";
 export const SITE = {
   name: "Grainpad",
-  subtitle: "p/xmr research",
+  subtitle: "Monero launch records",
   projectWallet: PLATFORM_SETTINGS.founder,
   origin: "https://grainpad.fun",
   twitter: "https://x.com/GrainXMR",
@@ -10,7 +11,7 @@ export const SITE = {
   tokenName: "Grainpad",
   tokenSymbol: "GRAIN",
   maxCost: "0.022",
-  description: "Grainpad combines a Solana launch interface using Raydium LaunchLab with an open p/xmr Monero registry experiment. GRAIN is the project token, with no XMR backing or claim on Monero test reserves.",
+  description: `Grainpad is a Solana launchpad on Raydium LaunchLab. ${MONERO_NARRATIVE} ${moneroRecordSummary()} GRAIN is the project token, with no XMR backing.`,
 };
 export function identityPolicy(owner: string) {
   return {owner, admin: PLATFORM_SETTINGS.admin, artworkHash: OFFICIAL_ARTWORK.sha256, siteHost: new URL(SITE.origin).hostname, twitterHandle: SITE.twitterHandle};
