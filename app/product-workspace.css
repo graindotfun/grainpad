@@ -12,3 +12,4 @@
 .crew-task.crew-paid{border-left-color:var(--foreground)}.crew-task.crew-closed{border-left-color:var(--product-line);opacity:.85}
 .crew-recipient{margin:14px 0;padding:12px;border:1px dashed var(--product-line);background:var(--product-wash)}.crew-recipient .address-line{margin:6px 0 10px}
 @media (max-width:720px){.crew-legend,.crew-pipeline{grid-template-columns:minmax(0,1fr)}.crew-pipeline li[data-done=true]{box-shadow:inset 2px 0 0 var(--xmr-orange)}}
+.kernel-note{margin:40px 0 32px;font:.75rem var(--font-code);color:var(--product-muted);opacity:.7}
