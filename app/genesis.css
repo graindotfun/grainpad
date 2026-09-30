@@ -30,7 +30,7 @@ body{background:var(--background)}
 .genesis-canvas{display:block;width:100%;height:100%;position:absolute;inset:0;visibility:hidden}
 .genesis-canvas[data-ready=true]{visibility:visible}
 .genesis-lattice{position:absolute;inset:0;background-image:linear-gradient(#9faeba09 1px,transparent 1px),linear-gradient(90deg,#9faeba09 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(0deg,#000,transparent 80%)}
-.genesis-stage{--grain-ink:rgb(220,225,226);--grain-charcoal:rgb(100,110,116);--grain-accent:rgb(255,102,0);--grain-shadow:rgba(127,139,145,.25)}
+.genesis-stage{--grain-ink:rgb(220,225,226);--grain-charcoal:rgb(100,110,116);--grain-accent:var(--grain-orange);--grain-shadow:rgba(127,139,145,.25)}
 .genesis-preview{position:absolute;inset:0;pointer-events:none}
 .genesis-preview-grains{position:absolute;height:79%;width:auto;aspect-ratio:1;left:50%;top:6.5%;transform:translateX(-50%);overflow:visible}
 .genesis-preview-node{position:absolute;left:calc(22% - 5px);top:calc(91% - 5px);width:10px;height:10px}

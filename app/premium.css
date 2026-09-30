@@ -101,7 +101,7 @@ html[data-theme=light] .preview-panel,.preview-panel{--preview-surface:#eee8dc;b
 .preview-panel :is(.eyebrow,.ticker,.preview-description,.muted,p,dt,.proof-address code){color:#605b52}
 html[data-theme=light] .claim-fields input,html[data-theme=light] .claim-fields select{background:var(--field-bg);color:var(--foreground);border-color:var(--field-border)}
 html[data-theme=light] .hero-features>*{background:var(--card)}
-html[data-theme=light] .genesis-stage{--grain-ink:rgb(51,46,38);--grain-charcoal:rgb(114,102,88);--grain-accent:rgb(255,102,0);--grain-shadow:rgba(74,61,43,.24)}
+html[data-theme=light] .genesis-stage{--grain-ink:rgb(51,46,38);--grain-charcoal:rgb(114,102,88);--grain-accent:var(--grain-orange);--grain-shadow:rgba(74,61,43,.24)}
 
 @media(max-width:1280px){.desktop-nav{gap:16px}.site-header{gap:18px}.site-header-actions{gap:7px}}
 @media(max-width:760px){
