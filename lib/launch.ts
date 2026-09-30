@@ -10,7 +10,6 @@ import {isLaunchTaxBps} from "./rewards-policy.mjs";
 import { NETWORKS, type Network } from "./site-config";
 import {assertMintSuffix} from "./vanity-suffix";
 import {POLICY,grainpadPlatformId,decodePlatform,assertGrainpadPolicy} from "./platform-policy";
-import {LEGACY_PLATFORM_RATE} from "./fee-policy.mjs";
 
 import {assertTokenCreationEnabled} from './platform-settings.mjs';
 import {decodeReviewedTransaction,inspectWalletTransaction,sameSimulatedAccount} from './wallet-transaction-policy.mjs';
@@ -117,7 +116,7 @@ async function preflightOperation(reviewed:PreparedOperation,connection:Connecti
  if(p.operationKind==='platform'){
   const {rpcAccount}=await import('./launch-rules.mjs');const post=rpcAccount(sim.value.accounts?.[1]);
   if(!post?.owner.equals(new PublicKey(POLICY.program)))throw Error('NO-GO: simulated platform owner changed.');
-  assertGrainpadPolicy(decodePlatform(post.data),{platformRate:LEGACY_PLATFORM_RATE});
+  assertGrainpadPolicy(decodePlatform(post.data));
   if(sim.value.unitsConsumed!==p.simulationUnits)throw Error('NO-GO: setup compute changed; review before signing.');
  }
  const after=sim.value.accounts?.[0]?.lamports,fee=(await connection.getFeeForMessage(p.transaction.message,'confirmed')).value;
@@ -189,7 +188,7 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
  if(p.operationKind==='platform'){
   const {rpcAccount}=await import('./launch-rules.mjs');const post=rpcAccount(finalSim.value.accounts?.[1]);
   if(!post?.owner.equals(new PublicKey(POLICY.program)))throw Error('NO-GO: post-sign simulated platform owner changed.');
-  assertGrainpadPolicy(decodePlatform(post.data),{platformRate:LEGACY_PLATFORM_RATE});
+  assertGrainpadPolicy(decodePlatform(post.data));
   if(!sameSimulatedAccount(sim.value.accounts?.[1],finalSim.value.accounts?.[1]))throw Error('NO-GO: returned transaction changed the exact simulated PlatformConfig state.');
   const {SETUP_CAP,SETUP_TOTAL,SETUP_DEBIT,classifySetup,readSetup}=await import('./platform-setup.mjs');
   const returnedAccounts=finalSim.value.accounts?.slice(1);
