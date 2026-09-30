@@ -63,10 +63,11 @@ test('market snapshot batches curve accounts once, rejects foreign platform and 
  pool.platformId=PublicKey.default;await assert.rejects(readMarketSnapshot(call,mint.toBase58(),platform.toBase58(),config.toBase58()),/not launched via Grainpad/);pool.platformId=platform;
  pool.status=1;view=await readMarketSnapshot(call,mint.toBase58(),platform.toBase58(),config.toBase58());assert.equal(view.route,'graduating');
  pool.status=2;reads=0;
- const cp=s.CpmmPoolInfoLayout.decode(Buffer.alloc(s.CpmmPoolInfoLayout.span));Object.assign(cp,{configId:pf.cpConfigId,mintA:mint,mintB:NATIVE_MINT,mintProgramA:TOKEN_PROGRAM_ID,mintProgramB:TOKEN_PROGRAM_ID});
+ const cp=s.CpmmPoolInfoLayout.decode(Buffer.alloc(s.CpmmPoolInfoLayout.span));Object.assign(cp,{configId:pf.cpConfigId,mintA:mint,mintB:NATIVE_MINT,mintProgramA:TOKEN_PROGRAM_ID,mintProgramB:TOKEN_PROGRAM_ID,mintDecimalA:6,mintDecimalB:9});
  const cc=s.CpmmConfigInfoLayout.decode(Buffer.alloc(s.CpmmConfigInfoLayout.span));
- const graduated=async()=>reads===0?call():(reads++,{value:[encode(s.CpmmPoolInfoLayout,cp,s.CREATE_CPMM_POOL_PROGRAM),encode(s.CpmmConfigInfoLayout,cc,s.CREATE_CPMM_POOL_PROGRAM)]});
- view=await readMarketSnapshot(graduated,mint.toBase58(),platform.toBase58(),config.toBase58());assert.equal(reads,2);assert.equal(view.route,'cpmm');assert.notEqual(view.pool,view.launchPool);
+ const tokenAccount=(mintKey,amount)=>{const data=Buffer.alloc(165);mintKey.toBuffer().copy(data,0);data.writeBigUInt64LE(amount,64);return {owner:TOKEN_PROGRAM_ID.toBase58(),data:[data.toString('base64'),'base64']};};
+ const graduated=async()=>{reads++;if(reads===1)return {context:{slot:100},value:[encode(s.LaunchpadPool,pool),encode(s.LaunchpadConfig,cfg),encode(s.PlatformConfig,pf),{owner:TOKEN_PROGRAM_ID.toBase58()}]};if(reads===2)return {value:[encode(s.CpmmPoolInfoLayout,cp,s.CREATE_CPMM_POOL_PROGRAM),encode(s.CpmmConfigInfoLayout,cc,s.CREATE_CPMM_POOL_PROGRAM)]};return {value:[tokenAccount(mint,2_000_000n),tokenAccount(NATIVE_MINT,1_000_000_000n)]};};
+ view=await readMarketSnapshot(graduated,mint.toBase58(),platform.toBase58(),config.toBase58());assert.equal(reads,3);assert.equal(view.route,'cpmm');assert.notEqual(view.pool,view.launchPool);assert.equal(view.quoteStats.price,0.5);
 });
 
 test('server cache registers its entire operation with Worker waitUntil before yielding',async()=>{
