@@ -11,7 +11,8 @@ import { SITE } from "@/lib/site-config";
 import { launchRegistrationIdentity } from "@/lib/launch-registration.mjs";
 import { bucket, fail, limitedJSON, sameOrigin, sha256 } from "@/lib/server-utils";
 import { assertMetadataText,metadataMessage,metadataPayload,metadataLink,type MetadataDraft } from "@/lib/metadata-shared";
-import { TOKEN_CREATION_ENABLED } from "@/lib/platform-settings.mjs";
+import { TOKEN_CREATION_ENABLED, PLATFORM_SETTINGS } from "@/lib/platform-settings.mjs";
+import { PILOT_SIGNING_ENABLED, PILOT_APPROVED } from "@/lib/pilot-review.mjs";
 import { takeBudget } from "@/lib/shared-market-cache.mjs";
 // Throwaway keys make the per-wallet quota unbounded; these atomic D1 counters bound one network and the whole site.
 const UPLOADS_PER_IP_HOUR=12,UPLOADS_PER_HOUR=240;
@@ -19,10 +20,13 @@ export async function POST(request:Request){
  try{
   sameOrigin(request);
   // Metadata exists only to create a token; while creation is locked it is unauthenticated public storage.
-  if(!TOKEN_CREATION_ENABLED)return fail(Error("Token creation is locked pending separate approval. Metadata uploads are closed."),403);
+  // The one exception: the admin's own GRAINU pilot metadata, only while pilot signing is approved.
+  const pilotOnly=!TOKEN_CREATION_ENABLED;
+  if(pilotOnly&&!PILOT_SIGNING_ENABLED)return fail(Error("Token creation is locked pending separate approval. Metadata uploads are closed."),403);
   const ipHash=await sha256(requestClientKey(request));
   if(!await consumeRequestBudget(database(),'upload-attempts-global',200)||!await consumeRequestBudget(database(),'upload-attempts-ip:'+ipHash,30))return fail(Error('Upload request limit reached. Retry shortly.'),429);
   const body=await limitedJSON(request,2_800_000);const draft=body.draft as MetadataDraft;
+  if(pilotOnly&&(draft?.owner!==PLATFORM_SETTINGS.admin||draft?.symbol!==PILOT_APPROVED.symbol))return fail(Error("Only the approved GRAINU pilot metadata can be uploaded while token creation is locked."),403);
   if(!draft||typeof draft.name!=="string"||!draft.name.trim()||new TextEncoder().encode(draft.name.trim()).length>32)throw new Error("Name must be 1–32 UTF-8 bytes.");
   if(typeof draft.symbol!=="string"||!/^[$A-Za-z0-9]{1,10}$/.test(draft.symbol))throw new Error("Ticker must have 1–10 letters or digits.");
   if(typeof draft.description!=="string"||draft.description.length>1000)throw new Error("Description is too long.");
