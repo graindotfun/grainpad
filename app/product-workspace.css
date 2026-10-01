@@ -24,3 +24,4 @@
 .room-updates{margin:0 0 20px}.room-strip-title{font-size:.875rem;margin:0 0 6px;color:var(--product-muted)}.room-partial,.room-closed-line{margin:12px 0 0}
 .room-thread>.product-actions{margin-top:18px}.room-sub+.room-sub{padding-top:14px;border-top:1px solid var(--product-line)}.room-stray{margin-top:14px}
 .crew-paid-field{margin:4px 0 12px}
+.crew-funded{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0 0}.crew-funded small{font-size:.8125rem}
