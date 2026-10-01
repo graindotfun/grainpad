@@ -1,7 +1,7 @@
 import {env} from 'cloudflare:workers';
 import {database} from '@/lib/server-owner';
 import {bucket} from '@/lib/server-utils';
-import {archiveXAvatar,clearOauthCookie,completeXAuthorization,consumeOauthState,xOauthConfig,xRedirectUri} from '@/lib/x-oauth.mjs';
+import {archiveXAvatar,clearOauthCookie,completeXAuthorization,consumeOauthState,xOauthConfig,xRedirectUri,xOauthFailureDetails} from '@/lib/x-oauth.mjs';
 import {linkXAccount} from '@/lib/wallet-identity.mjs';
 export const dynamic='force-dynamic';
 function go(path:string,secure:boolean){
@@ -29,7 +29,9 @@ export async function GET(request:Request){
   return go(`/u/${username}?x=connected`,secure);
  }catch(error){
   const message=error instanceof Error?error.message:'';
-  const code=/suspended/i.test(message)?'x-suspended':/already connected/i.test(message)?'x-taken':/Disconnect/i.test(message)?'x-replace':/Claim/i.test(message)?'x-profile':'x-failed';
+  const detail=xOauthFailureDetails(error);
+  if(detail)console.warn('grainpad_x_oauth_failure',detail);
+  const code=detail?.code||(/expired/i.test(message)?'x-callback':/suspended/i.test(message)?'x-suspended':/already connected/i.test(message)?'x-taken':/Disconnect/i.test(message)?'x-replace':/Claim/i.test(message)?'x-profile':'x-failed');
   return fail(code);
  }
 }
