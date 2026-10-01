@@ -39,3 +39,13 @@ test('snapshot is immutable when wallet mutates the input object',()=>{
 test('full account comparison catches data, owner, lamports and executable changes',()=>{
  const a={lamports:5445760,owner:'platform-program',executable:false,data:['AQI=','base64']};assert(sameSimulatedAccount(a,structuredClone(a)));for(const b of [{...a,lamports:1},{...a,owner:'other'},{...a,executable:true},{...a,data:['AQM=','base64']}])assert(!sameSimulatedAccount(a,b));assert(sameSimulatedAccount(null,{lamports:0,data:['','base64'],executable:false,owner:PublicKey.default.toBase58()}));
 });
+
+test('explicit SOL scope may omit zero-price only when frozen review also omitted price; default stays strict',()=>{
+ const m=message();m.instructions=m.instructions.filter(ix=>!(ix.programId.equals(ComputeBudgetProgram.programId)&&ix.data[0]===3));const tx=compile(m),before=decodeReviewedTransaction(tx);
+ assert.equal(inspectWalletTransaction(before,tx).valid,false);assert.equal(inspectWalletTransaction(before,tx,undefined,{allowDefaultZeroPrice:true}).valid,true);
+ assert.equal(inspectWalletTransaction(before,tx,undefined,{allowDefaultZeroPrice:'true'}).valid,false);
+ assert.equal(inspectWalletTransaction(originalSnapshot,tx,undefined,{allowDefaultZeroPrice:true}).valid,false);
+ const noLimit=message();noLimit.instructions=noLimit.instructions.filter(ix=>!ix.programId.equals(ComputeBudgetProgram.programId));const none=compile(noLimit);assert.equal(inspectWalletTransaction(decodeReviewedTransaction(none),none,undefined,{allowDefaultZeroPrice:true}).valid,false);
+ const changed=TransactionMessage.decompile(tx.message);changed.instructions[0]=ComputeBudgetProgram.setComputeUnitLimit({units:300000});assert.equal(inspectWalletTransaction(before,compile(changed),undefined,{allowDefaultZeroPrice:true}).valid,false);
+ const duplicate=TransactionMessage.decompile(tx.message);duplicate.instructions.push(ComputeBudgetProgram.setComputeUnitLimit({units:200000}));assert.equal(inspectWalletTransaction(before,compile(duplicate),undefined,{allowDefaultZeroPrice:true}).valid,false);
+});

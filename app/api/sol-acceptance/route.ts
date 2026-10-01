@@ -1,0 +1,5 @@
+import {sameOrigin,limitedJSON,fail,sha256} from '@/lib/server-utils';
+import {requireRpcSession} from '@/lib/server-rpc-session';
+import {consumeRequestBudget} from '@/lib/abuse-budget.mjs';import {requestClientKey} from '@/lib/client-key.mjs';import {database} from '@/lib/server-owner';
+import {prepareUnsignedSolAcceptance} from '@/lib/server-sol-trade';
+export async function POST(request:Request){try{sameOrigin(request);await requireRpcSession(request);const client=await sha256(requestClientKey(request));if(!await consumeRequestBudget(database(),'sol-acceptance:'+client,3)||!await consumeRequestBudget(database(),'sol-acceptance-global',6))return fail(Error('Unsigned simulation limit reached. Retry shortly.'),429);const input=await limitedJSON(request,100);if(Object.keys(input).length!==1||typeof input.case!=='string')throw Error('Exact unsigned case required.');return Response.json(await prepareUnsignedSolAcceptance(input.case),{headers:{'Cache-Control':'no-store'}});}catch(e){return fail(e);}}

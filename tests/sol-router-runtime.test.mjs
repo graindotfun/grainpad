@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {fetchSolRouterJSON} from '../lib/sol-trade-prepare.mjs';
+test('Cloudflare-compatible manual redirects are rejected before parsing a response',async()=>{let parsed=false;for(const status of [301,302,303,307,308])await assert.rejects(fetchSolRouterJSON(async(url,options)=>{assert.equal(options.redirect,'manual');return {status,ok:false,text:async()=>{parsed=true;throw Error('must not parse');}};},'https://api.jup.ag/swap/v1/quote'),/redirected/);assert.equal(parsed,false);});
+test('successful runtime uses explicit manual mode and preserves receiver binding through wrapper',async()=>{const fake={marker:true,async fetch(url,options){assert.equal(this.marker,true);assert.equal(options.redirect,'manual');return {status:200,ok:true,text:async()=>'{"ok":true}'};}};assert.deepEqual(await fetchSolRouterJSON((...args)=>fake.fetch(...args),'https://api.jup.ag/swap/v1/quote'),{ok:true});});

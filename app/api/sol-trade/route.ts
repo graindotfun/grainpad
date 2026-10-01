@@ -1,0 +1,4 @@
+import {sameOrigin,limitedJSON,fail,sha256} from '@/lib/server-utils';
+import {requireRpcSession} from '@/lib/server-rpc-session';import {prepareServerSolTrade} from '@/lib/server-sol-trade';
+import {consumeRequestBudget} from '@/lib/abuse-budget.mjs';import {requestClientKey} from '@/lib/client-key.mjs';import {database} from '@/lib/server-owner';
+export async function POST(request:Request){try{sameOrigin(request);await requireRpcSession(request);const client=await sha256(requestClientKey(request));if(!await consumeRequestBudget(database(),'sol-review:'+client,5))return fail(Error('Too many SOL trade reviews. Retry shortly.'),429);const input=await limitedJSON(request,2000);const review=await prepareServerSolTrade(input);return Response.json(review,{headers:{'Cache-Control':'no-store'}});}catch(e){return fail(e);}}
