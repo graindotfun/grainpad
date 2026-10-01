@@ -4,7 +4,8 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
-import {applyIdentity,assertSignedWallet,connectXMessage,identityCards,identityMessage,linkXAccount,normalizeUsername,publicProfile,readPublicIdentity,safeAvatarPath,verifyConnectXSignature,verifyIdentitySignature} from '../lib/wallet-identity.mjs';
+import {PLATFORM_SETTINGS} from '../lib/platform-settings.mjs';
+import {applyIdentity,lookupUsername,assertSignedWallet,connectXMessage,identityCards,identityMessage,linkXAccount,normalizeUsername,publicProfile,readPublicIdentity,safeAvatarPath,verifyConnectXSignature,verifyIdentitySignature} from '../lib/wallet-identity.mjs';
 import {archiveXAvatar,authorizationUrl,completeXAuthorization,consumeOauthState,createPkce,oauthCookie,safeXImage,xOauthConfig,xRedirectUri,X_OAUTH_COOKIE} from '../lib/x-oauth.mjs';
 
 function database(){
@@ -51,6 +52,12 @@ test('username rules reject length, case, reserved names, confusables and homogl
  assert.throws(()=>normalizeUsername('Satoshi'),/lowercase/);
  assert.throws(()=>normalizeUsername('grainpad'),/reserved/);
  assert.throws(()=>normalizeUsername('gr4inpad'),/reserved/);
+ const admin=PLATFORM_SETTINGS.admin;
+ assert.equal(normalizeUsername('grainpad',{wallet:admin}).username,'grainpad');
+ assert.throws(()=>normalizeUsername('grainpad',{wallet:wallet().address}),/reserved/);
+ assert.throws(()=>normalizeUsername('gr4inpad',{wallet:admin}),/reserved/);
+ assert.throws(()=>normalizeUsername('admin',{wallet:admin}),/reserved/);
+ assert.equal(lookupUsername('GrainPad'),'grainpad');
  assert.throws(()=>normalizeUsername('adm1n'),/reserved/);
  assert.throws(()=>normalizeUsername('аdmin'),/not allowed|lowercase/);
  assert.throws(()=>normalizeUsername('admin\u200b'),/not allowed/);

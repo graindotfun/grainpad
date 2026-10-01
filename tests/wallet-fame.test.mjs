@@ -107,7 +107,7 @@ test('a guarded write fails whole when eligibility is lost between read and writ
  const db=database(),target=wallet(),voter=wallet();profile(db,target);profile(db,voter,{x:true});
  const {payload,signature}=vote(voter,target,1);
  const real=db.prepare.bind(db);let armed=true;
- db.prepare=sql=>{const q=real(sql);if(armed&&/FROM wallet_fame WHERE voter/.test(sql)&&/^SELECT value/.test(sql)){const first=q.first;return {...q,bind:(...v)=>({...q.bind(...v),first:async()=>{const r=await q.bind(...v).first();db.sqlite.prepare("UPDATE wallet_identity SET x_user_id='',x_verified_at=NULL WHERE wallet=?").run(voter.address);armed=false;return r;}})};}return q;};
+ db.prepare=sql=>{const q=real(sql);if(armed&&/FROM wallet_fame WHERE voter/.test(sql)&&/^SELECT value/.test(sql)){return {...q,bind:(...v)=>({...q.bind(...v),first:async()=>{const r=await q.bind(...v).first();db.sqlite.prepare("UPDATE wallet_identity SET x_user_id='',x_verified_at=NULL WHERE wallet=?").run(voter.address);armed=false;return r;}})};}return q;};
  await assert.rejects(()=>applyFame(db,payload,signature,origin),/no longer eligible/);
  assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM wallet_fame').get().n,0);
  assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM wallet_fame_revision').get().n,0);

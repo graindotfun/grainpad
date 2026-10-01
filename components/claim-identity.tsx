@@ -22,7 +22,7 @@ async function signed(signMessage:(bytes:Uint8Array)=>Promise<Uint8Array>,messag
 }
 
 /** Optional identity. It never blocks trading or room participation. */
-export function ClaimIdentity({wallet,signMessage}:{wallet:string;signMessage:(bytes:Uint8Array)=>Promise<Uint8Array>}){
+export function ClaimIdentity({wallet,signMessage,fold=false}:{wallet:string;signMessage:(bytes:Uint8Array)=>Promise<Uint8Array>;fold?:boolean}){
  const [card,setCard]=useState<IdentityCard|null>(null),[ready,setReady]=useState(false),[open,setOpen]=useState(false);
  const [username,setUsername]=useState(''),[displayName,setDisplayName]=useState(''),[bio,setBio]=useState(''),[avatarHash,setAvatarHash]=useState(''),[baseUpdatedAt,setBaseUpdatedAt]=useState(0),[file,setFile]=useState<File|null>(null);
  const [xOn,setXOn]=useState(false),[busy,setBusy]=useState(''),[error,setError]=useState(()=>typeof window==='undefined'?'':X_ERRORS[new URLSearchParams(window.location.search).get('identity')||'']||''),[message,setMessage]=useState(()=>typeof window==='undefined'?'':new URLSearchParams(window.location.search).get('x')==='connected'?'X connected.':'');
@@ -41,7 +41,7 @@ export function ClaimIdentity({wallet,signMessage}:{wallet:string;signMessage:(b
  async function save(action:'claim'|'update'|'rename'|'disconnect-x'){
   setBusy('Review the identity message in your wallet');setError('');setMessage('');
   try{
-   const name=action==='disconnect-x'?card?.username||'':normalizeUsername(username.trim().toLowerCase()).username;
+   const name=action==='disconnect-x'?card?.username||'':normalizeUsername(username.trim().toLowerCase(),{wallet}).username;
    const nextAction=action==='disconnect-x'?'disconnect-x':!card?'claim':name===card.username?'update':'rename';
    const image=nextAction==='disconnect-x'?{hash:avatarHash,base64:''}:await avatar();
    const payload={origin:window.location.origin,wallet,action:nextAction,username:name,displayName:(nextAction==='disconnect-x'?card?.displayName:displayName.trim())||'',bio,avatarHash:image.hash,baseUpdatedAt:nextAction==='claim'?0:baseUpdatedAt,nonce:crypto.randomUUID(),expires:Date.now()+10*60*1000};
@@ -66,7 +66,7 @@ export function ClaimIdentity({wallet,signMessage}:{wallet:string;signMessage:(b
  }
  if(!ready)return null;
  if(card&&!open)return <section className="identity-claim is-quiet"><UserIdentity wallet={wallet} identity={card}/><button type="button" className="product-text-button" onClick={()=>setOpen(true)}>Edit identity</button>{message&&<p className="small">{message}</p>}</section>;
- return <section className="identity-claim"><div><p className="eyebrow">OPTIONAL</p><h2>{card?'Your Grainpad identity':'Claim your Grainpad identity'}</h2><p className="small muted">A username is optional. Trading and rooms keep working with your wallet alone. Your username, display name, avatar, bio and a verified X account are public. The wallet address stays visible.</p></div>
+ const body=<section className="identity-claim"><div><p className="eyebrow">OPTIONAL</p><h2>{card?'Your Grainpad identity':'Claim your Grainpad identity'}</h2><p className="small muted">A username is optional. Trading and rooms keep working with your wallet alone. Your username, display name, avatar, bio and a verified X account are public. The wallet address stays visible.</p></div>
   {card&&<UserIdentity wallet={wallet} identity={card}/>}
   <label>Username<Input value={username} maxLength={20} autoCapitalize="none" spellCheck={false} disabled={!!busy} onChange={e=>setUsername(e.target.value.toLowerCase())} placeholder="lowercase name"/></label>
   <label>Display name<Input value={displayName} maxLength={40} disabled={!!busy} onChange={e=>setDisplayName(e.target.value)}/></label>
@@ -81,4 +81,6 @@ export function ClaimIdentity({wallet,signMessage}:{wallet:string;signMessage:(b
   {!xOn&&<p className="small muted">X connection is not configured. The rest of Grainpad still works.</p>}
   {error&&<p className="feedback error" role="alert">{error}</p>}{message&&<p className="small">{message}</p>}
  </section>;
+ // Where the page's main job is elsewhere (the room composer), an unclaimed identity stays one line until opened.
+ return fold&&!card?<details className="identity-fold"><summary>Claim a Grainpad username <span className="muted">(optional)</span></summary>{body}</details>:body;
 }
