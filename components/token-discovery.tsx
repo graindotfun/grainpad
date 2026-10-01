@@ -10,11 +10,12 @@ import {grainImpersonation} from '@/lib/launch-identity.mjs';
 import {formatMarketCap,formatChange} from '@/lib/token-market';
 import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import type {DiscoveryResult,DiscoveryToken,DiscoveryFilter,DiscoverySort} from '@/lib/token-discovery';
+import {UserIdentity,type IdentityCard} from './user-identity';
 const QUOTE_OPTIONS=[{value:'all',label:'All quote markets'},{value:'SOL',label:'SOL'},{value:'wXMR',label:'wXMR'}];
 const SORT_OPTIONS=[{value:'newest',label:'Newest'},{value:'oldest',label:'Oldest'},{value:'market-cap',label:'Market cap'},{value:'volume',label:'24h volume'}];
 function age(date:string){const elapsed=Math.max(0,Date.now()-Date.parse(date)),minutes=Math.floor(elapsed/60000);return minutes<1?'Just now':minutes<60?`${minutes}m ago`:minutes<1440?`${Math.floor(minutes/60)}h ago`:`${Math.floor(minutes/1440)}d ago`;}
 /** `sparkline` is an integration point: #39 does not return a per-row price series yet, so cards draw a dashed baseline. */
-type CardToken=DiscoveryToken&{sparkline?:number[]|null};
+type CardToken=DiscoveryToken&{sparkline?:number[]|null;creatorIdentity?:IdentityCard|null};
 function Sparkline({points}:{points?:number[]|null}){
  const values=(points||[]).filter(v=>Number.isFinite(v));
  if(values.length<2)return <svg className="dc-spark is-empty" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="20" x2="100" y2="20"/></svg>;
@@ -34,7 +35,7 @@ function DiscoveryCard({token,roomMode=false}:{token:CardToken;roomMode?:boolean
   <Sparkline points={token.sparkline}/>
   <div className="dc-progress">{progress!==null?<><div className="progress-track" role="progressbar" aria-label={`Graduation progress for ${token.symbol}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-valuetext={token.state==='graduated'?'Graduated to Raydium':`${progress}% raised toward graduation`}><i style={{transform:`scaleX(${progress/100})`}}/></div><span>{token.state==='graduated'?'On Raydium':`${Math.round(progress)}%`}</span></>:<span className="dc-unknown">Curve not read yet</span>}</div>
  </a>
- <div className="dc-foot">{token.creator?<a href={`/creator/${token.creator}`} title={token.creator}>by {token.creator.slice(0,4)}…{token.creator.slice(-4)}</a>:<span>creator —</span>}<button aria-label={`Copy ${token.symbol} contract address`} title={token.mint} onClick={async()=>{try{await navigator.clipboard.writeText(token.mint);setCopied(true);setCopyError(false);setTimeout(()=>setCopied(false),1800);}catch{setCopyError(true);}}}>{copied?<Check size={10}/>:<Copy size={10}/>}<span aria-live="polite">{copied?'Copied':`${token.mint.slice(0,4)}…${token.mint.slice(-4)}`}</span></button><time dateTime={token.createdAt} title={new Date(token.createdAt).toLocaleString()}>{age(token.createdAt)}</time></div>
+ <div className="dc-foot">{token.creator?<UserIdentity compact wallet={token.creator} identity={token.creatorIdentity}/>:<span>creator —</span>}<button aria-label={`Copy ${token.symbol} contract address`} title={token.mint} onClick={async()=>{try{await navigator.clipboard.writeText(token.mint);setCopied(true);setCopyError(false);setTimeout(()=>setCopied(false),1800);}catch{setCopyError(true);}}}>{copied?<Check size={10}/>:<Copy size={10}/>}<span aria-live="polite">{copied?'Copied':`${token.mint.slice(0,4)}…${token.mint.slice(-4)}`}</span></button><time dateTime={token.createdAt} title={new Date(token.createdAt).toLocaleString()}>{age(token.createdAt)}</time></div>
  {copyError&&<p className="discovery-copy-error" role="status">Copy unavailable. Open token details.</p>}
  </article>;
 }

@@ -1,5 +1,6 @@
 "use client";
 import {CreatorDesk} from "@/components/creator-desk";
+import {ClaimIdentity} from "@/components/claim-identity";
 import {useCallback,useEffect,useRef,useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -40,7 +41,7 @@ export default function Fees(){
   }catch(e){setError(e instanceof Error?e.message:'Could not complete claim.');}finally{busyRef.current=false;setBusy('');}
  }
  const rows=[...balances].sort((a,b)=>Number(BigInt(b.creator||'0')>0n)-Number(BigInt(a.creator||'0')>0n));
- return <main className="shell"><SiteHeader/><div className="page-heading"><div><p className="eyebrow">CREATOR DESK / MAINNET</p><h1><KineticText>Build. Track. Earn.</KineticText></h1></div><p>Accrued trading fees.<br/>Paid to your connected wallet.</p></div><CreatorDesk key={owner} owner={owner}/><div className="launch-grid"><section className="panel form-panel earnings-panel" id="claim-controls"><h2>Your earnings</h2><p>All fee currencies, together. Claim the full available balance in its original currency.</p>
+ return <main className="shell"><SiteHeader/><div className="page-heading"><div><p className="eyebrow">CREATOR DESK / MAINNET</p><h1><KineticText>Build. Track. Earn.</KineticText></h1></div><p>Accrued trading fees.<br/>Paid to your connected wallet.</p></div>{owner&&<ClaimIdentity key={owner} wallet={owner} signMessage={async bytes=>{const current=wallet.current;if(!current||current.publicKey?.toBase58()!==owner)throw Error('Reconnect your wallet.');const signed=await current.signMessage(bytes);return signed instanceof Uint8Array?signed:signed.signature;}}/>}<CreatorDesk key={owner} owner={owner}/><div className="launch-grid"><section className="panel form-panel earnings-panel" id="claim-controls"><h2>Your earnings</h2><p>All fee currencies, together. Claim the full available balance in its original currency.</p>
  {!owner?<Button className="primary-action" onClick={openWalletPicker}>Connect wallet</Button>:<>
  <div className="earnings-balances">{rows.map(row=><article className="earnings-currency" key={row.symbol}><div className="earnings-currency-heading"><h3>{unit(row.symbol)}</h3><span>Creator earnings</span></div><p className="earnings-amount" aria-live="polite">{row.error?'Unavailable':row.creator===undefined?'Loading…':display(row.creator,row.symbol)}{row.creator!==undefined&&<small> {unit(row.symbol)}</small>}</p>
  {row.error?<><p role="status" className="small muted">Could not read this balance. It is not shown as zero.</p><Button variant="outline" onClick={()=>refresh(owner)}>Retry balance</Button></>:<Button className="primary-action" disabled={!!busy||locked||!row.creator||row.creator==='0'} onClick={()=>claim(row.symbol,'creator')}>{row.creator==='0'?'Nothing to claim':`Claim all ${unit(row.symbol)}`}</Button>}

@@ -8,11 +8,15 @@ import {chain} from '@/lib/server-rpc';
 import {sharedMarketCache} from '@/lib/server-cache';
 import {NETWORKS} from '@/lib/site-config';
 import {sameOrigin,limitedJSON,fail} from '@/lib/server-utils';
+import {identityCards} from '@/lib/wallet-identity.mjs';
 export const dynamic='force-dynamic';
 export async function GET(request:Request,{params}:{params:Promise<{mint:string}>}){try{
- const project=await registeredProject((await params).mint),url=new URL(request.url);
- const data=await roomPage(database(),project.mint,{before:url.searchParams.get('before'),need:url.searchParams.get('need')});
- return Response.json({...data,project},{headers:{'Cache-Control':'no-store'}});
+ const project=await registeredProject((await params).mint),url=new URL(request.url),db=database();
+ const data=await roomPage(db,project.mint,{before:url.searchParams.get('before'),need:url.searchParams.get('need')});
+ const wallets=[project.creator,...(data.events||[]).map((event:{author?:string})=>event.author)];
+ for(const task of data.crew||[]){for(const row of task.approved||[])wallets.push(row.contributor);for(const row of task.payments||[])wallets.push(row.contributor);}
+ let identities={};try{identities=await identityCards(db,wallets,{limit:80});}catch{identities={};}
+ return Response.json({...data,project,identities},{headers:{'Cache-Control':'no-store'}});
 }catch(e){return fail(e,400);}}
 /** Read-only proof: the finalized transfer from the creator to the approved contributor. Nothing is signed or sent. */
 async function paymentProof(db:D1Database,p:{mint:string;target:string;title:string;body:string},creator:string){
