@@ -65,7 +65,7 @@ export function ClaimIdentity({wallet,signMessage,fold=false}:{wallet:string;sig
   }catch(e){setError(e instanceof Error?e.message:'X connection failed.');setBusy('');}
  }
  if(!ready)return null;
- if(card&&!open)return <section className="identity-claim is-quiet"><UserIdentity wallet={wallet} identity={card}/><button type="button" className="product-text-button" onClick={()=>setOpen(true)}>Edit identity</button>{message&&<p className="small">{message}</p>}</section>;
+ if(card&&!open)return <section className="identity-claim is-quiet"><UserIdentity wallet={wallet} identity={card}/>{xOn&&!card.xVerified&&<Button type="button" variant="outline" disabled={!!busy} onClick={()=>void connectX(false)}>{busy||'Connect X'}</Button>}<button type="button" className="product-text-button" onClick={()=>setOpen(true)}>Edit identity</button>{error&&<p role="alert" className="feedback error">{error}</p>}{message&&<p className="small">{message}</p>}</section>;
  const body=<section className="identity-claim"><div><p className="eyebrow">OPTIONAL</p><h2>{card?'Your Grainpad identity':'Claim your Grainpad identity'}</h2><p className="small muted">A username is optional. Trading and rooms keep working with your wallet alone. Your username, display name, avatar, bio and a verified X account are public. The wallet address stays visible.</p></div>
   {card&&<UserIdentity wallet={wallet} identity={card}/>}
   <label>Username<Input value={username} maxLength={20} autoCapitalize="none" spellCheck={false} disabled={!!busy} onChange={e=>setUsername(e.target.value.toLowerCase())} placeholder="lowercase name"/></label>

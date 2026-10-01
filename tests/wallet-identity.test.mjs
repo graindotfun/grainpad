@@ -100,6 +100,9 @@ test('claim is race-safe, rename reserves the old name, and wallet-only lookup s
  db.sqlite.prepare('INSERT INTO launch_index(network,mint,platform_id,creator,pool,created_at,record,indexed_at) VALUES(?,?,?,?,?,?,?,?)').run('mainnet-beta','mint111111111111111111111111111111111111','platform',a.address,'pool','2026-01-01',JSON.stringify({mint:'mint111111111111111111111111111111111111',name:'Grain',symbol:'GRAIN'}),1);
  db.sqlite.prepare('INSERT INTO room_event(id,mint,author,kind,title,body,url,target,created_at,payload,signature) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run('id1','mint111111111111111111111111111111111111',a.address,'submission','Work','secret body','https://example.com','',1,'{}','sig');
  const view=await readPublicIdentity(db,'Nakamoto',{platform:'platform'});
+ assert.equal(view.activity.find(event=>event.kind==='launch').title,'Grain');
+ assert.equal(view.activity[0].kind,'launch');
+ assert.equal(view.rooms[0].tokenName,'Grain');
  assert.equal(view.profile.username,'nakamoto');assert.equal(view.created[0].symbol,'GRAIN');assert.equal(view.rooms[0].title,'Work');assert.equal(JSON.stringify(view).includes('secret body'),false);
  const old=await readPublicIdentity(db,'satoshi');assert.equal(old.redirect,'nakamoto');
  const linked=await linkXAccount(db,a.address,{xUserId:'42',xUsername:'satoshi'},{replace:'no',now:5,avatarHash:''});
