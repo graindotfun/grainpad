@@ -31,3 +31,18 @@
 @media(max-width:460px){.claim-wallet-option{padding:15px 13px;gap:11px}.claim-wallet-icon{width:39px;height:39px;border-radius:8px}.claim-wallet-icon svg{width:21px;height:21px}.claim-wallet-identity strong{font-size:15px}.claim-wallet-identity small{font-size:11px}.claim-wallet-detected{display:none}.claim-wallet-arrow{width:20px}.claim-wallet-heading{gap:10px}.claim-wallet-heading p{font-size:11px}.claim-wallet-soon p{display:block;font-size:11px}.claim-wallet-soon p>span{display:block;margin-top:2px}}
 @media(max-width:350px){.claim-wallet-option{padding:14px 11px;gap:9px}.claim-wallet-icon{width:34px;height:34px}.claim-wallet-identity small{font-size:12px}.claim-wallet-arrow{width:16px}.claim-wallet-back{font-size:11px}.claim-wallet-heading h3{font-size:15px}}
 @media(prefers-reduced-motion:reduce){.claim-wallet-option,.claim-wallet-arrow{transition:none}.claim-wallet-option:hover:not(:disabled),.claim-wallet-option:hover:not(:disabled) .claim-wallet-arrow{transform:none}}
+
+/* All wallet-provider choices share the same brand treatment, including Wallet Standard variants. */
+html body button[data-wallet-provider]{--wallet-bg:var(--market-inset,#263038);--wallet-ink:var(--foreground);display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;height:auto;margin:12px 0;padding:13px 22px;gap:12px;border:1px solid transparent!important;border-radius:999px!important;background:var(--wallet-bg)!important;color:var(--wallet-ink)!important;font-weight:600;white-space:normal;line-height:1.4;transition:filter .18s,transform .18s}
+html body button[data-wallet-provider*="phantom"]{--wallet-bg:#ab9ff2;--wallet-ink:#fff}
+html body button[data-wallet-provider*="metamask"]{--wallet-bg:#FF5C16;--wallet-ink:#3d065f}
+html body button[data-wallet-provider*="solflare"]{--wallet-bg:#ffef46;--wallet-ink:#000}
+html body button[data-wallet-provider]:hover:not(:disabled){transform:translateY(-1px)}
+html body button[data-wallet-provider]:focus-visible{outline:2px solid var(--foreground);outline-offset:3px}
+html body button[data-wallet-provider]:disabled{opacity:.55;cursor:wait}
+html body .claim-wallet-options button[data-wallet-provider]{margin:0;justify-content:flex-start}
+html body button[data-wallet-provider] :is(.claim-wallet-identity strong,.claim-wallet-identity small,.claim-wallet-arrow,.claim-wallet-icon,.claim-wallet-detected){color:inherit}
+html body button[data-wallet-provider] .claim-wallet-icon{background:#00000012;border-radius:50%}
+html body button[data-wallet-provider] .claim-wallet-detected{background:transparent;border-color:currentColor;border-radius:999px}
+html body button[data-wallet-provider] .claim-wallet-detected:before{background:currentColor}
+@media(prefers-reduced-motion:reduce){html body button[data-wallet-provider]{transition:none}html body button[data-wallet-provider]:hover:not(:disabled){transform:none}}

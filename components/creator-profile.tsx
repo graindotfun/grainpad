@@ -49,6 +49,6 @@ export function CreatorProfile({mint}:{mint:string}){
  <label>Telegram<Input value={telegram} placeholder="https://t.me/your_project" onChange={e=>setTelegram(e.target.value)}/></label>
  <label>Banner<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>setBanner(String(reader.result));reader.readAsDataURL(file);}}/></label>
  {!owner?<Button variant="outline" onClick={()=>setChoices(walletProviders())}>Connect creator wallet</Button>:<Button disabled={busy} onClick={()=>void save()}>{busy?'Waiting for signature…':'Sign profile update'}</Button>}
- {choices.map(c=><Button key={c.name} variant="outline" onClick={()=>void connect(c.wallet)}>{c.name}</Button>)}<WalletAvailability/>
+ {choices.map(c=><Button data-wallet-provider={c.name.toLowerCase()} key={c.name} variant="outline" onClick={()=>void connect(c.wallet)}>{c.name}</Button>)}<WalletAvailability/>
  </details></section>;
 }

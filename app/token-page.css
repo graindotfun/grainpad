@@ -75,7 +75,7 @@
 .progress-track{height:4px;border-radius:4px;background:var(--market-inset);overflow:hidden}
 .progress-track>i{display:block;height:100%;background:var(--xmr-orange);transform-origin:left}
 
-/* Tape: the public ledger on a cream record surface. */
+/* Tape: cream in light mode, charcoal in dark mode. */
 .public-tape{padding:20px 22px 18px!important;background:var(--record-paper)!important;color:var(--record-ink);border-color:var(--record-line)!important}
 .public-tape .corner-label{color:var(--record-muted)}
 .tape-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px 28px;flex-wrap:wrap;margin-bottom:16px}
@@ -194,3 +194,16 @@
 .creator-profile textarea{min-height:90px;padding:10px;border:1px solid var(--market-border);border-radius:8px;background:var(--market-inset);color:var(--foreground);font:inherit}
 .token-unregistered{padding:24px!important;max-width:720px}
 .token-unregistered p{margin:14px 0 18px;color:var(--market-muted)}
+
+html[data-theme="dark"] .public-tape{--record-paper:var(--market-panel,#15191b);--record-ink:var(--foreground);--record-muted:var(--market-muted,#929c9f);--record-line:var(--market-border,#ffffff12);--record-rule:var(--market-border,#ffffff12)}
+html[data-theme="dark"] .public-tape .segmented{background:var(--market-inset,#1c2124)}
+html[data-theme="dark"] .public-tape .segmented button[aria-pressed=true]{background:var(--record-paper)}
+html[data-theme="dark"] .public-tape .is-buy .ledger-side{color:var(--buy)}
+html[data-theme="dark"] .public-tape .is-buy .ledger-side i{background:var(--buy)}
+html[data-theme="dark"] .public-tape .is-sell .ledger-side{color:var(--sell)}
+html[data-theme="dark"] .public-tape .is-sell .ledger-side i{background:var(--sell)}
+.token-details>aside[aria-label="wXMR bridge risk"]{margin:22px 0 0;padding-top:18px;border-top:1px solid var(--market-border)}
+.creator-profile,.creator-profile .product-facts dd{text-align:left}
+.creator-profile .product-facts>div{display:grid;grid-template-columns:minmax(110px,1fr) minmax(0,2fr);gap:16px;align-items:start}
+.creator-profile .product-facts dd{margin:0;min-width:0;overflow-wrap:anywhere}
+@media(max-width:480px){.creator-profile .product-facts>div{grid-template-columns:minmax(0,1fr);gap:6px}}

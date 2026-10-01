@@ -29,6 +29,7 @@ const ALLOWED=[
  {why:'token definitions (canonical orange, light-theme text ink, warning amber)',test:({before})=>TOKEN_DEFINITIONS.test(before)},
  {why:'GRAIN_ORANGE constant for renderers without CSS variables',test:({file})=>file==='lib/brand-colors.mjs'},
  {why:'Solflare wallet icon: third-party brand colour',test:({line})=>/solflare/i.test(line)},
+ {why:'User-requested MetaMask provider button uses its exact third-party brand orange',test:({file,literal,before,line})=>file==='app/claim-wallet.css'&&literal.toLowerCase()==='#ff5c16'&&before.trim()==='--wallet-bg:'&&line.startsWith('html body button[data-wallet-provider*="metamask"]{')},
 ];
 function lineAt(text,index){const start=text.lastIndexOf('\n',index)+1,end=text.indexOf('\n',index);return text.slice(start,end<0?undefined:end);}
 function declarationBefore(text,index){const start=Math.max(text.lastIndexOf(';',index),text.lastIndexOf('{',index),text.lastIndexOf('\n',index))+1;return text.slice(start,index);}
