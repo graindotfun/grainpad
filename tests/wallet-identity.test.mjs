@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import {PLATFORM_SETTINGS} from '../lib/platform-settings.mjs';
-import {applyIdentity,lookupUsername,assertSignedWallet,connectXMessage,identityCards,identityMessage,linkXAccount,normalizeUsername,publicProfile,readPublicIdentity,safeAvatarPath,verifyConnectXSignature,verifyIdentitySignature} from '../lib/wallet-identity.mjs';
+import {validateIdentityPayload,applyIdentity,lookupUsername,assertSignedWallet,connectXMessage,identityCards,identityMessage,linkXAccount,normalizeUsername,publicProfile,readPublicIdentity,safeAvatarPath,verifyConnectXSignature,verifyIdentitySignature} from '../lib/wallet-identity.mjs';
 import {archiveXAvatar,authorizationUrl,completeXAuthorization,consumeOauthState,createPkce,oauthCookie,safeXImage,xOauthConfig,xRedirectUri,X_OAUTH_COOKIE} from '../lib/x-oauth.mjs';
 
 function database(){
@@ -185,7 +185,8 @@ test('stale and concurrent mutations cannot split a profile from its revision or
  consistent(db);
 });
 test('X OAuth is optional, callback-bound, and does not return tokens',async()=>{
- assert.equal(xOauthConfig({}),null);assert.equal(xOauthConfig({X_CLIENT_ID:'',X_CLIENT_SECRET:''}),null);
+ assert.equal(xOauthConfig({}),null);
+ assert.throws(()=>xOauthConfig({X_CLIENT_ID:'grainpad-app'}),/not configured together/);assert.throws(()=>xOauthConfig({X_CLIENT_SECRET:'test-secret-value-1'}),/not configured together/);assert.equal(xOauthConfig({X_CLIENT_ID:'',X_CLIENT_SECRET:''}),null);
  assert.throws(()=>xOauthConfig({X_CLIENT_ID:'short',X_CLIENT_SECRET:'short'}),/not usable/);
  const config=xOauthConfig({X_CLIENT_ID:'grainpad-app',X_CLIENT_SECRET:'test-secret-value-1'});
  assert.equal(xRedirectUri('https://grainpad.fun'),'https://grainpad.fun/api/identity/x/callback');
@@ -221,4 +222,20 @@ test('X OAuth is optional, callback-bound, and does not return tokens',async()=>
  await assert.rejects(completeXAuthorization({config,code:'auth-code-1',verifier:pkce.verifier,redirectUri:xRedirectUri(origin),fetchImpl:async url=>String(url).includes('token')?{ok:true,json:async()=>({access_token:token})}:{ok:false,status:403,json:async()=>({title:'Your account is suspended.'})}}),/suspended/);
  assert.equal(await archiveXAvatar('https://evil.example/a.jpg',async()=>{throw Error('should not fetch');}),null);
  assert.equal(await archiveXAvatar('https://pbs.twimg.com/a.jpg',async()=>({ok:false,status:302,headers:{get:()=>''},arrayBuffer:async()=>new ArrayBuffer(0)})),null);
+});
+
+const verifyIdentityPayloadShape=p=>validateIdentityPayload(p,origin);
+test('only the canonical platform admin wallet can claim the exact platform names; nobody gets look-alikes',()=>{
+ const admin=PLATFORM_SETTINGS.admin,other=wallet().address,exactNames=['grainpad','grain','grainxmr','grainpadfun'];
+ for(const name of exactNames){
+  assert.equal(normalizeUsername(name,{wallet:admin}).username,name);
+  assert.throws(()=>normalizeUsername(name,{wallet:other}),/reserved/);
+  assert.throws(()=>normalizeUsername(name),/reserved/);
+  assert.throws(()=>normalizeUsername(name,{wallet:'forged-admin'}),/reserved/);
+ }
+ for(const lookalike of ['gr4inpad','grain_pad','grainpa_d','gra1npad','grainpadd','gralnpad'])for(const who of [admin,other])assert.throws(()=>normalizeUsername(lookalike,{wallet:who}),/reserved/);
+ for(const other_reserved of ['admin','official','team','root'])assert.throws(()=>normalizeUsername(other_reserved,{wallet:admin}),/reserved/);
+ const base={origin,wallet:admin,action:'claim',username:'grainpad',displayName:'Grainpad',bio:'',avatarHash:'',baseUpdatedAt:0,nonce:crypto.randomUUID(),expires:Date.now()+60_000};
+ assert.equal(verifyIdentityPayloadShape(base).username,'grainpad');
+ assert.throws(()=>verifyIdentityPayloadShape({...base,wallet:other}),/reserved/);
 });

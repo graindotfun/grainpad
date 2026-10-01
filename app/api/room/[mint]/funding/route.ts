@@ -3,7 +3,7 @@ import {registeredProject} from '@/lib/server-project';
 import {crewTasks} from '@/lib/launch-room.mjs';
 import {consumeRequestBudget} from '@/lib/abuse-budget.mjs';
 import {requestClientKey} from '@/lib/client-key.mjs';
-import {lamportBalance,tokenBalance,fundingAssets,taskCoverage,FUNDING_MAX_AGE_MS} from '@/lib/room-funding.mjs';
+import {lamportBalance,tokenBalance,fundingAssets,fundingBalance,taskCoverage,publicCoverage} from '@/lib/room-funding.mjs';
 import {chain} from '@/lib/server-rpc';
 import {sharedMarketCache} from '@/lib/server-cache';
 import {NETWORKS} from '@/lib/site-config';
@@ -24,19 +24,16 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
    await Promise.all(assets.map(async asset=>{
     const key=asset.code===project.mint?project.mint:asset.code;
     try{
-     const read=await sharedMarketCache(db,`room-funding:${project.creator}:${key}`,async()=>{
-      if(!await consumeRequestBudget(db,'funding:site',600,{windowMs:3600000}))throw Error('Balance checks are busy.');
-      const raw=asset.mint===null
+     const read=await fundingBalance(db,{creator:project.creator,key,asset},async()=>asset.mint===null
        ?lamportBalance(await chain('mainnet-beta','getBalance',[project.creator,{commitment:'finalized'}]))
-       :tokenBalance(await chain('mainnet-beta','getTokenAccountsByOwner',[project.creator,{mint:asset.mint},{encoding:'jsonParsed',commitment:'finalized'}]),asset as {mint:string;decimals:number});
-      return {raw:raw.toString(),decimals:asset.decimals};
-     },{ttl:60_000,maxStale:FUNDING_MAX_AGE_MS});
-     balances[key]={raw:read.data.raw,decimals:read.data.decimals,checkedAt:read.updatedAt};
+       :tokenBalance(await chain('mainnet-beta','getTokenAccountsByOwner',[project.creator,{mint:asset.mint},{encoding:'jsonParsed',commitment:'finalized'}]),asset as {mint:string;decimals:number}),
+      async()=>await consumeRequestBudget(db,`funding:refresh:${project.creator}:${key}`,1,{windowMs:15_000})&&await consumeRequestBudget(db,'funding:site',600,{windowMs:3_600_000}));
+     if(read)balances[key]={raw:read.raw,decimals:read.decimals,checkedAt:read.checkedAt};
     }catch{/* no result for this asset: never Funded */}
    }));
   }catch{/* lookup unavailable: Rooms is unaffected */}
  }
  const out:Record<string,unknown>={};
- for(const task of tasks){const c=taskCoverage(task,project.mint,balances);if(c)out[task.id]=c;}
+ for(const task of tasks){const c=publicCoverage(taskCoverage(task,project.mint,balances));if(c)out[task.id]=c;}
  return Response.json({checkedAt:Date.now(),tasks:out},{headers:{'Cache-Control':'no-store'}});
 }catch(e){return fail(e,400);}}

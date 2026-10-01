@@ -9,7 +9,7 @@ import {applyFame,assertSignedVoter,fameMessage,fameSummary,validateFamePayload,
 const origin='https://grainpad.fun';
 function database(){
  const sqlite=new DatabaseSync(':memory:');
- for(const file of ['0024_wallet_identity.sql','0025_wallet_fame.sql'])for(const sql of readFileSync(new URL('../drizzle/'+file,import.meta.url),'utf8').split('--> statement-breakpoint'))if(sql.trim())sqlite.exec(sql);
+ for(const file of ['0024_wallet_identity.sql','0025_fame_and_funding_status.sql'])for(const sql of readFileSync(new URL('../drizzle/'+file,import.meta.url),'utf8').split('--> statement-breakpoint'))if(sql.trim())sqlite.exec(sql);
  return {sqlite,prepare(sql){const stmt=sqlite.prepare(sql);const bound=(...values)=>({first:async()=>stmt.get(...values)??null,all:async()=>({results:stmt.all(...values)}),run:()=>stmt.run(...values)});return {bind:bound,...bound()};},async batch(statements){sqlite.exec('BEGIN IMMEDIATE');try{const result=[];for(const statement of statements)result.push(statement.run());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}};
 }
 function wallet(){const pair=nacl.sign.keyPair();return {pair,address:bs58.encode(pair.publicKey)};}
@@ -126,4 +126,29 @@ test('one verified X account cannot back two wallets',()=>{
 test('fame never uses the token-level creator_profile twitter field or any weight',()=>{
  const source=readFileSync(new URL('../lib/wallet-fame.mjs',import.meta.url),'utf8');
  assert.doesNotMatch(source,/creator_profile|twitter|balance|holder|follower/i);
+});
+
+test('a +1 to -1 change is atomic: losing eligibility mid-write leaves the old vote and no new revision',async()=>{
+ const db=database(),target=wallet(),voter=wallet();profile(db,target);profile(db,voter,{x:true});
+ await cast(db,voter,target,1,{base:0},1000);const before=stored(db,voter,target);
+ const {payload,signature}=vote(voter,target,-1,{base:before.updated_at});
+ const real=db.prepare.bind(db);let armed=true;
+ db.prepare=sql=>{const q=real(sql);if(armed&&/^SELECT value,updated_at FROM wallet_fame WHERE voter/.test(sql)){return {...q,bind:(...v)=>({...q.bind(...v),first:async()=>{const r=await q.bind(...v).first();db.sqlite.prepare("UPDATE wallet_identity SET x_user_id='',x_verified_at=NULL WHERE wallet=?").run(voter.address);armed=false;return r;}})};}return q;};
+ await assert.rejects(()=>applyFame(db,payload,signature,origin,Date.now()+5000),/no longer eligible/);
+ assert.deepEqual(stored(db,voter,target),before);
+ assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM wallet_fame_revision').get().n,1);
+});
+test('two racing votes on the same base: exactly one wins and the pair keeps one state',async()=>{
+ const db=database(),target=wallet(),voter=wallet();profile(db,target);profile(db,voter,{x:true});
+ const a=vote(voter,target,1),b=vote(voter,target,-1);
+ const results=await Promise.allSettled([applyFame(db,a.payload,a.signature,origin),applyFame(db,b.payload,b.signature,origin)]);
+ assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+ assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM wallet_fame WHERE voter=? AND target=?').get(voter.address,target.address).n,1);
+ assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM wallet_fame_revision').get().n,1);
+});
+test('repeating the active vote is refused; the intended way to cancel is a signed clear',async()=>{
+ const db=database(),target=wallet(),voter=wallet();profile(db,target);profile(db,voter,{x:true});
+ await cast(db,voter,target,1,{base:0},1000);const row=stored(db,voter,target);
+ await assert.rejects(()=>cast(db,voter,target,1,{base:row.updated_at}),/already recorded/);
+ assert.equal((await cast(db,voter,target,0,{base:row.updated_at},3000)).score,0);
 });

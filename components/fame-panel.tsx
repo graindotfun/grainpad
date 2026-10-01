@@ -36,7 +36,7 @@ export function FamePanel({target,initial}:{target:string;initial:FameSummary}){
  }
  const note=!owner?'Connect a wallet to give fame.':viewer&&!viewer.canVote?viewer.message:'';
  return <section className="fame-panel" aria-label="Fame">
-  <span className="fame-score" aria-live="polite">Fame {signedScore(fame.score)}<small>▲ {fame.up} · ▼ {fame.down}</small></span>
+  <span className="fame-score" aria-live="polite">Fame {signedScore(fame.score)}</span>
   {viewer?.canVote&&<span className="fame-votes">
    <button type="button" aria-pressed={viewer.value===1} disabled={busy} onClick={()=>void cast(1)}>▲ Fame</button>
    <button type="button" aria-pressed={viewer.value===-1} disabled={busy} onClick={()=>void cast(-1)}>▼ Fame</button>

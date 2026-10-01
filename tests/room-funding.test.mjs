@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CREW_ASSETS} from '../lib/crew.mjs';
-import {lamportBalance,tokenBalance,fundingAssets,taskCoverage,FUNDING_MAX_AGE_MS} from '../lib/room-funding.mjs';
+import {DatabaseSync} from 'node:sqlite';
+import {lamportBalance,tokenBalance,fundingAssets,fundingBalance,publicCoverage,taskCoverage,FUNDING_MAX_AGE_MS} from '../lib/room-funding.mjs';
 const mint='9'.repeat(32),now=1_790_000_000_000;
 const task=(budget,status='open',closed=false)=>({id:'t',budget,status,closed});
 const fresh=(raw,decimals,age=1000)=>({raw,decimals,checkedAt:now-age});
@@ -47,5 +48,38 @@ test('the route is read-only, creator-wallet only and never takes a client balan
  const source=readFileSync(new URL('../app/api/room/[mint]/funding/route.ts',import.meta.url),'utf8');
  assert.match(source,/export async function GET/);assert.doesNotMatch(source,/export async function (POST|PUT|PATCH|DELETE)/);
  assert.match(source,/project\.creator/);assert.doesNotMatch(source,/searchParams|request\.json|limitedJSON/);
- assert.match(source,/commitment:'finalized'/);
+ assert.match(source,/commitment:'finalized'/);assert.doesNotMatch(source,/market_cache|sharedMarketCache\(db,`room-funding/);
+});
+
+function cacheDb(){
+ const sqlite=new DatabaseSync(':memory:');
+ for(const sql of readFileSync(new URL('../drizzle/0025_fame_and_funding_status.sql',import.meta.url),'utf8').split('--> statement-breakpoint'))if(sql.trim())sqlite.exec(sql);
+ return {sqlite,prepare(sql){const stmt=sqlite.prepare(sql);return {bind:(...v)=>({first:async()=>stmt.get(...v)??null,run:()=>stmt.run(...v)})};}};
+}
+const sol=CREW_ASSETS.SOL,who='C'.repeat(40);
+test('funding cache serves a fresh row without reading the chain, and never past 60 seconds',async()=>{
+ const db=cacheDb();let reads=0;const load=async()=>{reads+=1;return 2_000_000_000n;},yes=async()=>true;
+ const first=await fundingBalance(db,{creator:who,key:'SOL',asset:sol},load,yes,{now});assert.equal(first.raw,'2000000000');assert.equal(reads,1);
+ await fundingBalance(db,{creator:who,key:'SOL',asset:sol},load,yes,{now:now+59_000});assert.equal(reads,1);
+ await fundingBalance(db,{creator:who,key:'SOL',asset:sol},load,yes,{now:now+61_000});assert.equal(reads,2);
+});
+test('an expired row with no refresh allowed or a failed read yields no balance, so no Funded',async()=>{
+ const db=cacheDb();await fundingBalance(db,{creator:who,key:'SOL',asset:sol},async()=>9n,async()=>true,{now});
+ assert.equal(await fundingBalance(db,{creator:who,key:'SOL',asset:sol},async()=>9n,async()=>false,{now:now+120_000}),null);
+ await assert.rejects(()=>fundingBalance(db,{creator:who,key:'SOL',asset:sol},async()=>{throw Error('rpc down');},async()=>true,{now:now+120_000}),/rpc down/);
+});
+test('Funded disappears once the balance drops below the budget and the cache expires',async()=>{
+ const db=cacheDb(),budget=task({amount:'1',asset:'SOL'});let balance=2_000_000_000n;
+ const status=async at=>{const entry=await fundingBalance(db,{creator:who,key:'SOL',asset:sol},async()=>balance,async()=>true,{now:at});return publicCoverage(taskCoverage(budget,mint,{SOL:entry},{now:at}));};
+ assert.equal((await status(now)).funded,true);
+ balance=100n;
+ assert.equal((await status(now+30_000)).funded,true);
+ assert.equal(await status(now+61_000),null);
+});
+test('the public shape never carries the wallet balance',()=>{
+ const covered=taskCoverage(task({amount:'0.5',asset:'SOL'}),mint,{SOL:fresh('123456789012',9)},{now});
+ const shape=publicCoverage(covered);
+ assert.deepEqual(Object.keys(shape).sort(),['asset','checkedAt','decimals','funded','requiredRaw']);
+ assert.equal(JSON.stringify(shape).includes('123456789012'),false);
+ assert.equal(publicCoverage(taskCoverage(task({amount:'0.5',asset:'SOL'}),mint,{SOL:fresh('1',9)},{now})),null);
 });
