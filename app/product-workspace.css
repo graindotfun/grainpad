@@ -23,3 +23,4 @@
 .room-reply{margin:10px 0 0;padding-left:11px;border-left:1px solid var(--product-line)}
 .room-updates{margin:0 0 20px}.room-strip-title{font-size:.875rem;margin:0 0 6px;color:var(--product-muted)}.room-partial,.room-closed-line{margin:12px 0 0}
 .room-thread>.product-actions{margin-top:18px}.room-sub+.room-sub{padding-top:14px;border-top:1px solid var(--product-line)}.room-stray{margin-top:14px}
+.crew-paid-field{margin:4px 0 12px}
