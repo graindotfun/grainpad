@@ -1,4 +1,5 @@
 "use client";
+import {useSharedWallet} from "@/components/use-shared-wallet";
 import {canonicalTokenWebsite} from '@/lib/token-website.mjs';
 /* eslint-disable @next/next/no-img-element -- Wallet artwork and user-selected data URLs are local previews, with no image proxy. */
 import {useBlockhashCountdown} from '@/hooks/use-blockhash-countdown';
@@ -76,6 +77,7 @@ export default function LaunchWorkspace({initialTab="launch"}:{initialTab?:"laun
  useEffect(()=>{fetch("/api/platform").then(async r=>r.ok?await r.json() as PlatformStatus:null).then(setPlatformState).catch(()=>setPlatformState(null));},[prepared]);
  const pending=useRef<{network:Network;mint:string;owner:string;metadataHash:string}|null>(null);
  const wallet=useRef<Wallet|null>(null);const hydrated=useRef(false);const metadata=useRef<{key:string;uri:string;metadataHash:string}|null>(null);
+ useSharedWallet(wallet,setOwner,()=>{setPrepared(null);setAck(false);});
  const current=useRef<Record<string,unknown>>({});useEffect(()=>{current.current={quoteAsset:quoteSymbol,network,name,symbol,description,website:websiteValue,twitter:twitterValue,telegram:telegramValue,owner,vanityMint,prepared:prepared?{mint:prepared.mint,estimatedLamports:prepared.estimatedLamports}:null,signature,result};});
  // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore external receipt/draft state or invalidate stale approval before interaction.
  useEffect(()=>{try{const d=JSON.parse(localStorage.getItem("launch-lab-draft")||"null");if(d){setTaxBps(isLaunchTaxBps(Number(d.taxBps))?String(d.taxBps):String(DEFAULT_LAUNCH_TAX_BPS));setName(typeof d.name==="string"?d.name:"");setSymbol(typeof d.symbol==="string"?d.symbol:"");setDescription(typeof d.description==="string"?d.description:"");setDeclaredCreatorBuy(typeof d.declaredCreatorBuy==="string"?d.declaredCreatorBuy:"");setTwitter(typeof d.twitter==="string"?d.twitter:null);setTelegram(typeof d.telegram==="string"?d.telegram:null);setMaxCost(d.maxCost&&Number(d.maxCost)<=Number(SITE.maxCost)?d.maxCost:SITE.maxCost);}const pendingData=JSON.parse(localStorage.getItem("grainpad-pending")||"null");if(pendingData&&(pendingData.network==="mainnet-beta"||pendingData.network==="devnet")&&typeof pendingData.signature==="string"){pending.current=pendingData;setNetwork(pendingData.network);setSignature(pendingData.signature);setStatus("A submitted launch was restored. Check confirmation before creating another token.");}}catch{}hydrated.current=true;},[]);

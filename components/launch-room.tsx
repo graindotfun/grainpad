@@ -1,4 +1,5 @@
 'use client';
+import {useSharedWallet} from '@/components/use-shared-wallet';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {GrainSelect} from '@/components/grain-select';
 import {SiteHeader} from './site-header';
@@ -23,6 +24,7 @@ function LaunchRoomView({mint}:{mint:string}){
  const [room,setRoom]=useState<Room|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[owner,setOwner]=useState(''),[choices,setChoices]=useState<ReturnType<typeof walletProviders>>([]),[noWallet,setNoWallet]=useState(false),[busy,setBusy]=useState('');
  const [kind,setKind]=useState('submission'),[title,setTitle]=useState(''),[body,setBody]=useState(''),[url,setUrl]=useState(''),[target,setTarget]=useState(''),[recipient,setRecipient]=useState(''),[asset,setAsset]=useState('SOL'),[review,setReview]=useState(false),[older,setOlder]=useState<Event[]>([]),[cursor,setCursor]=useState<string|null>(null),[loadedOlder,setLoadedOlder]=useState(false),[activeNeed,setActiveNeed]=useState(''),[board,setBoard]=useState('active');
  const wallet=useRef<Wallet|null>(null),pending=useRef<{payload:Record<string,unknown>;signature:string}|null>(null);
+ useSharedWallet(wallet,setOwner,()=>{pending.current=null;});
  const creator=owner!==''&&owner===room?.project.creator;
  const assetLabel=(code:string)=>code===mint?`$${room?.project.symbol||'TOKEN'}`:code;
  const amount=(p:{raw:string;decimals:number;asset:string})=>`${fromRaw(p.raw,p.decimals)} ${assetLabel(p.asset)}`;

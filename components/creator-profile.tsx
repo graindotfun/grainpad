@@ -1,4 +1,5 @@
 'use client';
+import {useSharedWallet} from '@/components/use-shared-wallet';
 import {useEffect,useRef,useState} from 'react';
 import {WalletAvailability} from './wallet-availability';
 import {Button} from './ui/button';
@@ -13,6 +14,7 @@ export function CreatorProfile({mint}:{mint:string}){
  const selected=useRef<Wallet|null>(null),cleanup=useRef<(()=>void)|null>(null),[choices,setChoices]=useState<ReturnType<typeof walletProviders>>([]);
  useEffect(()=>()=>cleanup.current?.(),[]);
  const [data,setData]=useState<View|null>(null),[error,setError]=useState(''),[owner,setOwner]=useState(''),[busy,setBusy]=useState(false);
+ useSharedWallet(selected,setOwner,()=>{});
  const [description,setDescription]=useState(''),[website,setWebsite]=useState(''),[twitter,setTwitter]=useState(''),[telegram,setTelegram]=useState(''),[banner,setBanner]=useState('');
  useEffect(()=>{const c=new AbortController();fetch(`/api/profile/${mint}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw Error('Creator profile is unavailable.');const body=await r.json() as View;setData(body);setDescription(body.update?.description??body.launch.description);setWebsite(body.update?.website??'');setTwitter(body.update?.twitter??body.launch.twitter);setTelegram(body.update?.telegram??body.launch.telegram);}).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[mint]);
  async function connect(wallet:Wallet){setError('');try{await wallet.connect();if(!wallet.publicKey)throw Error('Wallet did not provide an address.');cleanup.current?.();selected.current=wallet;setOwner(wallet.publicKey.toBase58());setChoices([]);cleanup.current=watchWalletIdentity(wallet,()=>{selected.current=null;setOwner('');setError('Wallet changed. Choose it again before signing.');});}catch(e){setError(e instanceof Error?e.message:'Connection failed.');}}
