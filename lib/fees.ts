@@ -5,7 +5,7 @@ import {SITE} from './site-config';
 import {grainpadPlatformId} from './platform-policy';
 import {rpc,assertNetwork} from './launch';
 import {prepareInstructions} from './operations';
-import {feeVaults,feeClaimInstruction} from './fee-instructions.mjs';
+import {feeVaults,feeClaimInstructions} from './fee-instructions.mjs';
 export async function readFees(ownerAddress:string,symbol='SOL'){
  const connection=rpc('mainnet-beta'),owner=new PublicKey(ownerAddress);await assertNetwork(connection,'mainnet-beta');
  const a=feeVaults(owner,grainpadPlatformId(),symbol),accounts=await connection.getMultipleAccountsInfo([a.creator,a.platform]);
@@ -16,6 +16,6 @@ export async function prepareFeeClaim(ownerAddress:string,kind:'creator'|'platfo
  const rewards=await readFees(ownerAddress,symbol),amount=rewards[kind];if(BigInt(amount)<=0n)throw Error('No accrued fees to claim.');
  if(kind==='platform'&&ownerAddress!==SITE.projectWallet)throw Error('Platform fees belong to the Grainpad owner wallet.');
  const owner=new PublicKey(ownerAddress),a=feeVaults(owner,grainpadPlatformId(),symbol);
- const prepared=await prepareInstructions(ownerAddress,[feeClaimInstruction(owner,grainpadPlatformId(),kind,symbol)],maxCost);
+ const prepared=await prepareInstructions(ownerAddress,feeClaimInstructions(owner,grainpadPlatformId(),kind,symbol),maxCost);
  return {...prepared,amount,kind,destination:a.destination.toBase58(),quote:a.quote};
 }
