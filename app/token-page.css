@@ -102,15 +102,17 @@
 
 /* Reality Check inside the swap rail. */
 .swap-reality{margin-top:16px;border-top:1px solid var(--market-border);padding-top:12px}
-.swap-reality>summary{display:flex;align-items:baseline;gap:8px;cursor:pointer;list-style:none;font-size:13px;font-weight:600}
+.swap-reality>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;cursor:pointer;list-style:none;font-size:13px;font-weight:600}
 .swap-reality>summary::-webkit-details-marker{display:none}
 .swap-reality>summary::after{content:"+";margin-left:auto;color:var(--market-muted);font:500 14px/1 var(--font-code)}
 .swap-reality[open]>summary::after{content:"–"}
 .swap-reality>summary small{color:var(--market-muted);font-weight:400;font-size:12px}
-.reality-check.is-compact{margin-top:12px;font-size:12px}
+.reality-check.is-compact{margin-top:12px;font-size:12px;min-width:0;max-width:100%;overflow-wrap:anywhere}
 .reality-check.is-compact .product-input-row{display:grid;grid-template-columns:minmax(0,1fr) 84px;gap:8px}
-.reality-check.is-compact .product-input-row label{display:grid;gap:5px;font-size:11px;color:var(--market-muted)}
-.reality-check.is-compact .product-input-row button{grid-column:1/-1}
+.reality-check.is-compact .product-input-row label{min-width:0;max-width:100%;display:grid;gap:5px;font-size:11px;color:var(--market-muted)}
+.reality-check.is-compact .product-input-row input{min-width:0;max-width:100%;box-sizing:border-box}
+.reality-check.is-compact .product-input-row button{grid-column:1/-1;min-width:0;max-width:100%;height:auto;white-space:normal}
+.reality-rows li>*{min-width:0;overflow-wrap:anywhere}
 .reality-rows{list-style:none;margin:10px 0;padding:0}
 .reality-rows li{display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--market-border);font:500 11.5px/1.3 var(--font-code)}
 .reality-rows small{display:block;color:var(--market-muted);font-size:10px}
@@ -218,3 +220,10 @@ html[data-theme="dark"] .public-tape .is-sell .ledger-side i{background:var(--se
 .creator-profile .product-facts>div{display:grid;grid-template-columns:minmax(110px,1fr) minmax(0,2fr);gap:16px;align-items:start}
 .creator-profile .product-facts dd{margin:0;min-width:0;overflow-wrap:anywhere}
 @media(max-width:480px){.creator-profile .product-facts>div{grid-template-columns:minmax(0,1fr);gap:6px}}
+
+/* Sell shortcuts share the amount card and use the existing theme colors. */
+.swap-percentages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
+.token-market-page .swap-percentages button{min-width:0;padding:0 4px;min-height:36px;border:1px solid var(--market-border);border-radius:8px;background:var(--market-panel);color:var(--foreground);font-size:12px}
+.token-market-page .swap-percentages button:hover:not(:disabled){border-color:var(--xmr-orange);color:var(--xmr-orange)}
+/* Keep the wallet and navigation controls inside narrow token-page viewports. */
+@media(max-width:360px){.token-market-page .site-brand>span{display:none}}

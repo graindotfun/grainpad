@@ -29,7 +29,7 @@ export async function readTradeBalances(ownerAddress:string,mintAddress:string){
  await assertNetwork(connection,'mainnet-beta');const market=await readMarket(connection,mint,grainpadPlatformId()),quoteMint=new PublicKey(market.quote.mint);
  const tokenProgram=baseTokenProgram(market.pool),baseAta=getAssociatedTokenAddressSync(mint,owner,false,tokenProgram),quoteAta=getAssociatedTokenAddressSync(quoteMint,owner);
  const [sol,accounts]=await Promise.all([connection.getBalance(owner,'confirmed'),connection.getMultipleAccountsInfo([baseAta,quoteAta],'confirmed')]);
- return {owner:ownerAddress,base:(accounts[0]?unpackAccount(baseAta,accounts[0],tokenProgram).amount:0n).toString(),quote:market.quote.native?String(sol):(accounts[1]?unpackAccount(quoteAta,accounts[1],TOKEN_PROGRAM_ID).amount:0n).toString(),sol:String(sol),quoteSymbol:market.quote.symbol};
+ return {owner:ownerAddress,mint:mintAddress,base:(accounts[0]?unpackAccount(baseAta,accounts[0],tokenProgram).amount:0n).toString(),quote:market.quote.native?String(sol):(accounts[1]?unpackAccount(quoteAta,accounts[1],TOKEN_PROGRAM_ID).amount:0n).toString(),sol:String(sol),quoteSymbol:market.quote.symbol};
 }
 
 /** Read-only market estimate. It cannot be submitted or signed. */
