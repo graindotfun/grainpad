@@ -62,3 +62,20 @@ test('scheduled cancellation does not share a public inflight read and cancels r
  const forward=createRpcForwarder(f.options);const publicRead=forward('mainnet-beta',body('getBalance'));const scheduled=forward('mainnet-beta',body('getBalance'),{signal:controller.signal});setTimeout(()=>controller.abort(),10);
  assert.equal((await publicRead).result,42);await scheduled;assert.ok(f.calls.length>=2);assert.equal(cancelled,true);
 });
+
+test('scheduled RPC diagnostics expose bounded status/code but no provider strings',async()=>{
+ const f=fixture();f.options.fetcher=async()=>new Response('secret-body',{status:429});
+ const response=await createRpcForwarder(f.options)('mainnet-beta',body('getTransaction'),{primaryOnly:true,diagnostics:true});
+ assert.equal(response.diagnostic.category,'transport');assert.equal(response.diagnostic.attempts[0].httpStatus,429);assert(!JSON.stringify(response.diagnostic).includes('secret-body'));
+ const g=fixture();g.options.fetcher=async()=>Response.json({jsonrpc:'2.0',id:1,error:{code:-32602,message:'https://secret.example/token-secret',data:{secret:'never-copy'}}});
+ const provider=await createRpcForwarder(g.options)('mainnet-beta',body('getTransaction'),{primaryOnly:true,diagnostics:true});
+ assert.equal(provider.diagnostic.category,'provider');assert.equal(provider.diagnostic.attempts[0].providerCode,-32602);assert(!JSON.stringify(provider.diagnostic).includes('secret'));
+});
+test('budget and concurrency diagnostics remain fixed and public replies omit diagnostics',async()=>{
+ const f=fixture();f.options.reserve=async()=>false;
+ const forward=createRpcForwarder(f.options);
+ assert.equal((await forward('mainnet-beta',body('getTransaction'),{diagnostics:true})).diagnostic.category,'budget');
+ assert.equal((await forward('mainnet-beta',body('getBalance'))).diagnostic,undefined);
+ const g=fixture();g.options.acquire=async()=>null;
+ assert.equal((await createRpcForwarder(g.options)('mainnet-beta',body('getTransaction'),{primaryOnly:true,diagnostics:true})).diagnostic.category,'concurrency');
+});
