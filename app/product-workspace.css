@@ -18,7 +18,8 @@
 .room-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}.room-context{margin:6px 0 0}
 .room-sig-toggle{font:.6875rem var(--font-code);padding:2px 6px;border:1px solid var(--product-line);background:transparent;color:var(--product-muted);cursor:pointer}.room-sig-toggle[aria-expanded=true]{border-color:var(--xmr-orange);color:var(--xmr-orange)}
 .room-sig-body{flex-basis:100%}.room-sig-body pre{white-space:pre-wrap;overflow-wrap:anywhere;font:.75rem/1.7 var(--font-code);padding:14px;background:var(--product-wash);margin:8px 0}
-.room-subs{list-style:none;margin:16px 0 0;padding:0 0 0 12px;border-left:1px solid var(--product-line);display:grid;gap:18px}
+.room-subs{list-style:none;margin:16px 0 0;padding:0 0 0 11px;border-left:1px solid var(--product-line);display:grid;gap:18px}
 .room-sub-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 12px}.room-sub h4{margin:0;font-size:1rem}.room-chips{display:flex;flex-wrap:wrap;gap:6px}
-.room-reply{margin:10px 0 0 12px;padding-left:12px;border-left:1px solid var(--product-line)}
+.room-reply{margin:10px 0 0;padding-left:11px;border-left:1px solid var(--product-line)}
 .room-updates{margin:0 0 20px}.room-strip-title{font-size:.875rem;margin:0 0 6px;color:var(--product-muted)}.room-partial,.room-closed-line{margin:12px 0 0}
+.room-thread>.product-actions{margin-top:18px}.room-sub+.room-sub{padding-top:14px;border-top:1px solid var(--product-line)}.room-stray{margin-top:14px}
