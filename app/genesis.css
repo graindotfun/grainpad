@@ -63,3 +63,5 @@ body{background:var(--background)}
 @media(prefers-reduced-motion:reduce){.hero-soft{transition:none}.genesis-lab{box-shadow:none}.genesis-motion{display:none}.genesis-instruction{display:none}.principles-list>div:hover,.closing-arrow:hover{transform:none}}
 
 @media(max-width:760px){.pointer-instruction{display:none}.touch-instruction{display:inline}}
+/* Narrow phones: keep wordmark, theme toggle, header wallet and menu inside a 360px viewport. */
+@media(max-width:380px){.landing-shell,.landing-shell.grain-updates{--page-gutter:16px;padding:0 16px}.site-header{gap:8px}.site-header .site-brand{font-size:23px;gap:6px}.site-header .site-brand img{width:24px;height:24px}.site-header-actions{gap:2px}.site-header-actions .theme-toggle{width:40px;height:40px;min-width:40px}.mobile-menu-toggle{width:40px}}
