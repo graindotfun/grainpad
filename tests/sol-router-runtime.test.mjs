@@ -12,7 +12,7 @@ test('transient router rate limits and outages retry within a bounded policy',as
  calls=0;await assert.rejects(fetchSolRouterJSON(async()=>{calls++;throw new TypeError('network');},'https://api.jup.ag/swap/v1/quote',undefined,{sleep:async()=>{}}),/did not respond/);assert.equal(calls,3);
 });
 test('route rejections are not retried and expose only a bounded upstream code',async()=>{
- let calls=0;await assert.rejects(fetchSolRouterJSON(async()=>{calls++;return reply(400,'{"errorCode":"COULD_NOT_FIND_ANY_ROUTE","error":"<script>"}');},'https://api.jup.ag/swap/v1/quote',undefined,{sleep:async()=>{throw Error('must not wait');}}),/^Error: The SOL router has no route through this token's verified Grainpad pool right now \(COULD_NOT_FIND_ANY_ROUTE\)\. [^<]*wXMR meanwhile\.$/);assert.equal(calls,1);
+ let calls=0;await assert.rejects(fetchSolRouterJSON(async()=>{calls++;return reply(400,'{"errorCode":"COULD_NOT_FIND_ANY_ROUTE","error":"<script>"}');},'https://api.jup.ag/swap/v1/quote',undefined,{sleep:async()=>{throw Error('must not wait');}}),error=>error.code==='router-not-indexed'&&error.fallback==='wxmr-direct'&&error.routerCode==='COULD_NOT_FIND_ANY_ROUTE'&&/^The SOL router has not indexed this token's verified Grainpad pool yet \(COULD_NOT_FIND_ANY_ROUTE\)\. [^<]*wXMR now\./.test(error.message));assert.equal(calls,1);
  await assert.rejects(fetchSolRouterJSON(async()=>reply(400,'{"errorCode":"SLIPPAGE_TOO_HIGH"}'),'https://api.jup.ag/swap/v1/quote'),/^Error: Official SOL router rejected this route \(SLIPPAGE_TOO_HIGH\)\.$/);
  await assert.rejects(fetchSolRouterJSON(async()=>reply(401,'{"errorCode":"lower case <b>"}'),'https://api.jup.ag/swap/v1/quote'),/rejected this route request\.$/);
 });
