@@ -152,3 +152,23 @@ test('repeating the active vote is refused; the intended way to cancel is a sign
  await assert.rejects(()=>cast(db,voter,target,1,{base:row.updated_at}),/already recorded/);
  assert.equal((await cast(db,voter,target,0,{base:row.updated_at},3000)).score,0);
 });
+
+test('after X is disconnected the stale vote stops counting, can still be cleared, and nothing new can be created or changed until X is verified again',async()=>{
+ const db=database(),target=wallet(),voter=wallet(),other=wallet();profile(db,target);profile(db,voter,{x:true});profile(db,other);
+ await cast(db,voter,target,1,{base:0},1000);
+ const vote1=stored(db,voter,target);
+ assert.equal((await fameSummary(db,target.address)).score,1);
+ db.sqlite.prepare("UPDATE wallet_identity SET x_user_id='',x_username='',x_verified_at=NULL WHERE wallet=?").run(voter.address);
+ assert.equal((await fameSummary(db,target.address)).score,0);
+ assert.equal(stored(db,voter,target).value,1);
+ await assert.rejects(()=>cast(db,voter,target,-1,{base:vote1.updated_at}),/Connect X/);
+ await assert.rejects(()=>cast(db,voter,other,1,{base:0}),/Connect X/);
+ assert.equal(stored(db,voter,target).value,1);
+ assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM wallet_fame WHERE voter=?').get(voter.address).n,1);
+ const cleared=await cast(db,voter,target,0,{base:vote1.updated_at},3000);
+ assert.equal(stored(db,voter,target),undefined);assert.equal(cleared.score,0);
+ assert.deepEqual(db.sqlite.prepare('SELECT value FROM wallet_fame_revision ORDER BY created_at').all().map(r=>r.value),[1,0]);
+ await assert.rejects(()=>cast(db,voter,target,1,{base:0}),/Connect X/);
+ db.sqlite.prepare("UPDATE wallet_identity SET x_user_id='xv',x_username='v',x_verified_at=9 WHERE wallet=?").run(voter.address);
+ assert.equal((await cast(db,voter,target,1,{base:0},5000)).score,1);
+});
