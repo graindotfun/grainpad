@@ -1,3 +1,4 @@
+import {inspectTransactionStatus} from './transaction-status.mjs';
 import {simulationCostProof} from './simulation-cost.mjs';
 import {sessionRpcFetch} from "./browser-rpc-session.mjs";
 import {rebroadcastSigned} from './rebroadcast.mjs';
@@ -32,19 +33,16 @@ export function solToLamports(value:string):bigint{
 }
 export type PreparedLaunch={setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;rewards?:{taxBps:number;collector:string};fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
 export type PreparedOperation=Pick<PreparedLaunch,"rewards"|"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
-/** Only release a pending UI after finality or provable blockhash expiry. */
-export async function resolveSubmitted(signature:string){
+/** Pending is a normal state; uncertain attempts remain locked until resolved. */
+export async function inspectSubmitted(signature:string){
  const connection=rpc('mainnet-beta',undefined,signature);await assertNetwork(connection,'mainnet-beta');
- const status=(await connection.getSignatureStatuses([signature],{searchTransactionHistory:true})).value[0];
- if(status?.confirmationStatus==='finalized')return status.err?'failed':'finalized';
- const raw=localStorage.getItem(`grainpad-tx-expiry:${signature}`),expiry=raw?Number(raw):NaN;
- const target=localStorage.getItem(`grainpad-tx-target:${signature}`);
- if(!status&&target&&await connection.getAccountInfo(new PublicKey(target),'finalized'))throw Error('Target account exists. Do not recreate it. Verify the existing platform or mint before proceeding.');
- if(!status&&Number.isSafeInteger(expiry)&&await connection.getBlockHeight('finalized')>expiry){
-  const again=(await connection.getSignatureStatuses([signature],{searchTransactionHistory:true})).value[0];
-  if(!again)return 'expired';
- }
- throw Error('Transaction is still pending or its expiry cannot be verified. Check the explorer before retrying.');
+ const raw=localStorage.getItem(`grainpad-tx-expiry:${signature}`);
+ return inspectTransactionStatus(connection,signature,{expiry:raw?Number(raw):NaN,target:localStorage.getItem(`grainpad-tx-target:${signature}`),publicKey:(value:string)=>new PublicKey(value)});
+}
+export async function resolveSubmitted(signature:string){
+ const result=await inspectSubmitted(signature);
+ if(['finalized','failed','expired'].includes(result.status))return result.status;
+ throw Error(result.reason||'Transaction is still pending or its expiry cannot be verified. Check the explorer before retrying.');
 }
 export const DEVNET_PLATFORM="";
 export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number}):Promise<PreparedLaunch>{

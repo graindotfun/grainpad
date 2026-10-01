@@ -2,6 +2,7 @@ import {database} from '@/lib/server-owner';
 import {grainpadPlatformId} from '@/lib/platform-policy';
 import {discoveryRecords,enrichDiscovery} from '@/lib/token-discovery';
 import {queryDiscovery} from '@/lib/discovery-index.mjs';
+import {identityCards} from '@/lib/wallet-identity.mjs';
 export const dynamic='force-dynamic';
 export async function GET(request:Request){
  const headers={'Cache-Control':'no-store'},params=new URL(request.url).searchParams;
@@ -10,6 +11,9 @@ export async function GET(request:Request){
  try{
   const platform=grainpadPlatformId().toBase58(),now=Date.now(),result=await queryDiscovery(database(),{platform,search,filter,sort,page,quote,now});
   const enrich=(rows:typeof result.selected)=>{const parsed=discoveryRecords(rows,platform);return enrichDiscovery(parsed.records,parsed.cache,platform,result.officialMint,now);};
-  return Response.json({...result,selected:undefined,tokens:enrich(result.selected),featured:enrich(result.featured),updatedAt:now,stale:false,totalIndexed:result.total,coverage:'All indexed launches; historical completeness not yet verified.'},{headers});
+  const tokens=enrich(result.selected),featured=enrich(result.featured);
+  let identities:Record<string,{username:string}>={};try{identities=await identityCards(database(),[...tokens,...featured].map(token=>token.creator).filter((creator):creator is string=>Boolean(creator)),{limit:40});}catch{identities={};}
+  const withIdentity=<T extends {creator?:string}>(rows:T[])=>rows.map(token=>({...token,creatorIdentity:token.creator?identities[token.creator]||null:null}));
+  return Response.json({...result,selected:undefined,tokens:withIdentity(tokens),featured:withIdentity(featured),updatedAt:now,stale:false,totalIndexed:result.total,coverage:'All indexed launches; historical completeness not yet verified.'},{headers});
  }catch(error){console.error('grainpad_discovery_error',error instanceof Error?error.message:'Unknown error');return Response.json({error:'The token directory is temporarily unavailable. Please try again.'},{status:503,headers});}
 }

@@ -1,0 +1,25 @@
+/* Shared wallet and transaction flows stay inside the viewport on every screen. */
+.site-header .site-wallet-trigger{display:inline-flex!important;border-radius:999px;white-space:nowrap;gap:7px;min-height:40px;padding:10px 16px;font-size:12px;flex-shrink:0}
+.wallet-status-dot{width:6px;height:6px;border-radius:50%;background:#57c695}
+.wallet-session-dialog,.trade-flow-dialog{z-index:140!important;max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;border-radius:20px!important;background:var(--card,#151a1c);color:var(--foreground,#eef1f2);width:min(440px,calc(100vw - 24px));padding:24px!important}
+body:has(.wallet-session-dialog) [data-slot="dialog-overlay"],body:has(.trade-flow-dialog) [data-slot="dialog-overlay"]{z-index:130!important}
+.wallet-session-dialog .token-wallet-options{display:grid;gap:12px;margin:8px 0}
+.wallet-session-dialog button[data-wallet-provider]{border-radius:999px;min-height:48px}
+.trade-flow-dialog dl{display:grid;gap:14px;font-size:14px}
+.trade-flow-dialog dl>div{display:flex;justify-content:space-between;gap:20px}
+.trade-flow-dialog dd{text-align:right;overflow-wrap:anywhere}
+.trade-flow-dialog dt{color:var(--muted-foreground,#a0b2bb)}
+.trade-flow-dialog .feedback{overflow-wrap:anywhere;font-size:14px}
+.trade-flow-dialog>button:not([data-slot="dialog-close"]){border-radius:999px}
+.earnings-balances{display:grid;gap:16px}
+.earnings-currency{border:1px solid var(--line,rgba(143,159,168,.22));border-radius:16px;padding:20px}
+.earnings-currency-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.earnings-currency-heading h3{margin:0;font-size:17px}.earnings-currency-heading span{font-size:12px;color:var(--muted-foreground,#a0b2bb)}
+.earnings-currency .earnings-amount{font-size:clamp(22px,4vw,30px);line-height:1.3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin:20px 0}
+.earnings-amount small{font-size:14px}.earnings-currency .primary-action{width:100%;border-radius:999px}
+.platform-earnings{border-top:1px solid var(--line,rgba(143,159,168,.22));margin-top:16px;padding-top:12px}
+.claim-cost-settings,.claim-disclosures{margin-top:16px;font-size:14px}.claim-cost-settings label{display:block;margin-top:12px}
+.swap-cost-limit{font-size:11px!important;line-height:1.5!important;margin:8px 0 12px!important}
+.token-swap .swap-asset{padding:14px}.token-swap .swap-asset small{line-height:1.4}.token-swap .primary-action{border-radius:999px}
+@media(min-width:768px){.token-side .token-swap{position:relative;top:auto;max-height:calc(100dvh - 120px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}}
+@media(max-width:767px){.site-header .site-brand{font-size:22px!important;gap:6px}.site-header .site-brand img{width:27px;height:27px}.site-header .site-header-actions{gap:6px}.site-header .site-header-actions>a:has(svg){display:none}.site-header .site-wallet-trigger{font-size:11px;padding:8px 10px}.wallet-session-dialog,.trade-flow-dialog{padding:22px 18px!important}.token-swap.is-open{max-height:calc(100dvh - 16px)}.earnings-currency{padding:16px}}

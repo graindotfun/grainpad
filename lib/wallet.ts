@@ -1,10 +1,14 @@
+import {walletSession} from './wallet-session.mjs';
 import {getWallets} from '@wallet-standard/app';
 import {discoverWalletProviders} from './wallet-adapters.mjs';
 import type {PublicKey,VersionedTransaction} from '@solana/web3.js';
-export type Wallet={publicKey:PublicKey|null;connect:()=>Promise<unknown>;disconnect?:()=>Promise<void>;signMessage:(m:Uint8Array,encoding?:string)=>Promise<{signature:Uint8Array}|Uint8Array>;signTransaction:(t:VersionedTransaction)=>Promise<VersionedTransaction>;on?:(event:string,handler:()=>void)=>void;removeListener?:(event:string,handler:()=>void)=>void};
+export type Wallet={publicKey:PublicKey|null;connect:(options?:{silent?:boolean})=>Promise<unknown>;disconnect?:()=>Promise<void>;invalidateSession?:()=>void;signMessage:(m:Uint8Array,encoding?:string)=>Promise<{signature:Uint8Array}|Uint8Array>;signTransaction:(t:VersionedTransaction)=>Promise<VersionedTransaction>;on?:(event:string,handler:()=>void)=>void;removeListener?:(event:string,handler:()=>void)=>void};
+const observed=new WeakSet<Wallet>();
 export function walletProviders():{name:string;wallet:Wallet}[]{
  if(typeof window==='undefined')return [];
- return discoverWalletProviders(window,[...getWallets().get()]) as {name:string;wallet:Wallet}[];
+ const providers=discoverWalletProviders(window,[...getWallets().get()]) as {name:string;wallet:Wallet}[];
+ for(const {name,wallet} of providers)if(!observed.has(wallet)){observed.add(wallet);wallet.on?.('connect',()=>{walletSession.activate(wallet,name);try{sessionStorage.setItem('grainpad-wallet-provider',name);}catch{}});}
+ return providers;
 }
 /** Selecting/connecting identifies an account; it is not a login signature or transaction approval. */
 export function watchWalletIdentity(wallet:Wallet,onInvalidated:()=>void){
@@ -20,3 +24,14 @@ export function walletBrowseLinks(pageUrl:string){
 export function isMobileBrowser(userAgent:string,maxTouchPoints=0){
  return /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent)||(/Macintosh/.test(userAgent)&&maxTouchPoints>1);
 }
+
+let restoring:Promise<void>|null=null;
+export function restoreWalletSession(){
+ if(restoring||walletSession.getSnapshot())return restoring||Promise.resolve();
+ restoring=(async()=>{let name='';try{name=sessionStorage.getItem('grainpad-wallet-provider')||'';}catch{}if(!name)return;
+ // Wait briefly for an installed provider to inject. Never fall back to another wallet.
+ for(let i=0;i<4;i++){const selected=walletProviders().find(p=>p.name===name);if(selected){try{await selected.wallet.connect({silent:true});}catch{}return;}await new Promise(resolve=>setTimeout(resolve,300));}
+ })();return restoring;
+}
+export async function disconnectWalletSession(){const selected=walletSession.getSnapshot();try{sessionStorage.removeItem('grainpad-wallet-provider');}catch{}walletSession.clear();await selected?.wallet.disconnect?.();}
+export function openWalletPicker(){window.dispatchEvent(new Event('grainpad-open-wallet'));}
