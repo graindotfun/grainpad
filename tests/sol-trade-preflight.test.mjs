@@ -24,13 +24,13 @@ function chain({height=400,err=null,slot=9,onSimulate=()=>{}}={}){
 }
 test('passing preflight re-simulates the exact stored bytes without signature or blockhash replacement',async()=>{
  const {storage,review}=await stored(),connection=chain({onSimulate:params=>{assert.equal(params[0],review.transactionBase64);assert.deepEqual(params[1],{encoding:'base64',commitment:'confirmed',sigVerify:false,minContextSlot:5});}});
- const result=await preflightSolTrade(storage,review.id,connection,{clock:()=>review.createdAt+1000});
+ const result=await preflightSolTrade(storage,review.id,connection,{admit:async()=>{},clock:()=>review.createdAt+1000});
  assert.deepEqual(result,{id:review.id,ok:true,slot:9,blocksRemaining:100,unitsConsumed:1234});
  assert.equal(connection.calls.filter(c=>c[0]==='simulateTransaction').length,1);
 });
 test('a failing guard is classified by its reviewed position and the wallet is never opened',async()=>{
  const {storage,review}=await stored(),connection=chain({err:{InstructionError:[4,{Custom:6001}]}});
- const result=await preflightSolTrade(storage,review.id,connection,{clock:()=>review.createdAt+1000});
+ const result=await preflightSolTrade(storage,review.id,connection,{admit:async()=>{},clock:()=>review.createdAt+1000});
  assert.equal(result.ok,false);assert.equal(result.reason,'simulation-failed');assert.equal(result.failure.role,'net-minimum');assert.equal(result.failure.account,String(base));assert.match(result.message,/below your reviewed minimum/);
  let prompts=0;const live=(await stored(Date.now())).review;
  await assert.rejects(signSolTrade({review:live,confirmReviewed:true,connection:{},preflight:async()=>result,wallet:{publicKey:payer.publicKey,signTransaction:async()=>{prompts++;throw Error('must not prompt');}}}),/before opening your wallet; nothing was signed/);
@@ -46,26 +46,26 @@ test('route, guard, funding and account failures map to their reviewed instructi
 test('expiring blockhash or review closes before any simulation',async()=>{
  const {storage,review}=await stored();
  const nearHeight=chain({height:480});
- const blocks=await preflightSolTrade(storage,review.id,nearHeight,{clock:()=>review.createdAt+1000});
+ const blocks=await preflightSolTrade(storage,review.id,nearHeight,{admit:async()=>{},clock:()=>review.createdAt+1000});
  assert.equal(blocks.reason,'blockhash-expiring');assert.equal(blocks.blocksRemaining,20);assert.equal(nearHeight.calls.some(c=>c[0]==='simulateTransaction'),false);
- const late=chain();const review2=await preflightSolTrade(storage,review.id,late,{clock:()=>review.expiresAt-5000});
+ const late=chain();const review2=await preflightSolTrade(storage,review.id,late,{admit:async()=>{},clock:()=>review.expiresAt-5000});
  assert.equal(review2.reason,'review-expiring');assert.equal(late.calls.length,0);
- await assert.rejects(preflightSolTrade(storage,review.id,chain(),{clock:()=>review.expiresAt}),/expired/);
+ await assert.rejects(preflightSolTrade(storage,review.id,chain(),{admit:async()=>{},clock:()=>review.expiresAt}),/expired/);
 });
 test('signed or altered stored reviews are refused instead of re-simulated',async()=>{
  const {storage,review}=await stored(),key='sol-trades/v1/'+review.id;
  storage.objects.set(key,JSON.stringify({...review,signedMessageHash:'ab'}));
- await assert.rejects(preflightSolTrade(storage,review.id,chain(),{clock:()=>review.createdAt+1}),/already has a signed transaction/);
+ await assert.rejects(preflightSolTrade(storage,review.id,chain(),{admit:async()=>{},clock:()=>review.createdAt+1}),/already has a signed transaction/);
  const other=Keypair.generate(),tx=new VersionedTransaction(new TransactionMessage({payerKey:other.publicKey,recentBlockhash:'11111111111111111111111111111111',instructions:[]}).compileToV0Message());
  storage.objects.set(key,JSON.stringify({...review,transactionBase64:Buffer.from(tx.serialize()).toString('base64')}));
- await assert.rejects(preflightSolTrade(storage,review.id,chain(),{clock:()=>review.createdAt+1}),/do not match/);
- await assert.rejects(preflightSolTrade(storage,'d'.repeat(32),chain(),{clock:()=>review.createdAt+1}),/missing/);
+ await assert.rejects(preflightSolTrade(storage,review.id,chain(),{admit:async()=>{},clock:()=>review.createdAt+1}),/do not match/);
+ await assert.rejects(preflightSolTrade(storage,'d'.repeat(32),chain(),{admit:async()=>{},clock:()=>review.createdAt+1}),/missing/);
 });
 test('provider simulation failures are not reported as a passing check',async()=>{
  const {storage,review}=await stored(),connection={getBlockHeight:async()=>400,_rpcRequest:async()=>({error:{code:-32005,message:'busy'}})};
- await assert.rejects(preflightSolTrade(storage,review.id,connection,{clock:()=>review.createdAt+1}),/simulation unavailable/);
+ await assert.rejects(preflightSolTrade(storage,review.id,connection,{admit:async()=>{},clock:()=>review.createdAt+1}),/simulation unavailable/);
  const stale={getBlockHeight:async()=>400,_rpcRequest:async()=>({result:{context:{slot:4},value:{err:null}}})};
- await assert.rejects(preflightSolTrade(storage,review.id,stale,{clock:()=>review.createdAt+1}),/simulation unavailable/);
+ await assert.rejects(preflightSolTrade(storage,review.id,stale,{admit:async()=>{},clock:()=>review.createdAt+1}),/simulation unavailable/);
 });
 test('a wallet refusal after a passing preflight reports the verified slot and sends nothing',async()=>{
  const {review}=await stored(Date.now()),oldFetch=globalThis.fetch;let requests=0;globalThis.fetch=async()=>{requests++;throw Error('must not send');};
