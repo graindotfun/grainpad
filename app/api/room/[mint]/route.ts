@@ -13,7 +13,8 @@ export const dynamic='force-dynamic';
 export async function GET(request:Request,{params}:{params:Promise<{mint:string}>}){try{
  const project=await registeredProject((await params).mint),url=new URL(request.url),db=database();
  const data=await roomPage(db,project.mint,{before:url.searchParams.get('before'),need:url.searchParams.get('need')});
- const wallets=[project.creator,...(data.events||[]).map((event:{author?:string})=>event.author)];
+ const wallets=[project.creator];
+ for(const event of data.events||[]){const row=event as {author?:string;kind?:string;verification?:string};if(row.author)wallets.push(row.author);if(row.kind==='payment'&&typeof row.verification==='string'){try{const recipient=JSON.parse(row.verification).recipient;if(typeof recipient==='string')wallets.push(recipient);}catch{/* wallet-only fallback */}}}
  for(const task of data.crew||[]){for(const row of task.approved||[])wallets.push(row.contributor);for(const row of task.payments||[])wallets.push(row.contributor);}
  let identities={};try{identities=await identityCards(db,wallets,{limit:80});}catch{identities={};}
  return Response.json({...data,project,identities},{headers:{'Cache-Control':'no-store'}});

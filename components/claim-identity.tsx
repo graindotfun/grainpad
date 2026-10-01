@@ -24,12 +24,12 @@ async function signed(signMessage:(bytes:Uint8Array)=>Promise<Uint8Array>,messag
 /** Optional identity. It never blocks trading or room participation. */
 export function ClaimIdentity({wallet,signMessage}:{wallet:string;signMessage:(bytes:Uint8Array)=>Promise<Uint8Array>}){
  const [card,setCard]=useState<IdentityCard|null>(null),[ready,setReady]=useState(false),[open,setOpen]=useState(false);
- const [username,setUsername]=useState(''),[displayName,setDisplayName]=useState(''),[bio,setBio]=useState(''),[avatarHash,setAvatarHash]=useState(''),[file,setFile]=useState<File|null>(null);
+ const [username,setUsername]=useState(''),[displayName,setDisplayName]=useState(''),[bio,setBio]=useState(''),[avatarHash,setAvatarHash]=useState(''),[baseUpdatedAt,setBaseUpdatedAt]=useState(0),[file,setFile]=useState<File|null>(null);
  const [xOn,setXOn]=useState(false),[busy,setBusy]=useState(''),[error,setError]=useState(()=>typeof window==='undefined'?'':X_ERRORS[new URLSearchParams(window.location.search).get('identity')||'']||''),[message,setMessage]=useState(()=>typeof window==='undefined'?'':new URLSearchParams(window.location.search).get('x')==='connected'?'X connected.':'');
  useEffect(()=>{const c=new AbortController();Promise.all([
   fetch(`/api/identity/resolve?wallets=${encodeURIComponent(wallet)}`,{signal:c.signal,cache:'no-store'}).then(r=>r.json()),
   fetch('/api/identity/x/status',{signal:c.signal,cache:'no-store'}).then(r=>r.json()),
- ]).then(async([resolved,status])=>{const cards=resolved as {identities?:Record<string,IdentityCard&{avatarHash?:string}>};const flags=status as {configured?:boolean};const next=cards.identities?.[wallet];if(next?.username){const full=await fetch(`/api/identity/u/${next.username}`,{signal:c.signal,cache:'no-store'}).then(r=>r.json()) as {profile?:{bio?:string}};setBio(typeof full.profile?.bio==='string'?full.profile.bio:'');}setCard(next||null);setUsername(next?.username||'');setDisplayName(next?.displayName||'');setAvatarHash(next?.avatarHash||'');setXOn(Boolean(flags.configured));setOpen(!next);setReady(true);}).catch(()=>setReady(true));
+ ]).then(async([resolved,status])=>{const cards=resolved as {identities?:Record<string,IdentityCard&{avatarHash?:string}>};const flags=status as {configured?:boolean};const next=cards.identities?.[wallet];if(next?.username){const full=await fetch(`/api/identity/u/${next.username}`,{signal:c.signal,cache:'no-store'}).then(r=>r.json()) as {profile?:{bio?:string;updatedAt?:number}};setBio(typeof full.profile?.bio==='string'?full.profile.bio:'');setBaseUpdatedAt(typeof full.profile?.updatedAt==='number'?full.profile.updatedAt:0);}else setBaseUpdatedAt(0);setCard(next||null);setUsername(next?.username||'');setDisplayName(next?.displayName||'');setAvatarHash(next?.avatarHash||'');setXOn(Boolean(flags.configured));setOpen(!next);setReady(true);}).catch(()=>setReady(true));
   return ()=>c.abort();},[wallet]);
  async function avatar(){
   if(!file)return {hash:avatarHash,base64:''};
@@ -44,12 +44,13 @@ export function ClaimIdentity({wallet,signMessage}:{wallet:string;signMessage:(b
    const name=action==='disconnect-x'?card?.username||'':normalizeUsername(username.trim().toLowerCase()).username;
    const nextAction=action==='disconnect-x'?'disconnect-x':!card?'claim':name===card.username?'update':'rename';
    const image=nextAction==='disconnect-x'?{hash:avatarHash,base64:''}:await avatar();
-   const payload={origin:window.location.origin,wallet,action:nextAction,username:name,displayName:(nextAction==='disconnect-x'?card?.displayName:displayName.trim())||'',bio,avatarHash:image.hash,nonce:crypto.randomUUID(),expires:Date.now()+10*60*1000};
+   const payload={origin:window.location.origin,wallet,action:nextAction,username:name,displayName:(nextAction==='disconnect-x'?card?.displayName:displayName.trim())||'',bio,avatarHash:image.hash,baseUpdatedAt:nextAction==='claim'?0:baseUpdatedAt,nonce:crypto.randomUUID(),expires:Date.now()+10*60*1000};
    const signature=await signed(signMessage,identityMessage(payload));
    const response=await fetch('/api/identity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({payload,signature,...(image.base64?{avatarBase64:image.base64}:{})})});
    const result=await response.json() as {error?:string;profile?:IdentityCard&{bio?:string}};
    if(!response.ok)throw Error(result.error||'Identity update failed.');
-   setCard(result.profile||null);setUsername(result.profile?.username||'');setDisplayName(result.profile?.displayName||'');setFile(null);setOpen(false);setMessage(nextAction==='disconnect-x'?'X disconnected.':nextAction==='claim'?'Identity claimed.':'Identity saved.');
+   const saved=result.profile as IdentityCard&{bio?:string;updatedAt?:number}|undefined;
+   setCard(saved||null);setUsername(saved?.username||'');setDisplayName(saved?.displayName||'');if(typeof saved?.updatedAt==='number')setBaseUpdatedAt(saved.updatedAt);setFile(null);setOpen(false);setMessage(nextAction==='disconnect-x'?'X disconnected.':nextAction==='claim'?'Identity claimed.':'Identity saved.');
   }catch(e){setError(e instanceof Error?e.message:'Identity update failed.');}finally{setBusy('');}
  }
  async function connectX(replace:boolean){
