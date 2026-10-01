@@ -47,6 +47,15 @@ test('wallet additions remain constrained while lookup index/order/privilege sub
  const transfer=instructions();transfer.push(SystemProgram.transfer({fromPubkey:owner,toPubkey:key(36),lamports:1}));assert.equal(inspectWalletTransaction(before,compile(transfer),context).valid,false);
  const clone=transaction();clone.message.recentBlockhash=String(key(37));assert.equal(inspectWalletTransaction(before,clone,context).valid,false);
 });
+test('verified recompilation may change lookup packaging while semantic changes still fail',async()=>{
+ const tx=transaction(),context=await resolve(tx),before=decodeReviewedTransaction(tx,context);
+ const staticTx=new VersionedTransaction(new TransactionMessage({payerKey:owner,recentBlockhash:PublicKey.default.toBase58(),instructions:instructions()}).compileToV0Message());
+ const strict=inspectWalletTransaction(before,staticTx);assert.equal(strict.valid,false);assert.match(strict.reasons.join(' '),/lookup mapping/);
+ const permitted=inspectWalletTransaction(before,staticTx,undefined,{allowVerifiedLookupRemap:true});assert.equal(permitted.valid,true,JSON.stringify(permitted.reasons));
+ const changed=instructions();changed[2].keys[2].isWritable=true;
+ const privilegeTx=new VersionedTransaction(new TransactionMessage({payerKey:owner,recentBlockhash:PublicKey.default.toBase58(),instructions:changed}).compileToV0Message());
+ const rejected=inspectWalletTransaction(before,privilegeTx,undefined,{allowVerifiedLookupRemap:true});assert.equal(rejected.valid,false);assert.match(rejected.reasons.join(' '),/privileges|removed/);
+});
 test('actual SDK transport retains one-bank LUT balance mapping, clamps snapshot floor and verifies loaded account postbalance',async()=>{
  const tx=transaction(),context=await resolve(tx),all=transactionAddressKeys(tx,context),dest=context.loadedWritable[0],pre=all.map((_,i)=>i===0?10000000:100),post=all.map((_,i)=>i===0?9000000:100);
  const raw=()=>({context:{slot:101},value:{err:null,fee:5000,preBalances:[...pre],postBalances:[...post],loadedAddresses:{writable:[...context.loadedWritable],readonly:[...context.loadedReadonly]},accounts:[{lamports:9000000},{lamports:100}],unitsConsumed:100000}});
