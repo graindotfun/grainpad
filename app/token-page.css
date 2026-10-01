@@ -194,6 +194,17 @@
 .creator-profile textarea{min-height:90px;padding:10px;border:1px solid var(--market-border);border-radius:8px;background:var(--market-inset);color:var(--foreground);font:inherit}
 .token-unregistered{padding:24px!important;max-width:720px}
 .token-unregistered p{margin:14px 0 18px;color:var(--market-muted)}
+.token-market-page .token-swap>.wallet-connect-trigger{border-radius:999px!important}
+body:has(.token-wallet-dialog) [data-slot="dialog-overlay"]{z-index:90}
+.token-wallet-dialog[data-slot="dialog-content"]{z-index:100;display:flex;flex-direction:column;gap:16px;width:min(420px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:22px;border:1px solid var(--border,#ffffff22);border-radius:18px;background:var(--background);color:var(--foreground);overflow:hidden}
+.token-wallet-dialog [data-slot="dialog-header"]{flex:none;padding-right:28px;text-align:left}
+.token-wallet-dialog [data-slot="dialog-title"]{font-size:18px}
+.token-wallet-dialog [data-slot="dialog-description"]{font-size:12px;line-height:1.5;color:var(--muted-foreground)}
+.token-wallet-dialog .token-wallet-options{display:grid;gap:10px;min-height:0;max-height:min(40dvh,360px);overflow-y:auto;scrollbar-width:thin;padding:2px 4px 2px 2px}
+.token-wallet-dialog .token-wallet-options button[data-wallet-provider]{margin:0}
+.token-wallet-dialog>p.small{flex:none;margin:0;line-height:1.45;font-size:11px}
+.token-wallet-dialog>.feedback{flex:none;margin:0}
+@media(max-height:560px){.token-wallet-dialog[data-slot="dialog-content"]{overflow-y:auto}.token-wallet-dialog .token-wallet-options{flex:none;max-height:40dvh}}
 
 html[data-theme="dark"] .public-tape{--record-paper:var(--market-panel,#15191b);--record-ink:var(--foreground);--record-muted:var(--market-muted,#929c9f);--record-line:var(--market-border,#ffffff12);--record-rule:var(--market-border,#ffffff12)}
 html[data-theme="dark"] .public-tape .segmented{background:var(--market-inset,#1c2124)}
