@@ -15,6 +15,8 @@ import "./product-workspace.css";
 import "./grain-system.css";
 import "./token-page.css";
 import "./wallet-ux.css";
+import "./readability.css";
+import "./profile.css";
 import {ContractAddressBar} from "@/components/contract-address-bar";
 
 export const metadata: Metadata = {

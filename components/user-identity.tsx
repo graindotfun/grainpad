@@ -21,7 +21,7 @@ export function UserIdentity({wallet,identity,creator=false,compact=false}:{wall
   <span className="user-identity-name">{primary}</span>
   {identity&&!compact&&identity.displayName?<span className="user-identity-handle">@{identity.username}</span>:null}
   {creator?<span className="user-identity-badge">Creator</span>:null}
-  {identity?.xVerified?<span className="user-identity-badge" title={identity.xUsername?`Verified X @${identity.xUsername}`:'Verified X'}>X</span>:null}
+  {identity?.xVerified?<span className="user-identity-badge" title={identity.xUsername?`Verified X @${identity.xUsername}`:'Verified X'}>𝕏{!compact&&identity.xUsername?` @${identity.xUsername}`:''}</span>:null}
  </a>;
 }
 

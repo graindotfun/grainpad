@@ -6,7 +6,7 @@ import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import {PLATFORM_SETTINGS} from '../lib/platform-settings.mjs';
 import {validateIdentityPayload,applyIdentity,lookupUsername,assertSignedWallet,connectXMessage,identityCards,identityMessage,linkXAccount,normalizeUsername,publicProfile,readPublicIdentity,safeAvatarPath,verifyConnectXSignature,verifyIdentitySignature} from '../lib/wallet-identity.mjs';
-import {archiveXAvatar,authorizationUrl,completeXAuthorization,consumeOauthState,createPkce,oauthCookie,safeXImage,xOauthConfig,xRedirectUri,X_OAUTH_COOKIE} from '../lib/x-oauth.mjs';
+import {archiveXAvatar,authorizationUrl,completeXAuthorization,consumeOauthState,createPkce,oauthCookie,safeXImage,xOauthConfig,xRedirectUri,xOauthFailure,xOauthFailureDetails,X_OAUTH_COOKIE} from '../lib/x-oauth.mjs';
 
 function database(){
  const sqlite=new DatabaseSync(':memory:');
@@ -100,6 +100,9 @@ test('claim is race-safe, rename reserves the old name, and wallet-only lookup s
  db.sqlite.prepare('INSERT INTO launch_index(network,mint,platform_id,creator,pool,created_at,record,indexed_at) VALUES(?,?,?,?,?,?,?,?)').run('mainnet-beta','mint111111111111111111111111111111111111','platform',a.address,'pool','2026-01-01',JSON.stringify({mint:'mint111111111111111111111111111111111111',name:'Grain',symbol:'GRAIN'}),1);
  db.sqlite.prepare('INSERT INTO room_event(id,mint,author,kind,title,body,url,target,created_at,payload,signature) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run('id1','mint111111111111111111111111111111111111',a.address,'submission','Work','secret body','https://example.com','',1,'{}','sig');
  const view=await readPublicIdentity(db,'Nakamoto',{platform:'platform'});
+ assert.equal(view.activity.find(event=>event.kind==='launch').title,'Grain');
+ assert.equal(view.activity[0].kind,'launch');
+ assert.equal(view.rooms[0].tokenName,'Grain');
  assert.equal(view.profile.username,'nakamoto');assert.equal(view.created[0].symbol,'GRAIN');assert.equal(view.rooms[0].title,'Work');assert.equal(JSON.stringify(view).includes('secret body'),false);
  const old=await readPublicIdentity(db,'satoshi');assert.equal(old.redirect,'nakamoto');
  const linked=await linkXAccount(db,a.address,{xUserId:'42',xUsername:'satoshi'},{replace:'no',now:5,avatarHash:''});
@@ -238,4 +241,18 @@ test('only the canonical platform admin wallet can claim the exact platform name
  const base={origin,wallet:admin,action:'claim',username:'grainpad',displayName:'Grainpad',bio:'',avatarHash:'',baseUpdatedAt:0,nonce:crypto.randomUUID(),expires:Date.now()+60_000};
  assert.equal(verifyIdentityPayloadShape(base).username,'grainpad');
  assert.throws(()=>verifyIdentityPayloadShape({...base,wallet:other}),/reserved/);
+});
+
+test('X failure diagnostics distinguish operator issues and never expose provider secrets',async()=>{
+ const cases=[['token',401,{error:'invalid_client'},'x-credentials'],['token',400,{error:'invalid_grant'},'x-callback'],['profile',403,{type:'https://api.x.com/2/problems/client-not-enrolled'},'x-enrollment'],['profile',402,{type:'https://api.x.com/2/problems/credits-depleted'},'x-credits'],['profile',403,{},'x-permission'],['profile',429,{},'x-rate']];
+ for(const [stage,status,body,code] of cases){
+  const failure=xOauthFailure(stage,status,{...body,access_token:'sensitive-token',detail:'private-provider-detail'});
+  const details=xOauthFailureDetails(failure);
+  assert.equal(details.code,code);
+  assert.equal(details.stage,stage);
+  assert.equal(JSON.stringify(details).includes('sensitive-token'),false);
+  assert.equal(JSON.stringify(details).includes('private-provider-detail'),false);
+ }
+ const config={clientId:'client-id-test',clientSecret:'client-secret-test'};
+ await assert.rejects(completeXAuthorization({config,code:'auth-code-1',verifier:'v'.repeat(43),redirectUri:'https://grainpad.fun/api/identity/x/callback',fetchImpl:async()=>({ok:false,status:401,json:async()=>({error:'invalid_client'})})}),error=>xOauthFailureDetails(error).code==='x-credentials');
 });
