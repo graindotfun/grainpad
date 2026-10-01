@@ -15,7 +15,11 @@ export async function verifyServerSolTrade(id:string,encoded:string,network:stri
 
 /** Fixed unsigned probes use a non-persistent sink, never the trade-intent bucket. */
 export async function prepareUnsignedSolAcceptance(name:string){
+ const {SOL_GUARD_ACCEPTANCE_CASES,prepareUnsignedGuardAcceptance}=await import('./sol-guard-acceptance.mjs');
+ if(SOL_GUARD_ACCEPTANCE_CASES.includes(name))return prepareUnsignedGuardAcceptance(connection(),name,NETWORKS['mainnet-beta'].genesis);
+ const negative=name==='admin-buy-net-reject';
  const {solAcceptanceInput,solAcceptanceSummary}=await import('./sol-acceptance-policy.mjs');const db=database();
- const review=await prepareGuardedSolTrade({...solAcceptanceInput(name),connection:connection(),storage:{put:async()=>true},expectedGenesis:NETWORKS['mainnet-beta'].genesis,findLaunch:async(mint:string)=>{const row=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',String(grainpadPlatformId()),mint).first<{record:string}>();return row?JSON.parse(row.record):null;}});
+ const review=await prepareGuardedSolTrade({...solAcceptanceInput(negative?'admin-buy':name),connection:connection(),storage:{put:async()=>true},expectedGenesis:NETWORKS['mainnet-beta'].genesis,findLaunch:async(mint:string)=>{const row=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',String(grainpadPlatformId()),mint).first<{record:string}>();return row?JSON.parse(row.record):null;}});
+ if(negative){const {probeUnsignedNetGuardFailure}=await import('./sol-negative-acceptance.mjs');return probeUnsignedNetGuardFailure(connection(),review);}
  return solAcceptanceSummary(review);
 }
