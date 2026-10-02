@@ -4,9 +4,10 @@ import {discoverWalletProviders} from './wallet-adapters.mjs';
 import type {PublicKey,VersionedTransaction} from '@solana/web3.js';
 export type Wallet={publicKey:PublicKey|null;connect:(options?:{silent?:boolean})=>Promise<unknown>;disconnect?:()=>Promise<void>;invalidateSession?:()=>void;signMessage:(m:Uint8Array,encoding?:string)=>Promise<{signature:Uint8Array}|Uint8Array>;signTransaction:(t:VersionedTransaction)=>Promise<VersionedTransaction>;on?:(event:string,handler:()=>void)=>void;removeListener?:(event:string,handler:()=>void)=>void};
 const observed=new WeakSet<Wallet>();
-export function walletProviders():{name:string;wallet:Wallet}[]{
+export type WalletProvider={name:string;brand:string;kind:'injected'|'standard';icon:string|null;wallet:Wallet};
+export function walletProviders():WalletProvider[]{
  if(typeof window==='undefined')return [];
- const providers=discoverWalletProviders(window,[...getWallets().get()]) as {name:string;wallet:Wallet}[];
+ const providers=discoverWalletProviders(window,[...getWallets().get()]) as WalletProvider[];
  for(const {name,wallet} of providers)if(!observed.has(wallet)){observed.add(wallet);wallet.on?.('connect',()=>{walletSession.activate(wallet,name);try{sessionStorage.setItem('grainpad-wallet-provider',name);}catch{}});}
  return providers;
 }
