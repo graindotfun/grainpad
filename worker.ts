@@ -1,5 +1,12 @@
 import handler from 'vinext/server/fetch-handler';
 import {runScheduledIndexer} from './lib/scheduled-indexer.mjs';
+import {createPublicReadCache} from './lib/public-read-cache.mjs';
+
+declare const __GRAINPAD_COMMIT__: string | null;
+const publicReads = createPublicReadCache({
+ cache: typeof caches === 'undefined' ? undefined : (caches as CacheStorage & {default: Cache}).default,
+ version: __GRAINPAD_COMMIT__,
+});
 
 const worker = {
  fetch(request: Request, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string}, context: ExecutionContext) {
@@ -8,7 +15,8 @@ const worker = {
   const headers = new Headers(request.headers);
   headers.delete('Content-Security-Policy');
   headers.delete('Content-Security-Policy-Report-Only');
-  return handler.fetch(new Request(request, {headers}), env, context);
+  const clean = new Request(request, {headers});
+  return publicReads(clean, () => handler.fetch(clean, env, context), (task: Promise<unknown>) => context.waitUntil(task));
  },
  async scheduled(_controller: ScheduledController, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string}, context: ExecutionContext) {
   const jobs=[runScheduledIndexer(handler,env,context)];
