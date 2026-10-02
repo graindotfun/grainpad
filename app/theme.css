@@ -43,6 +43,7 @@ html[data-theme="light"] .hero-dot{-webkit-text-stroke:inherit}
 html[data-theme="light"] .hero-baseline>span>i{border-color:#918672}
 html[data-theme="light"] .technology-name{color:#4e483e}
 html[data-theme="light"] .raydium-logo{filter:brightness(.28)}
+html[data-theme="light"] .monero-logo{filter:brightness(.28)}
 html[data-theme="light"] .status-indicator.is-active{background:#397b57;border-color:#397b57}
 html[data-theme="light"] .underlined-link{color:#504a3f;border-color:#a39a8a}
 html[data-theme="light"] .underlined-link:hover{color:var(--light-accent);border-color:var(--grain-orange)}

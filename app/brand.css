@@ -49,6 +49,8 @@
 .solana-logo{display:block;width:24px;height:auto;flex:none}
 .technology-separator{height:26px;width:1px;background:var(--brand-line)}
 .raydium-logo{display:block;width:22px;height:auto;flex:none}
+.monero-logo{display:block;width:22px;height:auto;flex:none}
+@media(max-width:700px){.technology-separator{display:none}}
 .raydium-name>span{font-size:12px;color:#a69e91;letter-spacing:0;margin-left:1px}
 .technology-note{margin-left:auto;font-size:11px;color:#a1998c;line-height:1.55}
 .approach-section{--brand-line:#cfcac0;--brand-muted:#6b675f;padding:105px var(--page-gutter);margin:0 calc(-1 * var(--page-gutter));background:#ece9e1;color:#1c1c1a;display:grid;grid-template-columns:1fr 1.04fr;gap:100px}
