@@ -47,3 +47,11 @@ test('brand reservation permits only a mint-bound token page and still rejects t
  assert.match(reservedIdentity({...ordinary,website:'https://grainpad.fun/'},policy),/own website/);
  assert.match(reservedIdentity({...ordinary,website:'https://grainpad.fun/token/'+Keypair.generate().publicKey},policy),/own website/);
 });
+
+test('official GRAIN uses the owner-approved home without weakening other mint bindings',async()=>{
+ const official='Db91fm8AxxfoFySAp6Jg3KVcfZHUTAR7bJDJb5WLMgrn';
+ const publication=await buildMetadataPublication({...draft,mint:official,name:'Grainpad',symbol:'GRAIN'},bytes,'https://preview.example');
+ assert.equal(assertCanonicalTokenWebsite(publication.metadata,official),'https://grainpad.fun');
+ assert.equal(publication.metadata.extensions.website,'https://grainpad.fun');
+ assert.throws(()=>assertCanonicalTokenWebsite({...publication.metadata,grainpad:{mint}},mint),/actual mint/);
+});
