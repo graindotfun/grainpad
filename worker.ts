@@ -1,5 +1,5 @@
 import handler from 'vinext/server/fetch-handler';
-import {runScheduledIndexer} from './lib/scheduled-indexer.mjs';
+import {runScheduledIndexer,refreshMoneroOnIndexerTick} from './lib/scheduled-indexer.mjs';
 import {createPublicReadCache} from './lib/public-read-cache.mjs';
 
 declare const __GRAINPAD_COMMIT__: string | null;
@@ -18,6 +18,7 @@ const worker = {
   headers.delete('Content-Security-Policy');
   headers.delete('Content-Security-Policy-Report-Only');
   const clean = new Request(request, {headers});
+  refreshMoneroOnIndexerTick(clean,handler,env,context);
   return publicReads(clean, () => handler.fetch(clean, env, context), (task: Promise<unknown>) => context.waitUntil(task));
  },
  async scheduled(_controller: ScheduledController, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string}, context: ExecutionContext) {
