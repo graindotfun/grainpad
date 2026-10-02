@@ -13,7 +13,7 @@ const clmm={configId:PublicKey.unique(),vaultA:PublicKey.unique(),vaultB:PublicK
 const required=preCreationLookupAddresses(clmm);
 const tableKey=Keypair.generate().publicKey.toBase58();
 test('a missing, deactivated, foreign or third-party lookup table is refused',()=>{
- assert.equal(GRAINPAD_SOL_LOOKUP_TABLE,null);
+ assert.equal(GRAINPAD_SOL_LOOKUP_TABLE,'GdrHQNhwy7veVC9evQ6YtSwrrjjkqKuHtaV4mfE1X7je');
  assert.throws(()=>assertGrainpadLookupTable({tableAddress:null,table:null}),/owner signature is required before official-token creation/);
  assert.throws(()=>assertGrainpadLookupTable({tableAddress:REFUSED_THIRD_PARTY_SOL_LOOKUP,table:lookupAccount(tableKey,required)}),/third-party/);
  assert.throws(()=>assertGrainpadLookupTable({tableAddress:tableKey,table:null}),/missing on chain/);
