@@ -1,3 +1,4 @@
+import {authorizePlannedLaunch} from './monero-prelaunch-browser.mjs';
 import {inspectTransactionStatus} from './transaction-status.mjs';
 import {simulationCostProof} from './simulation-cost.mjs';
 import {sessionRpcFetch} from "./browser-rpc-session.mjs";
@@ -138,6 +139,7 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
  if(reviewed.operationKind==='launch')assertTokenCreationEnabled();
  if(reviewed.operationKind==='platform')(await import('./platform-setup.mjs')).assertSetupSigningEnabled(reviewed.setupStep);
  if(wallet.publicKey?.toBase58()!==reviewed.owner)throw Error('Wallet changed. Prepare again.');
+ if(reviewed.operationKind==='launch'){const mint=launchMintSigners.get(reviewed);if(!mint)throw Error('Fresh mint signer required.');await authorizePlannedLaunch({...reviewed,...(reviewed as PreparedLaunch),platformId:grainpadPlatformId().toBase58()},wallet,mint);}
  const connection=rpc(reviewed.network,attempt.get().id);
  const {p,setupBefore,sim,conservativeDebit,fee,simulationAddresses}=await preflightOperation(reviewed,connection,attempt);
  const refreshable=p.operationKind==='platform'||p.operationKind==='launch';
