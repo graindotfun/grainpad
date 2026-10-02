@@ -1,6 +1,6 @@
 // Editorial dates are explicit: never use a build date or the visitor's clock.
 export const DOCS = {
-  lastUpdated: "2026-09-29",
+  lastUpdated: "2026-10-02",
   // Set YYYY-MM-DD after verifying the activation transaction on mainnet.
   // /api/platform must also confirm the current policy before Docs says Active.
   feesActiveSince: null as string | null,
