@@ -4,7 +4,9 @@ import {createPublicReadCache} from './lib/public-read-cache.mjs';
 
 declare const __GRAINPAD_COMMIT__: string | null;
 const publicReads = createPublicReadCache({
- cache: typeof caches === 'undefined' ? undefined : (caches as CacheStorage & {default: Cache}).default,
+ // Workers for Platforms disables caches.default in untrusted namespaces.
+ // Open this application's isolated named cache inside request context.
+ cache: typeof caches === 'undefined' ? undefined : () => caches.open('grainpad-public-read-v1'),
  version: __GRAINPAD_COMMIT__,
 });
 

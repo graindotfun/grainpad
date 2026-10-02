@@ -61,3 +61,12 @@ test('bounded distinct cold requests shed load instead of flooding the database'
  const second=await read(request('/api/discovery?q=b'),async()=>{throw Error('must not load');});
  assert.equal(second.status,503);assert.equal(second.headers.get('Retry-After'),'2');release();await first;
 });
+test('named cache opens lazily for public reads and failure preserves origin availability',async()=>{
+ const f=fixture();let opens=0;
+ const read=createPublicReadCache({cache:async()=>{opens++;return f.cache;},version:'v',now:()=>1000});
+ await read(request('/api/rpc'),f.load);assert.equal(opens,0);
+ await read(request(),f.load);const hit=await read(request(),f.load);
+ assert.equal(hit.headers.get('X-Grainpad-Read-Cache'),'HIT');assert.equal(f.loads(),2);
+ const unavailable=createPublicReadCache({cache:async()=>{throw Error('cache unavailable');},version:'v'});
+ assert.equal((await unavailable(request(),f.load)).status,200);
+});
