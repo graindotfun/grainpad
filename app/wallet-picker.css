@@ -26,7 +26,7 @@ body:has(.wallet-session-dialog) [data-slot="dialog-overlay"]{backdrop-filter:bl
 .wallet-row.is-install:hover .wallet-row-install{color:var(--foreground)}
 .wallet-rows.is-secondary{margin-top:8px}.wallet-rows.is-secondary .wallet-row{min-height:54px;border-radius:14px}
 
-.wallet-logo{display:inline-grid;flex:none;place-items:center;overflow:hidden;border-radius:11px}
+.wallet-logo{display:inline-grid;flex:none;place-items:center;overflow:hidden;border-radius:23%}
 .wallet-logo>svg,.wallet-logo>img{width:100%;height:100%;display:block}
 .wallet-logo-generic{display:grid;place-items:center;width:100%;height:100%;background:var(--wp-hover);border:1px solid var(--wp-line);border-radius:inherit;color:var(--foreground)}
 
@@ -43,7 +43,7 @@ body:has(.wallet-session-dialog) [data-slot="dialog-overlay"]{backdrop-filter:bl
 /* Connecting and error states */
 .wallet-connecting{display:grid;justify-items:center;gap:8px;padding:12px 0 4px;text-align:center}
 .wallet-connecting-logo{position:relative;display:grid;place-items:center;width:96px;height:96px;margin-bottom:10px}
-.wallet-connecting-logo .wallet-logo{border-radius:20px;box-shadow:0 8px 24px -10px rgb(0 0 0/.4)}
+.wallet-connecting-logo .wallet-logo{box-shadow:0 8px 24px -10px rgb(0 0 0/.4)}
 .wallet-connecting-ring{position:absolute;inset:-2px;border-radius:50%;border:2px solid transparent;border-top-color:var(--grain-orange);border-right-color:var(--grain-orange-ring);animation:wallet-spin 1s linear infinite}
 .wallet-connecting-logo:has(.wallet-connecting-ring) .wallet-logo{animation:wallet-pulse 1.6s ease-in-out infinite}
 .wallet-connecting-logo.is-error .wallet-logo{filter:grayscale(.6);opacity:.75}
