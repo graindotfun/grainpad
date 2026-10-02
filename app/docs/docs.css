@@ -74,3 +74,8 @@ html[data-theme="light"] :is(.docs-section-body .docs-status,.docs-callout){bord
 @media(max-width:420px){.docs-shell{--docs-header-height:74px}}
 /* The section margin supplies the entire sticky offset; avoid adding the global 90px twice. */
 html:has(.docs-shell){scroll-padding-top:0}
+
+.wallets-faq>details{padding:18px 0;border-bottom:1px solid var(--brand-line)}
+.wallets-faq>details>summary{cursor:pointer;font-weight:600;line-height:1.5}
+.wallets-faq>details[open]>summary{margin-bottom:14px}
+.wallets-faq .address-line{overflow-wrap:anywhere}

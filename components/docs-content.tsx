@@ -11,7 +11,8 @@ import {WxmrWarning} from "@/components/wxmr-warning";
 import { SITE } from "@/lib/site-config";
 import { MoneroLiveRecord, MoneroProofLists, MoneroRecordStatus } from "@/components/monero-record-panel";
 import { GRN1, MONERO_NARRATIVE, MONERO_RECORD_FACTS, MONERO_RECORD_LIMITS, moneroProofStatus } from "@/lib/monero-record-status.mjs";
-import type { PlatformStatus } from "@/lib/platform-policy";
+import {WalletsFaq,type FaqPlatform} from "@/components/wallets-faq";
+import {WxmrUnwrapLink} from "@/components/wxmr-wallet-note";
 
 const sections = [
   ["overview", "Overview"], ["launch-flow", "Launch flow"],
@@ -19,7 +20,7 @@ const sections = [
   ["graduation", "Graduation"], ["grain-and-treasury", "$GRAIN and Treasury"],
   ["trust-model", "How Grainpad is managed"], ["verification", "Verification"],
   ["monero-records", "Monero launch records"], ["pxmr-research", "Early p/xmr research"],
-  ["official-links", "Official links"],
+  ["official-links", "Official links"], ["faq", "Wallets & FAQ"],
 ] as const;
 type ReadState = "loading" | "ready" | "unavailable";
 type TokenRecord = { mint: string };
@@ -39,8 +40,8 @@ function Address({ label, address, note, token = false }: { label: string; addre
   </dd></div>;
 }
 
-export function DocsContent({ platformId, rates }: { platformId: string; rates: { creator: number; platform: number; protocol: number } }) {
-  const [platform, setPlatform] = useState<PlatformStatus | null>(null);
+export function DocsContent({ platformId, rates, solTradingEnabled, solLookupConfigured }: { platformId: string; rates: { creator: number; platform: number; protocol: number }; solTradingEnabled:boolean; solLookupConfigured:boolean }) {
+  const [platform, setPlatform] = useState<FaqPlatform | null>(null);
   const [platformState, setPlatformState] = useState<ReadState>("loading");
   const [token, setToken] = useState<TokenRecord | null>(null);
   const [tokenState, setTokenState] = useState<ReadState>("loading");
@@ -53,7 +54,7 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
       if (!response.ok) throw Error("Verification unavailable");
       return response.json() as Promise<T>;
     }
-    const platformRead = read<PlatformStatus>("/api/platform").then(data => {
+    const platformRead = read<FaqPlatform>("/api/platform").then(data => {
       if (typeof data.active !== "boolean" || data.platformId !== platformId) throw Error("Unexpected platform");
       if (current) { setPlatform(data); setPlatformState("ready"); }
     }).catch(() => { if (current) setPlatformState("unavailable"); });
@@ -97,7 +98,7 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
         </Section>
         <Section index={2}>
           <dl className="docs-facts"><div><dt>Total supply</dt><dd>1,000,000,000 tokens</dd></div><div><dt>Decimals</dt><dd>6</dd></div><div><dt>Offered on the curve</dt><dd>793,100,000 tokens</dd></div><div><dt>Reserved for migration liquidity</dt><dd>206,900,000 tokens</dd></div><div><dt>Graduation target</dt><dd>20 wXMR · rewards launch</dd></div></dl>
-          <p>The rewards launch target is 20 wXMR in trading reserves raised by the curve, not a creation fee. Creation costs are quoted separately through simulation. New reward launches use Token-2022 with a creator-selected transfer tax from 1% to 3%; the slider moves in 0.1% steps. The program accepts whole basis points within this range.</p><h3>Required holder rewards · awaiting activation</h3><p>Transfer tax is withheld in the launched token. The collector operator converts verified tax to wXMR: 70% is allocated to holders of that token, 15% to official GRAIN purchases and burns, and 15% to Grainpad. Existing frozen sources retain their original split. The collector is configured on chain and the operator spending policy is approved. Live operation and verified distribution receipts remain separate activation checks. Public rewards are not active. <a href="/rewards">View distribution status and verified receipts</a>.</p><p>Finalized configuration read slot: {platform?.slot??"UNKNOWN"}. Rewards launches pair with wXMR and use Token-2022, a 1–3% tax range, the billion-token supply and exact 20 wXMR graduation target. The previous untaxed 1b configuration is superseded. Token creation remains locked until policy, operational and public-admission checks pass.</p><p>The creator chooses the tax before launch and has no tax-edit control in Grainpad. LaunchLab initially controls the tax configuration; after migration that authority passes to the configured Grainpad collector. It is not permanently immutable. The founder admin can also change platform rules and trading fees. Current settings are checked before launch and shown on each token’s proof page.</p><h3>Paired with wXMR</h3><WxmrWarning/>
+          <p>The rewards launch target is 20 wXMR in trading reserves raised by the curve, not a creation fee. Creation costs are quoted separately through simulation. New reward launches use Token-2022 with a creator-selected transfer tax from 1% to 3%; the slider moves in 0.1% steps. The program accepts whole basis points within this range.</p><h3>Required holder rewards · awaiting activation</h3><p>Transfer tax is withheld in the launched token. The collector operator converts verified tax to wXMR: 70% is allocated to holders of that token, 15% to official GRAIN purchases and burns, and 15% to Grainpad. Existing frozen sources retain their original split. The collector is configured on chain and the operator spending policy is approved. Live operation and verified distribution receipts remain separate activation checks. Public rewards are not active. <a href="/rewards">View distribution status and verified receipts</a>.</p><p>Finalized configuration read slot: {platform?.slot??"UNKNOWN"}. Rewards launches pair with wXMR and use Token-2022, a 1–3% tax range, the billion-token supply and exact 20 wXMR graduation target. The previous untaxed 1b configuration is superseded. Token creation remains locked until policy, operational and public-admission checks pass.</p><p>The creator chooses the tax before launch and has no tax-edit control in Grainpad. LaunchLab initially controls the tax configuration; after migration that authority passes to the configured Grainpad collector. It is not permanently immutable. The founder admin can also change platform rules and trading fees. Current settings are checked before launch and shown on each token’s proof page.</p><h3>Paired with wXMR</h3><WxmrWarning/><WxmrUnwrapLink/>
         </Section>
         <Section index={3}>
           <p className={`docs-status${active ? " is-active" : ""}`} role="status">{feeStatus}</p>
@@ -157,6 +158,7 @@ export function DocsContent({ platformId, rates }: { platformId: string; rates: 
         <Section index={10}>
           <p>The official GRAIN CA is published only on grainpad.fun and @GrainXMR after verification. Until then, no official CA is published. Display or trading support on Axiom, GMGN, Photon, Padre, Dexscreener and other external interfaces is not guaranteed.</p><p>Primary references: <a href="https://github.com/raydium-io/raydium-idl/blob/master/raydium_launchpad/raydium_launchpad.json" target="_blank" rel="noreferrer">LaunchLab IDL</a>, <a href="https://docs.raydium.io/products/launchlab/platform-config" target="_blank" rel="noreferrer">platform configuration</a>, <a href="https://docs.raydium.io/products/launchlab/instructions" target="_blank" rel="noreferrer">migration instructions</a>.</p><ul className="docs-links"><li><span>Website</span><a href={SITE.origin} target="_blank" rel="noreferrer">grainpad.fun</a></li><li><span>X / Twitter</span><a href={SITE.twitter} target="_blank" rel="noreferrer">x.com/GrainXMR</a></li><li><span>Public record</span><a href="/treasury">Treasury</a></li><li><span>Configuration</span><a href="/platform">Platform status</a></li><li><span>Research</span><a href="/lab">Monero lab</a></li></ul>
         </Section>
+        <Section index={11}><WalletsFaq platform={platformState==="ready"?platform:null} token={token} tokenState={tokenState} solTradingEnabled={solTradingEnabled} solLookupConfigured={solLookupConfigured}/></Section>
       </article>
     </div>
     <SiteFooter/>
