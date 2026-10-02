@@ -86,3 +86,13 @@ test('the daemon client refuses wallet methods and reads extra from daemon json'
   const parsed=extraFromDaemonTransaction({as_json:JSON.stringify({extra})});
   assert.equal(decodeExtraField(parsed).length,1);
 });
+test('the GRAINU v2 record is still 185 bytes and its Grainpad extra field is still 189',async()=>{
+  const {readFileSync}=await import('node:fs');
+  const grainu=JSON.parse(readFileSync(new URL('./fixtures/grainu-v2-signed-creator-record.json',import.meta.url)));
+  const record=Buffer.from(grainu.recordHex,'hex');
+  assert.equal(record.length,185);
+  const fields=verifyRecord(record);
+  assert.equal(fields.version,2);
+  assert.equal(encodeExtraField(record).length,189);
+  assert.equal(fields.metadataHash.toString('hex'),grainu.intent.metadataHash);
+});

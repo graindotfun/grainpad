@@ -57,3 +57,15 @@
 .identity-fold[open]>summary{border-bottom:1px solid var(--product-line,var(--charcoal))}
 .identity-fold .identity-claim{margin:0;border:0;border-radius:0}
 .room-composer .identity-fold .identity-claim label{margin-top:14px}
+
+/* Authorship precedes each signed contribution and its creator response. */
+.room-author-line{margin-bottom:12px}.room-thread>.room-meta{margin-top:14px;margin-bottom:12px}
+.room-reply{padding:14px 16px;border-left:3px solid var(--xmr-orange);background:var(--background)}
+.room-reply-text{margin:10px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;color:var(--foreground)}
+.room-composer-dialog{width:min(620px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--product-line);border-radius:16px;background:var(--background);color:var(--foreground);overflow:auto;overscroll-behavior:contain}
+.room-composer-dialog::backdrop{background:rgb(0 0 0 / .65);backdrop-filter:blur(4px)}
+.room-composer-dialog .room-composer{position:static;margin:0!important;border:0;box-shadow:none}
+.room-composer-dialog-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.room-composer-context{padding:12px 14px;border-left:3px solid var(--xmr-orange);background:var(--product-wash);overflow-wrap:anywhere}
+html:has(.room-composer-dialog[open]){overflow:hidden}
+@media(max-width:760px){.room-composer-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}.room-reply{padding:12px}}
