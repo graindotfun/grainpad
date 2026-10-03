@@ -2,6 +2,7 @@ import {canonicalTokenWebsite} from '@/lib/token-website.mjs';
 import {validateImage} from '@/lib/image-validation.mjs';
 import {env} from 'cloudflare:workers';
 import {buildMetadataPublication,assertPublicationBinding} from '@/lib/metadata-publication.mjs';
+import {acceptLaunchHeader} from '@/lib/canonical-identity.mjs';
 import {persistMetadata} from '@/lib/metadata-persistence.mjs';
 import {database} from "@/lib/server-owner";
 import {consumeRequestBudget} from "@/lib/abuse-budget.mjs";
@@ -56,11 +57,14 @@ export async function POST(request:Request){
   assertPublicationBinding(draft,publication);
   const {metadata,metadataHash:metaHash}=publication;const json=JSON.stringify(metadata);
   if(!await consumeRequestBudget(database(),'upload-global',2000,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-ip:'+ipHash,40,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-owner:'+draft.owner,20,{windowMs:86_400_000}))throw Error('Metadata upload budget reached. Please retry tomorrow.');
+  const header=await acceptLaunchHeader({header:body.header,owner:draft.owner,mint:draft.mint,metadataHash:metaHash,imageHash:publication.imageHash});
   const bindings=env as unknown as {METADATA_PRIMARY?:Fetcher;METADATA_SECONDARY?:Fetcher};
   const persistence=await persistMetadata(publication,[bindings.METADATA_PRIMARY,bindings.METADATA_SECONDARY]);
   if(!await storage.head(`assets/${imageHash}`))await storage.put(`assets/${imageHash}`,bytes,{httpMetadata:{contentType:type,cacheControl:"public, max-age=31536000, immutable"}});
   if(!await storage.head(`assets/${metaHash}`))await storage.put(`assets/${metaHash}`,json,{httpMetadata:{contentType:"application/json",cacheControl:"public, max-age=31536000, immutable"}});
-  await storage.put(`owners/${metaHash}/${draft.owner}`,JSON.stringify({createdAt:new Date().toISOString(),mint:draft.mint,metadata,uri:publication.uri,profile:publication.profile,imageHash,signedPayloadHash:hash,persistence}));
+  if(header&&!await storage.head(`assets/${header.sha256}`))await storage.put(`assets/${header.sha256}`,header.bytes,{httpMetadata:{contentType:header.type,cacheControl:"public, max-age=31536000, immutable"}});
+  if(header&&!await storage.head(`assets/${header.smallSha256}`))await storage.put(`assets/${header.smallSha256}`,header.smallBytes,{httpMetadata:{contentType:"image/png",cacheControl:"public, max-age=31536000, immutable"}});
+  await storage.put(`owners/${metaHash}/${draft.owner}`,JSON.stringify({createdAt:new Date().toISOString(),mint:draft.mint,metadata,uri:publication.uri,profile:publication.profile,imageHash,signedPayloadHash:hash,persistence,...(header?{header:{sha256:header.sha256,smallSha256:header.smallSha256,type:header.type,mint:header.mint,metadataHash:header.metadataHash,imageHash:header.imageHash,signature:header.signature}}:{})}));
   return Response.json({uri:publication.uri,metadataHash:metaHash,image:`${SITE.origin}/api/assets/${imageHash}`});
  }catch(error){return fail(error);}
 }
