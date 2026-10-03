@@ -139,7 +139,7 @@ export function DocsContent({ platformId, rates, solTradingEnabled, solLookupCon
         </Section>
         <Section index={8}>
           <p>{MONERO_NARRATIVE}</p>
-          <p>GRAINU has a verified record. Automatic publication for every new token is not active: its creator authorization, the bounded native-XMR fee policy and the operator must be enabled and verified first. A successful Solana launch alone is not a completed Monero publication.</p>
+          <p>GRAINU has a verified record. New launches enter the automatic Monero publication queue after creator authorization and finalized Solana registration. Publication uses a dedicated funded wallet and bounded fee budget; records can wait for funding, confirmations or recovery. A successful Solana launch alone is not a completed Monero publication.</p>
           <MoneroRecordStatus/>
           <MoneroLiveRecord/>
           <ul className="monero-limits">{MONERO_RECORD_FACTS.map(line => <li key={line}>{line}</li>)}</ul>
@@ -151,11 +151,12 @@ export function DocsContent({ platformId, rates, solTradingEnabled, solLookupCon
         <Section index={9}>
           <p>Before the Monero record layer, Grainpad built a research implementation of the p/xmr registry. It is historical research, not the production record path. It ran on Monero regtest (fakechain) only, using test funds, with no mainnet execution and no XMR20 compatibility.</p>
           <p>There is no live Monero engine, native XMR settlement or XMR redemption. The research does not back $GRAIN or any token launched on Solana. An independent Grainpad curve, GRAIN as a quote asset and holder discounts are research only. We do not claim the same protocol or exact curve as p/xmr.</p>
-          <p><a href="/rewards">wXMR holder rewards and tax-funded GRAIN burns</a> are required before token launches open. They are being implemented and are not active yet.</p>
+          <p><a href="/rewards">wXMR holder rewards and tax-funded GRAIN burns</a> are required before token launches open. GRAINU collection and holder/platform payments have finalized. Public activation still requires the first finalized purchase and burn of official GRAIN.</p>
           <a className="docs-related" href="/lab">Open the Monero lab: records and early research</a>
           <p>Read the <a href="/roadmap">Monero roadmap</a> and the <a href="/transparency">donation commitment and public receipts</a>.</p>
         </Section>
         <Section index={10}>
+          <div id="launch-coverage" className="docs-callout"><strong>Initial release coverage</strong><p>Grainpad tests its direct SOL and wXMR routes, permissions, spending limits, rewards and recovery. Independent-creator and graduated-pool paths have also executed against the real programs in a local Solana runtime. A Grainpad mainnet graduation and complete phone-wallet and external-terminal coverage remain unverified. Third-party discovery, throughput and complete historical indexing are not guaranteed. We publish observed results and use community reports to improve compatibility.</p></div>
           <p>The official GRAIN CA is published only on grainpad.fun and @GrainXMR after verification. Until then, no official CA is published. Display or trading support on Axiom, GMGN, Photon, Padre, Dexscreener and other external interfaces is not guaranteed.</p><p>Primary references: <a href="https://github.com/raydium-io/raydium-idl/blob/master/raydium_launchpad/raydium_launchpad.json" target="_blank" rel="noreferrer">LaunchLab IDL</a>, <a href="https://docs.raydium.io/products/launchlab/platform-config" target="_blank" rel="noreferrer">platform configuration</a>, <a href="https://docs.raydium.io/products/launchlab/instructions" target="_blank" rel="noreferrer">migration instructions</a>.</p><ul className="docs-links"><li><span>Website</span><a href={SITE.origin} target="_blank" rel="noreferrer">grainpad.fun</a></li><li><span>X / Twitter</span><a href={SITE.twitter} target="_blank" rel="noreferrer">x.com/GrainXMR</a></li><li><span>Public record</span><a href="/treasury">Treasury</a></li><li><span>Configuration</span><a href="/platform">Platform status</a></li><li><span>Research</span><a href="/lab">Monero lab</a></li></ul>
         </Section>
         <Section index={11}><WalletsFaq platform={platformState==="ready"?platform:null} token={token} tokenState={tokenState} solTradingEnabled={solTradingEnabled} solLookupConfigured={solLookupConfigured}/></Section>
