@@ -10,38 +10,28 @@ import bs58 from 'bs58';
 function database(){const sqlite=new DatabaseSync(':memory:');sqlite.exec(readFileSync(new URL('../drizzle/0035_official_creator_buy_reservation.sql',import.meta.url),'utf8'));return {sqlite,prepare(query){const statement=sqlite.prepare(query);const bound=(...values)=>({run:async()=>({meta:{changes:Number(statement.run(...values).changes)}}),first:async()=>statement.get(...values)||null});return {...bound(),bind:bound};}};}
 const review=(n=1)=>({version:1,officialCreatorBuy:true,id:n.toString(16).padStart(32,'0'),messageHash:n.toString(16).padStart(64,'0'),mint:OFFICIAL_LAUNCH_PINS.mint,owner:PLATFORM_SETTINGS.admin,side:'buy',amount:String(OFFICIAL_CREATOR_BUY.inputLamports),maxTotalDebitLamports:OFFICIAL_CREATOR_BUY.routeMaximumDebitLamports,createdAt:1000,expiresAt:61000});
 const signature=bs58.encode(Buffer.alloc(64,12)),otherSignature=bs58.encode(Buffer.alloc(64,13));
-test('another device cannot reserve or preflight another official creator buy',async()=>{const db=database(),one=review();await reserveOfficialCreatorBuy(db,one,2000);await reserveOfficialCreatorBuy(db,one,2000);await assert.rejects(reserveOfficialCreatorBuy(db,review(2),3000),/another reserved/);await assert.rejects(assertOfficialCreatorBuyReservation(db,review(2)),/another reserved/);assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM official_creator_buy_reservation').get().n,1);});
-test('expired unsigned review can be replaced; the old signed wire cannot claim it',async()=>{const db=database(),old=review(),fresh={...review(2),createdAt:62000,expiresAt:122000};await reserveOfficialCreatorBuy(db,old,2000);await reserveOfficialCreatorBuy(db,fresh,62000);await assert.rejects(bindOfficialCreatorBuyReservation(db,old,signature,62001),/another reserved/);assert.equal((await assertOfficialCreatorBuyReservation(db,fresh)).signature,null);});
-test('signed, unknown or finalized creator buy permanently blocks a second purchase but allows identical resend',async()=>{const db=database(),one=review();await reserveOfficialCreatorBuy(db,one,2000);await bindOfficialCreatorBuyReservation(db,one,signature,3000);await bindOfficialCreatorBuyReservation(db,one,signature,3100);await assert.rejects(bindOfficialCreatorBuyReservation(db,one,otherSignature,3200),/another signed/);await assert.rejects(reserveOfficialCreatorBuy(db,{...review(2),createdAt:100000,expiresAt:160000},100001),/another reserved/);assert.equal((await assertOfficialCreatorBuyReservation(db,one)).signature,signature);});
-test('atomic race allows either fresh unsigned replacement or signed claim, never both',async()=>{for(const signingFirst of [true,false]){const db=database(),one=review(),fresh={...review(2),createdAt:62000,expiresAt:122000};await reserveOfficialCreatorBuy(db,one,2000);if(signingFirst){await bindOfficialCreatorBuyReservation(db,one,signature,60000);await assert.rejects(reserveOfficialCreatorBuy(db,fresh,62000),/another reserved/);}else{await reserveOfficialCreatorBuy(db,fresh,62000);await assert.rejects(bindOfficialCreatorBuyReservation(db,one,signature,62000),/another reserved/);}}});
-test('SQL refuses deleting or rewriting a signed creator reservation',async()=>{const db=database(),one=review();await reserveOfficialCreatorBuy(db,one,2000);await bindOfficialCreatorBuyReservation(db,one,signature,3000);assert.throws(()=>db.sqlite.exec('DELETE FROM official_creator_buy_reservation'),/cannot be deleted/);assert.throws(()=>db.sqlite.prepare('UPDATE official_creator_buy_reservation SET signature=?').run(otherSignature),/immutable/);assert.throws(()=>db.sqlite.exec('UPDATE official_creator_buy_reservation SET signature=NULL,signed_at=NULL'),/immutable/);});
-test('normal buys and sells require no reservation and are not captured',async()=>{const db=database();assert.equal(await assertOfficialCreatorBuyReservation(db,{side:'sell'}),null);assert.equal(await bindOfficialCreatorBuyReservation(db,{side:'buy'},signature),null);assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM official_creator_buy_reservation').get().n,0);});
-test('only exact owner-approved 1.2 SOL shortcut terms can reserve',async()=>{const db=database();for(const changed of [{owner:'11111111111111111111111111111111'},{side:'sell'},{amount:'1000000000'},{maxTotalDebitLamports:1250000000},{officialCreatorBuy:false}])await assert.rejects(reserveOfficialCreatorBuy(db,{...review(),...changed},2000));assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM official_creator_buy_reservation').get().n,0);});
-// Server wiring test stubs route execution only; SQL reservation and storage marker are real.
-test('real server wrapper persists the verified marker and rejects a second-device shortcut before wallet review',async()=>{
- const {build}=await import('esbuild');const {mkdirSync}=await import('node:fs');const {join}=await import('node:path');const {pathToFileURL}=await import('node:url');
- const directory=join(process.cwd(),'.test-output','creator-buy-reservation');mkdirSync(directory,{recursive:true});const outfile=join(directory,'server.mjs');
- await build({entryPoints:['lib/server-sol-trade.ts'],bundle:true,platform:'node',format:'esm',packages:'external',outfile,logLevel:'silent',plugins:[{name:'creator-server-wiring',setup(builder){
- builder.onResolve({filter:/^cloudflare:workers$/},()=>({path:'environment',namespace:'creator-stub'}));
- builder.onLoad({filter:/.*/,namespace:'creator-stub'},()=>({contents:'export const env={SOL_TRADING_ENABLED:"true"};',loader:'js'}));
- builder.onLoad({filter:/server-utils\.ts$/},()=>({contents:'export function bucket(){return globalThis.__creatorStore;}',loader:'js'}));
- builder.onLoad({filter:/server-owner\.ts$/},()=>({contents:'export function database(){return globalThis.__creatorDb;}',loader:'js'}));
- builder.onLoad({filter:/server-rpc\.ts$/},()=>({contents:'export function forwardRpc(){throw Error("No RPC allowed in wiring test");}',loader:'js'}));
- builder.onLoad({filter:/sol-trade-prepare\.mjs$/},()=>({contents:'export function solRouterFetcher(){return ()=>{};} export async function prepareGuardedSolTrade({storage}){const review=globalThis.__creatorReview;await storage.put(`sol-trades/v1/${review.id}`,JSON.stringify(review),{onlyIf:{etagDoesNotMatch:"*"}});return review;}',loader:'js'}));
- builder.onLoad({filter:/sol-trade-preflight\.mjs$/},()=>({contents:'export async function preflightSolTrade(){return {ok:true};}',loader:'js'}));
- builder.onLoad({filter:/sol-trade-relay\.mjs$/},()=>({contents:'export async function verifySolTradeSubmission(storage,id){return {signature:globalThis.__creatorSignature,review:await(await storage.get(`sol-trades/v1/${id}`)).json()};}',loader:'js'}));
- }}]});
- const db=database(),now=Date.now(),one={...review(),createdAt:now,expiresAt:now+60000};db.sqlite.exec('CREATE TABLE official_token(id INTEGER PRIMARY KEY,mint TEXT)');db.sqlite.prepare('INSERT INTO official_token VALUES(1,?)').run(one.mint);
- const objects=new Map();globalThis.__creatorDb=db;globalThis.__creatorReview=one;globalThis.__creatorSignature=signature;globalThis.__creatorStore={put:async(key,value)=>{objects.set(key,value);return true;},get:async key=>objects.has(key)?{json:async()=>JSON.parse(objects.get(key))}:null};
- try{const server=await import(pathToFileURL(outfile).href);const input={owner:one.owner,mint:one.mint,side:one.side,amount:one.amount,slippageBps:100,maxTotalDebitLamports:one.maxTotalDebitLamports,creatorBuy:true};
- const first=await server.prepareServerSolTrade(input);assert.equal(first.officialCreatorBuy,true);assert.equal(JSON.parse(objects.get(`sol-trades/v1/${first.id}`)).officialCreatorBuy,true);
- assert.equal((await server.preflightServerSolTrade(first.id)).ok,true);
- globalThis.__creatorReview={...one,id:review(2).id,messageHash:review(2).messageHash};await assert.rejects(server.prepareServerSolTrade(input),/another reserved/);
- await assert.rejects(server.preflightServerSolTrade(review(2).id),/another reserved/);
- await server.verifyServerSolTrade(first.id,'synthetic-wire','mainnet-beta','sendTransaction');assert.equal((await assertOfficialCreatorBuyReservation(db,one)).signature,signature);
- await server.verifyServerSolTrade(first.id,'synthetic-wire','mainnet-beta','sendTransaction');
- await assert.rejects(server.verifyServerSolTrade(review(2).id,'synthetic-wire','mainnet-beta','sendTransaction'),/another reserved/);
- }finally{delete globalThis.__creatorDb;delete globalThis.__creatorStore;delete globalThis.__creatorReview;delete globalThis.__creatorSignature;}
+test('retired official mint refuses new and expired shortcut reservations without journal writes',async()=>{
+ const db=database();for(const one of [review(),{...review(2),createdAt:62000,expiresAt:122000}])await assert.rejects(reserveOfficialCreatorBuy(db,one,one.createdAt+1),/permanently retired/);
+ assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM official_creator_buy_reservation').get().n,0);
 });
-
-test('concurrent shortcut preparations have exactly one winning reservation',async()=>{const db=database();const results=await Promise.allSettled([reserveOfficialCreatorBuy(db,review(11),2000),reserveOfficialCreatorBuy(db,review(12),2000)]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected').length,1);assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM official_creator_buy_reservation').get().n,1);});
+function seed(db,one=review()) {db.sqlite.prepare('INSERT INTO official_creator_buy_reservation VALUES(?,?,?,?,?,?,?,?)').run(one.mint,one.owner,one.id,one.messageHash,one.expiresAt,one.createdAt,signature,3000);return one;}
+test('retirement refuses old signed review preflight and submission without changing preserved evidence',async()=>{
+ const db=database(),one=seed(db),before=db.sqlite.prepare('SELECT * FROM official_creator_buy_reservation').get();
+ await assert.rejects(assertOfficialCreatorBuyReservation(db,one),/permanently retired/);
+ await assert.rejects(bindOfficialCreatorBuyReservation(db,one,signature,3100),/permanently retired/);
+ assert.deepEqual(db.sqlite.prepare('SELECT * FROM official_creator_buy_reservation').get(),before);
+});
+test('SQL still refuses deleting or rewriting historical signed reservations',()=>{
+ const db=database();seed(db);assert.throws(()=>db.sqlite.exec('DELETE FROM official_creator_buy_reservation'),/cannot be deleted/);
+ assert.throws(()=>db.sqlite.prepare('UPDATE official_creator_buy_reservation SET signature=?').run(otherSignature),/immutable/);
+ assert.throws(()=>db.sqlite.exec('UPDATE official_creator_buy_reservation SET signature=NULL,signed_at=NULL'),/immutable/);
+});
+test('normal buys and sells remain independent from retired shortcut reservation',async()=>{
+ const db=database();assert.equal(await assertOfficialCreatorBuyReservation(db,{side:'sell',mint:OFFICIAL_LAUNCH_PINS.mint}),null);
+ assert.equal(await bindOfficialCreatorBuyReservation(db,{side:'buy',mint:OFFICIAL_LAUNCH_PINS.mint},signature),null);
+ assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM official_creator_buy_reservation').get().n,0);
+});
+test('concurrent retired shortcut preparations both reject and reserve nothing',async()=>{
+ const db=database(),results=await Promise.allSettled([reserveOfficialCreatorBuy(db,review(11),2000),reserveOfficialCreatorBuy(db,review(12),2000)]);
+ assert.equal(results.filter(r=>r.status==='fulfilled').length,0);assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM official_creator_buy_reservation').get().n,0);
+});
