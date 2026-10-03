@@ -1,3 +1,4 @@
+import {assertOfficialCreatorBuyRequest} from './official-creator-buy.mjs';
 import {LIGHTHOUSE_NET_GUARD_DEPLOYMENT_VERIFIED} from './sol-token-net-guard.mjs';
 import {env} from 'cloudflare:workers';
 import {bucket} from './server-utils';import {database} from './server-owner';
@@ -17,8 +18,11 @@ async function findLaunch(mint:string){if(typeof mint!=='string')return null;con
 export async function resolveServerSolRouteScope(mint:string,rpc:ReturnType<typeof connection>=connection()){return resolveSolRouteScope(rpc,await findLaunch(mint),{mint,platformId:String(grainpadPlatformId())});}
 /** Stored reviews stay executable only while their mint and pool are still the current verified route. */
 function admitReview(rpc:ReturnType<typeof connection>){return async(review:{mint:string})=>assertSolRouteScopeUnchanged(review,await resolveServerSolRouteScope(review.mint,rpc));}
-export async function prepareServerSolTrade(input:{owner:string;mint:string;side:string;amount:string;slippageBps:number;maxTotalDebitLamports:number}){
- assertSolTradeEnabled();return prepareGuardedSolTrade({...input,fetcher:routerFetcher(),connection:connection(),storage:bucket(),expectedGenesis:NETWORKS['mainnet-beta'].genesis,platformId:String(grainpadPlatformId()),findLaunch});
+export async function prepareServerSolTrade(input:{owner:string;mint:string;side:string;amount:string;slippageBps:number;maxTotalDebitLamports:number;creatorBuy?:boolean}){
+ assertSolTradeEnabled();
+ if(input.creatorBuy!==undefined&&input.creatorBuy!==true)throw Error('Invalid creator-buy shortcut marker.');
+ if(input.creatorBuy===true){const official=await database().prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();assertOfficialCreatorBuyRequest(input,{publishedMint:official?.mint});}
+ return prepareGuardedSolTrade({...input,fetcher:routerFetcher(),connection:connection(),storage:bucket(),expectedGenesis:NETWORKS['mainnet-beta'].genesis,platformId:String(grainpadPlatformId()),findLaunch});
 }
 /** Exact stored bytes only; returns a classified simulation result before any wallet request. */
 export async function preflightServerSolTrade(id:string){assertSolTradeEnabled();if(typeof id!=='string'||!/^[a-f0-9]{32}$/.test(id))throw Error('Invalid SOL review identity.');const rpc=connection();return preflightSolTrade(bucket(),id,rpc,{admit:admitReview(rpc)});}
