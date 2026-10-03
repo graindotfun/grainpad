@@ -1,3 +1,5 @@
+import {reserveOfficialCreatorBuy,assertOfficialCreatorBuyReservation,bindOfficialCreatorBuyReservation} from './official-creator-buy-reservation.mjs';
+import {loadSolTradeReview} from './sol-trade-intent.mjs';
 import {assertOfficialCreatorBuyRequest} from './official-creator-buy.mjs';
 import {LIGHTHOUSE_NET_GUARD_DEPLOYMENT_VERIFIED} from './sol-token-net-guard.mjs';
 import {env} from 'cloudflare:workers';
@@ -22,11 +24,15 @@ export async function prepareServerSolTrade(input:{owner:string;mint:string;side
  assertSolTradeEnabled();
  if(input.creatorBuy!==undefined&&input.creatorBuy!==true)throw Error('Invalid creator-buy shortcut marker.');
  if(input.creatorBuy===true){const official=await database().prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();assertOfficialCreatorBuyRequest(input,{publishedMint:official?.mint});}
- return prepareGuardedSolTrade({...input,fetcher:routerFetcher(),connection:connection(),storage:bucket(),expectedGenesis:NETWORKS['mainnet-beta'].genesis,platformId:String(grainpadPlatformId()),findLaunch});
+ const actual=bucket();
+ // Persist the server-verified marker in the immutable review, not a browser flag.
+ const storage=input.creatorBuy===true?{get:actual.get.bind(actual),put:async(key:string,body:string,options:unknown)=>actual.put(key,JSON.stringify({...JSON.parse(body),officialCreatorBuy:true}),options as Parameters<typeof actual.put>[2])}:actual;
+ const review=await prepareGuardedSolTrade({...input,fetcher:routerFetcher(),connection:connection(),storage,expectedGenesis:NETWORKS['mainnet-beta'].genesis,platformId:String(grainpadPlatformId()),findLaunch});
+ return input.creatorBuy===true?reserveOfficialCreatorBuy(database(),{...review,officialCreatorBuy:true}):review;
 }
 /** Exact stored bytes only; returns a classified simulation result before any wallet request. */
-export async function preflightServerSolTrade(id:string){assertSolTradeEnabled();if(typeof id!=='string'||!/^[a-f0-9]{32}$/.test(id))throw Error('Invalid SOL review identity.');const rpc=connection();return preflightSolTrade(bucket(),id,rpc,{admit:admitReview(rpc)});}
-export async function verifyServerSolTrade(id:string,encoded:string,network:string,method:string){assertSolTradeEnabled();if(network!=='mainnet-beta'||method!=='sendTransaction')throw Error('SOL intent header only authorizes its signed mainnet submission.');const rpc=connection();return verifySolTradeSubmission(bucket(),id,encoded,rpc,{admit:admitReview(rpc)});}
+export async function preflightServerSolTrade(id:string){assertSolTradeEnabled();if(typeof id!=='string'||!/^[a-f0-9]{32}$/.test(id))throw Error('Invalid SOL review identity.');const rpc=connection();await assertOfficialCreatorBuyReservation(database(),await loadSolTradeReview(bucket(),id));return preflightSolTrade(bucket(),id,rpc,{admit:admitReview(rpc)});}
+export async function verifyServerSolTrade(id:string,encoded:string,network:string,method:string){assertSolTradeEnabled();if(network!=='mainnet-beta'||method!=='sendTransaction')throw Error('SOL intent header only authorizes its signed mainnet submission.');const rpc=connection();await assertOfficialCreatorBuyReservation(database(),await loadSolTradeReview(bucket(),id));const result=await verifySolTradeSubmission(bucket(),id,encoded,rpc,{admit:admitReview(rpc)});await bindOfficialCreatorBuyReservation(database(),result.review,result.signature);return result;}
 
 /** Fixed unsigned probes use a non-persistent sink, never the trade-intent bucket. */
 export async function prepareUnsignedSolAcceptance(name:string){
