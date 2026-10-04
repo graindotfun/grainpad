@@ -11,6 +11,7 @@ import {GenesisField} from "@/components/genesis-field";
 import {KineticText} from "@/components/kinetic-text";
 import {TokenTape} from "@/components/token-tape";
 import {LaunchDisclosure} from "@/components/launch-disclosure";
+import {OfficialLinksNotice} from "@/components/official-links-notice";
 import {SiteFooter} from "@/components/site-footer";
 import type {PlatformStatus} from "@/lib/platform-policy";
 import {MONERO_NARRATIVE,moneroRecordSummary} from "@/lib/monero-record-status.mjs";
@@ -27,6 +28,7 @@ export default function Home(){
    <div className="hero-copy"><p className="overline"><span className="hero-network"><span className="orange-square"/> {BRAND_CHAIN.label.toUpperCase()}</span> IDEAS INTO EXISTENCE</p>
     <h1 id="hero-heading"><span className="hero-opening"><KineticText>Your idea.</KineticText></span><br/><span className="hero-soft">On-chain<span className="hero-dot">.</span></span></h1>
     <p className="hero-description">Create your token. Shape what comes next.<br/>Clear launch conditions. Your wallet. Your call.</p>
+    <OfficialLinksNotice/>
     <HeroFeatures data={overview}/>
     <div className="hero-actions"><a href="/launch" className="action-button action-light">Create a token <ArrowUpRight size={20}/></a><a href="#launches" className="action-text">Explore launches <ArrowDown size={17}/></a></div>
     <a className="hero-status" href="/platform"><span className={`status-indicator ${launchesOpen?"is-active":""}`}/><span>{status}</span><ArrowUpRight size={12}/></a>

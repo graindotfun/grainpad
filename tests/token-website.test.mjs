@@ -48,10 +48,12 @@ test('brand reservation permits only a mint-bound token page and still rejects t
  assert.match(reservedIdentity({...ordinary,website:'https://grainpad.fun/token/'+Keypair.generate().publicKey},policy),/own website/);
 });
 
-test('official GRAIN uses the owner-approved home without weakening other mint bindings',async()=>{
- const official='Db91fm8AxxfoFySAp6Jg3KVcfZHUTAR7bJDJb5WLMgrn';
- const publication=await buildMetadataPublication({...draft,mint:official,name:'Grainpad',symbol:'GRAIN'},bytes,'https://preview.example');
+test('official GRAIN uses the owner-approved home when the publication declares the relaunch buy',async()=>{
+ const official='7CHbQ7XMGV7ohKD54pNYcKX21JZcEqGvBPS9hZcRNgrn';
+ const publication=await buildMetadataPublication({...draft,mint:official,name:'Grainpad',symbol:'GRAIN',declaredCreatorBuy:{quote:'wXMR',amountIn:'262000000000',minOut:'1'},quoteAsset:'wXMR'},bytes,'https://preview.example');
  assert.equal(assertCanonicalTokenWebsite(publication.metadata,official),'https://grainpad.fun');
  assert.equal(publication.metadata.extensions.website,'https://grainpad.fun');
+ const ordinary=await buildMetadataPublication({...draft,mint:official},bytes,'https://preview.example');
+ assert.equal(ordinary.metadata.website,`https://grainpad.fun/token/${official}`);
  assert.throws(()=>assertCanonicalTokenWebsite({...publication.metadata,grainpad:{mint}},mint),/actual mint/);
 });

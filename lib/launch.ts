@@ -12,6 +12,7 @@ import {readRewardsIssuanceState} from "./rewards-issuance.mjs";
 import {isLaunchTaxBps} from "./rewards-policy.mjs";
 import { NETWORKS, type Network } from "./site-config";
 import {assertMintSuffix} from "./vanity-suffix";
+import {isPreviousOfficialMint} from "./previous-official-mints.mjs";
 import {POLICY,grainpadPlatformId,decodePlatform,assertGrainpadPolicy} from "./platform-policy";
 
 import {assertTokenCreationEnabled} from './platform-settings.mjs';
@@ -58,7 +59,7 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  const quote=quoteAsset(input.quoteAsset);
  if(quote.symbol!=='wXMR')throw Error('Holder reward launches must be paired with wXMR.');
  if(!isLaunchTaxBps(input.taxBps))throw Error('Choose a transfer tax from 1.0% to 3.0% in 0.1% steps.');
- if(input.mintKeypair.publicKey.toBase58()==='Db91fm8AxxfoFySAp6Jg3KVcfZHUTAR7bJDJb5WLMgrn')throw Error('The official GRAIN purchase route needs a separate reviewed configuration.');
+ if(isPreviousOfficialMint(input.mintKeypair.publicKey.toBase58()))throw Error('The official GRAIN purchase route needs a separate reviewed configuration.');
  const {platformId,platform,config,collector}=await readRewardsIssuanceState(connection);
  const mint=input.mintKeypair;
  if(mint.publicKey.equals(owner)||await connection.getAccountInfo(mint.publicKey))throw Error("Mint address is already in use. Use a fresh mint-only key, never your wallet key.");
