@@ -16,13 +16,14 @@ import { bucket, fail, limitedJSON, sameOrigin, sha256 } from "@/lib/server-util
 import { assertMetadataText,metadataMessage,metadataPayload,metadataLink,type MetadataDraft } from "@/lib/metadata-shared";
 import { TOKEN_CREATION_ENABLED, PLATFORM_SETTINGS } from "@/lib/platform-settings.mjs";
 import { PILOT_SIGNING_ENABLED, PILOT_APPROVED } from "@/lib/pilot-review.mjs";
-import { OFFICIAL_LAUNCH_PINS } from "@/lib/official-launch-policy.mjs";
+import { OFFICIAL_LAUNCH_CREATOR } from "@/lib/official-launch-policy.mjs";
+import { buildOfficialMetadataPublication, OFFICIAL_METADATA_DESCRIPTION_DRAFT, OFFICIAL_METADATA_DOCUMENT } from "@/lib/official-metadata.mjs";
+import { isPreviousOfficialMint } from "@/lib/previous-official-mints.mjs";
 import { takeBudget } from "@/lib/shared-market-cache.mjs";
 // Throwaway keys make the per-wallet quota unbounded; these atomic D1 counters bound one network and the whole site.
 const UPLOADS_PER_IP_HOUR=12,UPLOADS_PER_HOUR=240;
 function isOfficialMetadataUpload(draft:MetadataDraft){
- const mint=OFFICIAL_LAUNCH_PINS.mint as string|null,metadataHash=OFFICIAL_LAUNCH_PINS.metadataHash as string|null;
- return !TOKEN_CREATION_ENABLED&&typeof mint==='string'&&mint.length>0&&typeof metadataHash==='string'&&/^[a-f0-9]{64}$/.test(metadataHash)&&draft?.owner===PLATFORM_SETTINGS.admin&&draft?.name?.trim()==='Grainpad'&&draft?.symbol==='GRAIN'&&draft?.mint===mint;
+ return !TOKEN_CREATION_ENABLED&&draft?.owner===OFFICIAL_LAUNCH_CREATOR&&draft?.name?.trim()==='Grainpad'&&draft?.symbol==='GRAIN'&&typeof draft?.mint==='string'&&draft.mint.length>31&&!isPreviousOfficialMint(draft.mint);
 }
 export async function POST(request:Request){
  try{
@@ -41,8 +42,8 @@ export async function POST(request:Request){
   assertMetadataText(draft);
   if(typeof draft.imageBase64!=="string"||draft.imageBase64.length>2_700_000)throw new Error("Choose an image below 2 MB.");
   if(!Number.isSafeInteger(draft.expires)||draft.expires<Date.now()||draft.expires>Date.now()+15*60*1000)throw new Error("Metadata signature expired. Please sign again.");
-  const website=canonicalTokenWebsite(draft.mint);if(draft.website!==undefined&&draft.website!==''&&draft.website!==website)throw Error('Token website cannot be overridden.');const twitter=metadataLink(draft.twitter,"twitter"),telegram=draft.telegram===undefined?undefined:metadataLink(draft.telegram,"telegram");
-  if(draft.declaredCreatorBuy!==undefined&&(!['SOL','wXMR'].includes(draft.quoteAsset||'')||typeof draft.declaredCreatorBuy!=='string'||!/^\d{1,12}(\.\d{1,9})?$/.test(draft.declaredCreatorBuy)))throw Error('Creator buy declaration must be an amount in the selected quote asset.');
+  const website=canonicalTokenWebsite(draft.mint);if(!official&&draft.website!==undefined&&draft.website!==''&&draft.website!==website)throw Error('Token website cannot be overridden.');const twitter=metadataLink(draft.twitter,"twitter"),telegram=draft.telegram===undefined?undefined:metadataLink(draft.telegram,"telegram");
+  if(!official&&draft.declaredCreatorBuy!==undefined&&(!['SOL','wXMR'].includes(draft.quoteAsset||'')||typeof draft.declaredCreatorBuy!=='string'||!/^\d{1,12}(\.\d{1,9})?$/.test(draft.declaredCreatorBuy)))throw Error('Creator buy declaration must be an amount in the selected quote asset.');
   const payload=metadataPayload(draft);const hash=await sha256(payload);
   const owner=bs58.decode(draft.owner),sig=bs58.decode(body.signature);
   if(owner.length!==32||sig.length!==64||!nacl.sign.detached.verify(new TextEncoder().encode(metadataMessage(new URL(request.url).origin,hash)),sig,owner))throw new Error("Wallet signature did not verify.");
@@ -53,8 +54,8 @@ export async function POST(request:Request){
   const db=database();
   if(!await takeBudget(db,`metadata-ip:${ipHash}`,1,UPLOADS_PER_IP_HOUR,3_600_000))return fail(Error('Too many metadata uploads from this network. Try again later.'),429);
   if(!await takeBudget(db,'metadata-global',1,UPLOADS_PER_HOUR,3_600_000))return fail(Error('Metadata uploads are busy. Try again shortly.'),429);
-  const publication=await buildMetadataPublication({...draft,website,twitter,...(telegram!==undefined?{telegram}:{})},bytes,SITE.origin);
-  if(official&&publication.metadataHash!==(OFFICIAL_LAUNCH_PINS.metadataHash as string|null))throw Error('Official metadata hash does not match the approved pin. Nothing was stored.');
+  if(official&&(draft.description.trim()!==OFFICIAL_METADATA_DESCRIPTION_DRAFT||draft.twitter!==OFFICIAL_METADATA_DOCUMENT.twitter))throw Error('Official metadata draft was not the published document. Nothing was stored.');
+  const publication=official?await buildOfficialMetadataPublication({mint:draft.mint,imageBytes:bytes}):await buildMetadataPublication({...draft,website,twitter,...(telegram!==undefined?{telegram}:{})},bytes,SITE.origin);
   assertPublicationBinding(draft,publication);
   const {metadata,metadataHash:metaHash}=publication;const json=JSON.stringify(metadata);
   if(!await consumeRequestBudget(database(),'upload-global',2000,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-ip:'+ipHash,40,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-owner:'+draft.owner,20,{windowMs:86_400_000}))throw Error('Metadata upload budget reached. Please retry tomorrow.');

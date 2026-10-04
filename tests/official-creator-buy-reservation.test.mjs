@@ -3,12 +3,11 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {reserveOfficialCreatorBuy,assertOfficialCreatorBuyReservation,bindOfficialCreatorBuyReservation} from '../lib/official-creator-buy-reservation.mjs';
-import {OFFICIAL_LAUNCH_PINS} from '../lib/official-launch-policy.mjs';
 import {PLATFORM_SETTINGS} from '../lib/platform-settings.mjs';
-import {OFFICIAL_CREATOR_BUY} from '../lib/official-creator-buy.mjs';
+import {OFFICIAL_CREATOR_BUY,RETIRED_CREATOR_BUY_MINT} from '../lib/official-creator-buy.mjs';
 import bs58 from 'bs58';
 function database(){const sqlite=new DatabaseSync(':memory:');sqlite.exec(readFileSync(new URL('../drizzle/0035_official_creator_buy_reservation.sql',import.meta.url),'utf8'));return {sqlite,prepare(query){const statement=sqlite.prepare(query);const bound=(...values)=>({run:async()=>({meta:{changes:Number(statement.run(...values).changes)}}),first:async()=>statement.get(...values)||null});return {...bound(),bind:bound};}};}
-const review=(n=1)=>({version:1,officialCreatorBuy:true,id:n.toString(16).padStart(32,'0'),messageHash:n.toString(16).padStart(64,'0'),mint:OFFICIAL_LAUNCH_PINS.mint,owner:PLATFORM_SETTINGS.admin,side:'buy',amount:String(OFFICIAL_CREATOR_BUY.inputLamports),maxTotalDebitLamports:OFFICIAL_CREATOR_BUY.routeMaximumDebitLamports,createdAt:1000,expiresAt:61000});
+const review=(n=1)=>({version:1,officialCreatorBuy:true,id:n.toString(16).padStart(32,'0'),messageHash:n.toString(16).padStart(64,'0'),mint:RETIRED_CREATOR_BUY_MINT,owner:PLATFORM_SETTINGS.admin,side:'buy',amount:String(OFFICIAL_CREATOR_BUY.inputLamports),maxTotalDebitLamports:OFFICIAL_CREATOR_BUY.routeMaximumDebitLamports,createdAt:1000,expiresAt:61000});
 const signature=bs58.encode(Buffer.alloc(64,12)),otherSignature=bs58.encode(Buffer.alloc(64,13));
 test('retired official mint refuses new and expired shortcut reservations without journal writes',async()=>{
  const db=database();for(const one of [review(),{...review(2),createdAt:62000,expiresAt:122000}])await assert.rejects(reserveOfficialCreatorBuy(db,one,one.createdAt+1),/permanently retired/);
@@ -27,8 +26,8 @@ test('SQL still refuses deleting or rewriting historical signed reservations',()
  assert.throws(()=>db.sqlite.exec('UPDATE official_creator_buy_reservation SET signature=NULL,signed_at=NULL'),/immutable/);
 });
 test('normal buys and sells remain independent from retired shortcut reservation',async()=>{
- const db=database();assert.equal(await assertOfficialCreatorBuyReservation(db,{side:'sell',mint:OFFICIAL_LAUNCH_PINS.mint}),null);
- assert.equal(await bindOfficialCreatorBuyReservation(db,{side:'buy',mint:OFFICIAL_LAUNCH_PINS.mint},signature),null);
+ const db=database();assert.equal(await assertOfficialCreatorBuyReservation(db,{side:'sell',mint:RETIRED_CREATOR_BUY_MINT}),null);
+ assert.equal(await bindOfficialCreatorBuyReservation(db,{side:'buy',mint:RETIRED_CREATOR_BUY_MINT},signature),null);
  assert.equal(db.sqlite.prepare('SELECT count(*) AS n FROM official_creator_buy_reservation').get().n,0);
 });
 test('concurrent retired shortcut preparations both reject and reserve nothing',async()=>{
