@@ -56,3 +56,15 @@ test('rate limits, forwarded failures and unparseable errors are not treated as 
   await assert.rejects(()=>rebroadcastSigned(f.options),/Blockhash expired/);assert(f.wires.length>1);
  }
 });
+
+test('close-only reconciliation recognizes an already landed signature without any resend',async()=>{
+ const f=fixture();f.connection.getSignatureStatuses=async()=>({value:[{confirmationStatus:'finalized',err:null}]});
+ assert.equal(await rebroadcastSigned({...f.options,reconcileBySignature:true}),'signature');assert.equal(f.wires.length,0);
+});
+test('close-only success racing a relay refusal is recognized by signature; uncertain refusal preserves receipt',async()=>{
+ const f=fixture();f.connection.sendRawTransaction=async bytes=>{f.wires.push([...bytes]);throw refusal(false);};
+ f.connection.getSignatureStatuses=async()=>({value:[f.wires.length?{confirmationStatus:'confirmed',err:null}:null]});
+ assert.equal(await rebroadcastSigned({...f.options,reconcileBySignature:true}),'signature');assert.equal(f.wires.length,1);
+ const uncertain=fixture();uncertain.connection.sendRawTransaction=async()=>{throw refusal(false);};
+ await assert.rejects(()=>rebroadcastSigned({...uncertain.options,reconcileBySignature:true}),e=>!e.notSubmitted&&/Keep the saved signature/.test(e.message));
+});
