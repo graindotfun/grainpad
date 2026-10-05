@@ -5,7 +5,7 @@ import {grainpadPlatformId} from "@/lib/platform-policy";
 import {chain} from "@/lib/server-rpc";
 import {database,verifyOwner} from "@/lib/server-owner";
 import {bucket,fail,limitedJSON,sameOrigin} from "@/lib/server-utils";
-import {assertMintSuffix} from "@/lib/vanity-suffix";
+import {assertOfficialMintSuffix} from "@/lib/vanity-suffix";
 import {verifyLaunch} from '@/lib/verify-launch.mjs';
 import {readConnection} from '@/lib/server-chain-connection';
 import {serverMarket} from '@/lib/server-market';
@@ -24,7 +24,7 @@ export async function GET(){try{
 export async function POST(request:Request){try{
  sameOrigin(request);const body=await limitedJSON(request,3000);verifyOwner(body.approval,body.signature,"publish-ca");
  const mint=new PublicKey(body.approval.value);if(mint.toBase58()===SITE.projectWallet||mint.toBase58()===OFFICIAL_LAUNCH_CREATOR)throw Error("Use the token mint, not the owner wallet.");
- assertMintSuffix(mint.toBase58());
+ assertOfficialMintSuffix(mint.toBase58());
  const reservation=await readOfficialLaunchReservation(database());
  if(isPreviousOfficialMint(mint.toBase58())||!reservation||reservation.state!=='registered'||!reservation.signature||reservation.mint!==mint.toBase58()||reservation.creator!==OFFICIAL_LAUNCH_CREATOR||!reservation.metadata_hash)throw Error("CA publication requires the exact registered official launch reservation.");
  const identity=await readOfficialGenerationIdentity(database());
