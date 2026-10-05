@@ -16,10 +16,10 @@ import {LAUNCH_EXPECTED} from '@/lib/verify-launch.mjs';
 import {isPreviousOfficialMint} from '@/lib/previous-official-mints.mjs';
 export const dynamic="force-dynamic";
 export async function GET(){try{
- const stored=await database().prepare("SELECT mint, pool, token_program, published_at FROM official_token WHERE id=1 AND generation=2").first<{mint:string;pool:string;token_program:string;published_at:string}>();
- const token=stored&&!isPreviousOfficialMint(stored.mint)?stored:null;
+ const stored=await database().prepare("SELECT generation, mint, pool, token_program, published_at FROM official_token WHERE id=1 AND generation=2").first<{generation:number;mint:string;pool:string;token_program:string;published_at:string}>();
+ const token=stored?.generation===2&&!isPreviousOfficialMint(stored.mint)?stored:null;
  let lifecycle=null;if(token){try{const market=await serverMarket(token.mint);lifecycle={status:market.route,launchPool:token.pool,cpmmPool:market.route==='cpmm'?market.pool:null,tradingPaused:market.route==='graduating',stale:market.stale};}catch{lifecycle={status:'unavailable',stale:true};}}
- return Response.json({token:token?{...token,...lifecycle}:null,network:"mainnet-beta"},{headers:{"Cache-Control":"no-store"}});
+ return Response.json({generation:2,token:token?{...token,...lifecycle}:null,network:"mainnet-beta"},{headers:{"Cache-Control":"no-store"}});
 }catch(e){return fail(e,503);}}
 export async function POST(request:Request){try{
  sameOrigin(request);const body=await limitedJSON(request,3000);verifyOwner(body.approval,body.signature,"publish-ca");

@@ -20,6 +20,7 @@ import { OFFICIAL_LAUNCH_CREATOR } from "@/lib/official-launch-policy.mjs";
 import { buildOfficialMetadataPublication, OFFICIAL_METADATA_DESCRIPTION_DRAFT, OFFICIAL_METADATA_DOCUMENT } from "@/lib/official-metadata.mjs";
 import { isPreviousOfficialMint } from "@/lib/previous-official-mints.mjs";
 import { takeBudget } from "@/lib/shared-market-cache.mjs";
+import {canonicalLaunchTweet} from '@/lib/launch-post-link.mjs';
 // Throwaway keys make the per-wallet quota unbounded; these atomic D1 counters bound one network and the whole site.
 const UPLOADS_PER_IP_HOUR=12,UPLOADS_PER_HOUR=240;
 function isOfficialMetadataUpload(draft:MetadataDraft){
@@ -43,6 +44,8 @@ export async function POST(request:Request){
   if(typeof draft.imageBase64!=="string"||draft.imageBase64.length>2_700_000)throw new Error("Choose an image below 2 MB.");
   if(!Number.isSafeInteger(draft.expires)||draft.expires<Date.now()||draft.expires>Date.now()+15*60*1000)throw new Error("Metadata signature expired. Please sign again.");
   const website=canonicalTokenWebsite(draft.mint);if(!official&&draft.website!==undefined&&draft.website!==''&&draft.website!==website)throw Error('Token website cannot be overridden.');const twitter=metadataLink(draft.twitter,"twitter"),telegram=draft.telegram===undefined?undefined:metadataLink(draft.telegram,"telegram");
+  const launchTweet=canonicalLaunchTweet(draft.launchTweet);
+  if(official&&launchTweet)throw Error('Attach the official launch post after creation; its approved metadata must stay unchanged.');
   if(!official&&draft.declaredCreatorBuy!==undefined&&(!['SOL','wXMR'].includes(draft.quoteAsset||'')||typeof draft.declaredCreatorBuy!=='string'||!/^\d{1,12}(\.\d{1,9})?$/.test(draft.declaredCreatorBuy)))throw Error('Creator buy declaration must be an amount in the selected quote asset.');
   const payload=metadataPayload(draft);const hash=await sha256(payload);
   const owner=bs58.decode(draft.owner),sig=bs58.decode(body.signature);
@@ -55,7 +58,7 @@ export async function POST(request:Request){
   if(!await takeBudget(db,`metadata-ip:${ipHash}`,1,UPLOADS_PER_IP_HOUR,3_600_000))return fail(Error('Too many metadata uploads from this network. Try again later.'),429);
   if(!await takeBudget(db,'metadata-global',1,UPLOADS_PER_HOUR,3_600_000))return fail(Error('Metadata uploads are busy. Try again shortly.'),429);
   if(official&&(draft.description.trim()!==OFFICIAL_METADATA_DESCRIPTION_DRAFT||draft.twitter!==OFFICIAL_METADATA_DOCUMENT.twitter))throw Error('Official metadata draft was not the published document. Nothing was stored.');
-  const publication=official?await buildOfficialMetadataPublication({mint:draft.mint,imageBytes:bytes}):await buildMetadataPublication({...draft,website,twitter,...(telegram!==undefined?{telegram}:{})},bytes,SITE.origin);
+  const publication=official?await buildOfficialMetadataPublication({mint:draft.mint,imageBytes:bytes}):await buildMetadataPublication({...draft,website,twitter,...(telegram!==undefined?{telegram}:{}),...(draft.launchTweet!==undefined?{launchTweet}:{})},bytes,SITE.origin);
   assertPublicationBinding(draft,publication);
   const {metadata,metadataHash:metaHash}=publication;const json=JSON.stringify(metadata);
   if(!await consumeRequestBudget(database(),'upload-global',2000,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-ip:'+ipHash,40,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-owner:'+draft.owner,20,{windowMs:86_400_000}))throw Error('Metadata upload budget reached. Please retry tomorrow.');

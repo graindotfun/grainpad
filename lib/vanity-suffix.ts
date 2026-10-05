@@ -1,4 +1,4 @@
-export const MINT_SUFFIX = "grn";
+export const MINT_SUFFIX = "grain";
 const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const modulus = 58 ** MINT_SUFFIX.length;
 const target = [...MINT_SUFFIX].reduce((value, char) => value * 58 + alphabet.indexOf(char), 0);
@@ -10,5 +10,5 @@ export function hasMintSuffix(bytes: Uint8Array): boolean {
 }
 
 export function assertMintSuffix(address: string): void {
-  if (!address.endsWith(MINT_SUFFIX)) throw Error("Every launch through Grainpad requires a lowercase grn mint address.");
+  if (!address.endsWith(MINT_SUFFIX)) throw Error("Every launch through Grainpad requires a lowercase grain mint address.");
 }

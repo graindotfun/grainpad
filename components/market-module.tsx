@@ -49,15 +49,15 @@ export function GrainChart({points,interval,unit,label}:{points:SeriesPoint[];in
 }
 function Stat({label,value,note}:{label:string;value:string;note?:string}){return <div className="market-stat"><dt>{label}</dt><dd>{value}{note&&<small>{note}</small>}</dd></div>;}
 const COVERAGE_LABEL:Record<string,string>={indexed:'indexed',partial:'partial index','not-indexed':'not indexed yet','no-trades':'no trades yet','external-fallback':'external fallback'};
-type Props={market:MarketView|null;mint:string;error?:string;seconds:number;setSeconds:(n:number)=>void};
+type Props={market:MarketView|null;mint:string;quoteSymbol?:string;error?:string;seconds:number;setSeconds:(n:number)=>void};
 /** One market module. Grainpad's native figures and indexed candles are the default; an external USD pool series is a
  * toggle only when a pool index has it (market.chart.available), and the index's own GeckoTerminal fallback is labeled. */
-export function MarketModule({market,mint,error,seconds,setSeconds}:Props){
+export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:Props){
  const usdAvailable=!!market?.chart.available,[choice,setChoice]=useState<MarketSource>('grainpad'),[metric,setMetric]=useState<'price'|'market-cap'>('price');
  const source:MarketSource=choice==='usd'&&usdAvailable?'usd':'grainpad';
  const interval=INTERVALS.find(([,s])=>s===seconds)?.[0]||'5m',history=useHistory(market,mint,interval,source==='usd');
  const [now,setNow]=useState(()=>Date.now());useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),15_000);return()=>clearInterval(id);},[]);
- const q=market?.quote,unit=q?.symbol||'SOL',n=market?.native,graduated=market?.route==='cpmm';
+ const q=market?.quote,unit=q?.symbol||quoteSymbol||'—',n=market?.native,graduated=market?.route==='cpmm';
  const rows=history.data?.rows||[],usdSeries=isUsd(history.data);
  const metricOptions={nativePrice:n?.priceQuote??market?.quoteStats?.price??null,nativeMarketCap:n?.marketCapQuote??market?.quoteStats?.marketCap??null,quoteUsd:n?.usd??null,usdSeries:usdSeries||source==='usd'};
  const canMarketCap=marketMetricSeries([],{...metricOptions,metric:'market-cap'}).available,activeMetric=canMarketCap?metric:'price';
@@ -84,6 +84,7 @@ export function MarketModule({market,mint,error,seconds,setSeconds}:Props){
  ];
  const emptyTitle=error?'Market unavailable':!market?'Reading the pool…':history.error&&!history.data?'Price history unavailable':!history.data?'Reading the index…':coverage?.status==='no-trades'?'No trades yet':coverage?.status==='not-indexed'?'Trade history not indexed yet':'No indexed trades in this interval';
  const emptyNote=error?'Check the token address or try again shortly.':coverage?.notice||'Empty periods stay empty. Missing history is never drawn as zero.';
+ const missingPriceNote=!market?(error?'Price temporarily unavailable':'Reading the pool…'):coverage?.status==='no-trades'||market.activity==='none'?'Price appears with the first trade':history.error?'Price history unavailable':'No verified price available';
  const seriesLabel=source==='usd'?'USD · external pool index':usdSeries?'USD · GeckoTerminal fallback':`on-chain · ${unit}`;
  return <section className="panel corner-panel market-module" aria-labelledby="market-heading" data-stale={stale||undefined}>
   <div className="corner-head"><span className="corner-label">Market</span><span className="corner-label is-right">{seriesLabel}</span></div>
@@ -91,7 +92,7 @@ export function MarketModule({market,mint,error,seconds,setSeconds}:Props){
    <div>
     <h2 id="market-heading" className="sr-only">Market</h2>
     <p className="market-price"><button type="button" className="market-metric-toggle" aria-pressed={activeMetric==='market-cap'} aria-label={`Switch to ${activeMetric==='price'?'market cap':'price'}`} disabled={!canMarketCap} onClick={()=>setMetric(activeMetric==='price'?'market-cap':'price')} title="Switch price and market cap"><ArrowLeftRight size={16} aria-hidden="true"/><span>{metricLabel}</span></button><strong className="stale-value">{headline}</strong>{stale&&<span className="delay-chip" role="status" title={market?`Last updated ${new Date(market.updatedAt).toLocaleTimeString()}`:undefined}>delayed {relativeTime(now-delayedMs,now)}</span>}</p>
-    <p className="market-subline">{change!=null&&<span className={change>=0?'is-up':'is-down'}>{formatPercent(change,{signed:true})} 24h</span>}<span>{activeMetric==='market-cap'?'Market cap from current supply; spot price before fees':source==='usd'?'USD price from an external pool index':priceQuote!=null?<>{graduated?'Pool spot price':'Curve spot price'}, before fees{n?.priceUsd!=null&&n.usd?.freshness!=='expired'&&<> · ≈ {formatPrice(n.priceUsd,'USD')}</>}</>:points.length&&!usdSeries?'Last indexed execution price':'Price appears with the first trade'}</span></p>
+    <p className="market-subline">{change!=null&&<span className={change>=0?'is-up':'is-down'}>{formatPercent(change,{signed:true})} 24h</span>}<span>{activeMetric==='market-cap'?'Market cap from current supply; spot price before fees':source==='usd'?'USD price from an external pool index':priceQuote!=null?<>{graduated?'Pool spot price':'Curve spot price'}, before fees{n?.priceUsd!=null&&n.usd?.freshness!=='expired'&&<> · ≈ {formatPrice(n.priceUsd,'USD')}</>}</>:points.length&&!usdSeries?'Last indexed execution price':missingPriceNote}</span></p>
    {activeMetric==='market-cap'&&<p className="market-metric-note">{display.estimatedUsd?'USD estimate using the current quote-asset conversion, not historical USD prices. ':''}Market-cap history uses current supply.</p>}
    </div>
    <div className="market-controls">

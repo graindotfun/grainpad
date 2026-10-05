@@ -2,6 +2,7 @@ import './browser-buffer.mjs';
 import {PublicKey} from '@solana/web3.js';
 import {TOKEN_PROGRAM_ID,unpackAccount} from '@solana/spl-token';
 import {SITE} from './site-config';
+import {PLATFORM_SETTINGS} from './platform-settings.mjs';
 import {grainpadPlatformId} from './platform-policy';
 import {rpc,assertNetwork} from './launch';
 import {prepareInstructions} from './operations';
@@ -13,6 +14,7 @@ export async function readFees(ownerAddress:string,symbol='SOL'){
  return {creator:amount(0),platform:ownerAddress===SITE.projectWallet?amount(1):'0',quote:a.quote};
 }
 export async function prepareFeeClaim(ownerAddress:string,kind:'creator'|'platform',maxCost:string,symbol='SOL'){
+ if(kind==='platform'&&PLATFORM_SETTINGS.claimAuthority!==SITE.projectWallet)throw Error('Platform fees use approved collector automation. View Treasury for verified forwarding to the business wallet.');
  const rewards=await readFees(ownerAddress,symbol),amount=rewards[kind];if(BigInt(amount)<=0n)throw Error('No accrued fees to claim.');
  if(kind==='platform'&&ownerAddress!==SITE.projectWallet)throw Error('Platform fees belong to the Grainpad owner wallet.');
  const owner=new PublicKey(ownerAddress),a=feeVaults(owner,grainpadPlatformId(),symbol);

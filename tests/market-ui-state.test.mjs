@@ -36,3 +36,13 @@ test('actual Tape render labels confirmed rows separately from zero finalized re
  const html=renderToStaticMarkup(createElement(NativeTape,{mint:'fixture-mint',symbol:'GRAINU',feed:{data:{events:[],nextCursor:null,coverage:'Partial fixture',quote:'wXMR'},pending,error:'',updatedAt:1000}}));
  assert.match(html,/0 finalized · 3 confirmed/);assert.equal((html.match(/class="ledger-row /g)||[]).length,3);assert.doesNotMatch(html,/0 records/);
 });
+
+test('actual market outage render keeps verified wXMR pair and does not invent zero trades or a SOL pair',async()=>{
+ const {build}=await import('esbuild'),{createElement}=await import('react'),{renderToStaticMarkup}=await import('react-dom/server');
+ await build({entryPoints:['components/market-module.tsx'],bundle:true,platform:'node',format:'esm',packages:'external',outfile:'.test-output/market-outage-review.mjs',logLevel:'silent'});
+ const {MarketModule}=await import('../.test-output/market-outage-review.mjs');
+ const props={market:null,mint:'fixture-mint',quoteSymbol:'wXMR',error:'Market temporarily unavailable',seconds:300,setSeconds:()=>{}};
+ const html=renderToStaticMarkup(createElement(MarketModule,props));
+ assert.match(html,/on-chain · wXMR/);assert.match(html,/<dt>Pair<\/dt><dd>wXMR<\/dd>/);assert.match(html,/Price temporarily unavailable/);assert.doesNotMatch(html,/Price appears with the first trade|on-chain · SOL|<dd>SOL<\/dd>/);
+ const unknown=renderToStaticMarkup(createElement(MarketModule,{...props,quoteSymbol:undefined}));assert.match(unknown,/<dt>Pair<\/dt><dd>—<\/dd>/);assert.doesNotMatch(unknown,/on-chain · SOL/);
+});

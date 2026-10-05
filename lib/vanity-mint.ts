@@ -19,7 +19,7 @@ export function parseVanityMint(text: string): Keypair {
   try { mint = Keypair.fromSecretKey(bytes.slice()); } catch { throw Error("Mint keypair failed signature-key validation."); }
   finally { bytes.fill(0); }
   if (!mint.publicKey.toBase58().endsWith(MINT_SUFFIX)) {
-    throw Error("Mint address must end with lowercase grn exactly.");
+    throw Error("Mint address must end with lowercase grain exactly.");
   }
   return mint;
 }

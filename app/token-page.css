@@ -227,3 +227,17 @@ html[data-theme="dark"] .public-tape .is-sell .ledger-side i{background:var(--se
 .token-market-page .swap-percentages button:hover:not(:disabled){border-color:var(--xmr-orange);color:var(--xmr-orange)}
 /* Keep the wallet and navigation controls inside narrow token-page viewports. */
 @media(max-width:360px){.token-market-page .site-brand>span{display:none}}
+
+/* Public identity URLs keep their full value without widening a mobile market. */
+.token-project-context{min-width:0;overflow-wrap:anywhere}
+.token-project-context a{overflow-wrap:anywhere}
+.legacy-rewards-notice{margin-top:18px;overflow-wrap:anywhere;font-size:13px;line-height:1.6}
+.legacy-rewards-notice p{margin:5px 0}
+.token-launch-post{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;min-width:0;padding:10px 0;border-top:1px solid var(--border)}
+.token-launch-post-link{display:inline-flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+.token-launch-post-editor{min-width:0;max-width:100%;font-size:13px}
+.token-launch-post-editor[open]{flex:0 0 100%;max-width:100%}
+.token-launch-post-editor[open]>:not(summary){max-width:620px}
+.token-launch-post-editor summary{cursor:pointer}
+.token-launch-post-editor label{display:block;margin:12px 0 8px}
+.token-launch-post-note{flex-basis:100%;margin:0;font-size:11px;color:var(--muted-foreground)}

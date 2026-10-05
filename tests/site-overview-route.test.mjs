@@ -3,12 +3,18 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {build} from 'esbuild';
 import {grainpadPlatformId} from '../lib/platform-policy.mjs';
+import {DatabaseSync} from 'node:sqlite';
+import {PREVIOUS_OFFICIAL_MINTS} from '../lib/previous-official-mints.mjs';
 const platformId=grainpadPlatformId().toBase58();
+const ledger=new DatabaseSync(':memory:');
+ledger.exec('CREATE TABLE launch_index(network TEXT,platform_id TEXT,mint TEXT)');
+for(const mint of ['current-launch',PREVIOUS_OFFICIAL_MINTS[0].mint])ledger.prepare('INSERT INTO launch_index VALUES(?,?,?)').run('mainnet-beta',platformId,mint);
 const official={mint:'test-mint',pool:'test-pool',approval:JSON.stringify({verification:{status:'PASS',readOnly:true,platform:platformId,mint:'test-mint',pool:'test-pool',checks:[{status:'PASS'}]}})};
 const platform={active:true,policyMatches:true,kind:'grainpad',platformId,restrictionFlags:{globalConfig:1,curveParam:1},rules:[{symbol:'SOL'},{symbol:'wXMR'}]};
 const statement=(sql,args=[])=>({
  bind:(...next)=>statement(sql,next),
  first:async()=>{
+  if(sql.includes('FROM launch_index'))return ledger.prepare(sql).get(...args);
   if(sql.includes('FROM market_cache'))return args[0]===`platform:rules:v7:${platformId}`?{value:JSON.stringify(platform),updated_at:Date.now()-1000,expires_at:Date.now()+29_000}:null;
   if(sql.includes('FROM official_token'))return official;
   return null;
@@ -21,7 +27,7 @@ async function route(creationEnabled){
  const stubs={
   '@/lib/server-owner':'export const database=()=>globalThis.overviewTest.db;',
   '@/lib/server-utils':'export const bucket=()=>({});',
-  '@/lib/server-cache':'export const sharedMarketCache=async()=>({data:{launches:null,volume:null,burned:null},updatedAt:Date.now(),stale:false});',
+  '@/lib/server-cache':'export const sharedMarketCache=async(db,key,read)=>({data:await read(),updatedAt:Date.now(),stale:false});',
   '@/lib/launch-records':'export const readLaunchRecords=async()=>[];',
  };
  await build({entryPoints:['app/api/site-overview/route.ts'],outfile,bundle:true,packages:'external',platform:'node',format:'esm',logLevel:'silent',plugins:[{name:'overview-boundaries',setup(b){
@@ -34,6 +40,7 @@ async function route(creationEnabled){
 test('hero launch claims read the live platform cache and stay off while creation is locked',async()=>{
  const locked=await (await (await route(false))()).json();
  assert.deepEqual(locked.features,{pairedLaunches:false,onChainRules:false});
+ assert.equal(locked.launches,1,'The homepage count excludes the retired official mint, matching discovery.');
  const open=await (await (await route(true))()).json();
  assert.deepEqual(open.features,{pairedLaunches:true,onChainRules:true},'A fully verified platform row under the key /api/platform writes must be found.');
 });
