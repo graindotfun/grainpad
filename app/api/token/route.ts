@@ -13,6 +13,7 @@ import {readOfficialLaunchReservation} from '@/lib/official-launch-reservation.m
 import {readOfficialGenerationIdentity} from '@/lib/official-launch-identity.mjs';
 import {OFFICIAL_LAUNCH_CREATOR,OFFICIAL_LAUNCH_PINS} from '@/lib/official-launch-policy.mjs';
 import {LAUNCH_EXPECTED} from '@/lib/verify-launch.mjs';
+import {canonicalOfficialTwitter} from '@/lib/official-metadata.mjs';
 import {isPreviousOfficialMint} from '@/lib/previous-official-mints.mjs';
 export const dynamic="force-dynamic";
 export async function GET(){try{
@@ -34,10 +35,10 @@ export async function POST(request:Request){try{
  const indexed=await database().prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint.toBase58()).first<{record:string}>();
  const saved=indexed?{json:async<T>()=>JSON.parse(indexed.record) as T}:await bucket().get(`launches/mainnet-beta/${mint.toBase58()}`);
  if(!saved)throw Error("Register the confirmed Grainpad launch in the launch workspace first.");
- const launch=await saved.json<{mint:string;pool:string;creator:string;platformId:string;symbol:string;name:string}>();
- if(launch.creator!==OFFICIAL_LAUNCH_CREATOR||launch.platformId!==grainpadPlatformId().toBase58()||launch.symbol!==SITE.tokenSymbol||launch.name!==SITE.tokenName)throw Error("This is not the owner's GRAIN launch on Grainpad.");
+ const launch=await saved.json<{mint:string;pool:string;creator:string;platformId:string;symbol:string;name:string;metadataHash:string;twitter?:string}>();
+ if(launch.mint!==mint.toBase58()||launch.metadataHash!==reservation.metadata_hash||launch.creator!==OFFICIAL_LAUNCH_CREATOR||launch.platformId!==grainpadPlatformId().toBase58()||launch.symbol!==SITE.tokenSymbol||launch.name!==SITE.tokenName)throw Error("This is not the owner's GRAIN launch on Grainpad.");
  if(await chain("mainnet-beta","getGenesisHash")!==NETWORKS["mainnet-beta"].genesis)throw Error("Network mismatch.");
- const verification=await verifyLaunch({connection:readConnection(),platform:grainpadPlatformId().toBase58(),pool:launch.pool,mint:mint.toBase58(),creationSignature:reservation.signature,expected:{...LAUNCH_EXPECTED,officialMint:mint.toBase58(),metadataHash:reservation.metadata_hash,taxBps:OFFICIAL_LAUNCH_PINS.taxBps},loadAsset:async(uri:string)=>{const hash=new URL(uri).pathname.split('/').pop();const asset=await bucket().get(`assets/${hash}`);if(!asset)throw Error('Metadata asset missing.');return new Uint8Array(await asset.arrayBuffer());}});
+ const verification=await verifyLaunch({connection:readConnection(),platform:grainpadPlatformId().toBase58(),pool:launch.pool,mint:mint.toBase58(),creationSignature:reservation.signature,expected:{...LAUNCH_EXPECTED,officialMint:mint.toBase58(),metadataHash:reservation.metadata_hash,taxBps:OFFICIAL_LAUNCH_PINS.taxBps,twitter:canonicalOfficialTwitter(launch.twitter)},loadAsset:async(uri:string)=>{const hash=new URL(uri).pathname.split('/').pop();const asset=await bucket().get(`assets/${hash}`);if(!asset)throw Error('Metadata asset missing.');return new Uint8Array(await asset.arrayBuffer());}});
  if(verification.checks.find((check:{name:string;observed?:{signature?:string}})=>check.name==='T0-creation-declared-creator-buy')?.observed?.signature!==reservation.signature)throw Error('Verified creation does not match the stored official launch signature.');
  if(verification.status!=='PASS')throw Error(`CA remains unpublished: ${verification.checks.filter((c:{status:string})=>c.status==='FAIL').map((c:{name:string;observed:unknown})=>`${c.name}: ${JSON.stringify(c.observed)}`).join('; ')}`);
  await database().prepare("INSERT INTO official_token (id,generation,mint,pool,token_program,published_at,approval) VALUES (1,2,?,?,?,?,?) ON CONFLICT(id) DO NOTHING").bind(mint.toBase58(),launch.pool,TOKEN_2022_PROGRAM_ID.toBase58(),new Date().toISOString(),JSON.stringify({request:body.approval,signature:body.signature,verification})).run();
