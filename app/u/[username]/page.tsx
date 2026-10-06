@@ -4,6 +4,7 @@ import {SiteHeader} from '@/components/site-header';
 import {TokenImage} from '@/components/token-image';
 import {CopyText} from '@/components/copy-text';
 import {UserAvatar} from '@/components/user-identity';
+import {IdentityName} from '@/components/identity-name';
 import {database} from '@/lib/server-owner';
 import {clientKey} from '@/lib/client-key.mjs';
 import {consumeRequestBudget} from '@/lib/abuse-budget.mjs';
@@ -38,7 +39,7 @@ export default async function ProfilePage({params}:{params:Promise<{username:str
  const fame=await fameSummary(database(),profile.wallet).catch(()=>({target:profile.wallet,score:0,up:0,down:0,viewer:null}));
  return <main className="shell product-page profile-page"><SiteHeader/>
   <section className="profile-intro" aria-label="Public profile">
-   <div className="profile-identity"><UserAvatar src={avatar} label={profile.displayName||profile.username} size={96}/><div className="profile-name"><div className="profile-name-line"><h1>{profile.displayName||profile.username}</h1>{profile.xVerified&&profile.xUsername?<a className="profile-x" href={`https://x.com/${profile.xUsername}`} target="_blank" rel="noreferrer" aria-label={`Verified X account @${profile.xUsername}`}><span aria-hidden="true">𝕏</span> @{profile.xUsername}</a>:null}</div><p className="profile-handle">@{profile.username}</p><p className="profile-joined">Joined {dateLabel(profile.createdAt)}</p></div></div>
+   <div className="profile-identity"><UserAvatar src={avatar} label={profile.displayName||profile.username} size={96}/><div className="profile-name"><div className="profile-name-line"><h1><IdentityName identity={profile} fallback={profile.displayName||profile.username}/></h1>{profile.xVerified&&profile.xUsername?<a className="profile-x" href={`https://x.com/${profile.xUsername}`} target="_blank" rel="noreferrer" aria-label={`Verified X account @${profile.xUsername}`}><span aria-hidden="true">𝕏</span> @{profile.xUsername}</a>:null}</div><p className="profile-handle">@{profile.username}</p><p className="profile-joined">Joined {dateLabel(profile.createdAt)}</p></div></div>
    {profile.bio?<p className="profile-bio">{profile.bio}</p>:null}
    <div className="profile-bottom"><div className="profile-wallet"><span className="address-line" title={profile.wallet}>{profile.wallet.slice(0,6)}…{profile.wallet.slice(-6)}</span><CopyText value={profile.wallet} label="Copy wallet"/><a className="profile-link" href={`/creator/${profile.wallet}`}>Creator record</a></div><FamePanel target={profile.wallet} initial={fame}/></div>
   </section>

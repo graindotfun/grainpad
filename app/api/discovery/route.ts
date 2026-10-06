@@ -3,6 +3,9 @@ import {grainpadPlatformId} from '@/lib/platform-policy';
 import {discoveryRecords,enrichDiscovery} from '@/lib/token-discovery';
 import {queryDiscovery} from '@/lib/discovery-index.mjs';
 import {identityCards} from '@/lib/wallet-identity.mjs';
+import {waitUntil} from 'cloudflare:workers';
+import {refreshDiscoveryMarkets} from '@/lib/discovery-refresh.mjs';
+import {serverMarket} from '@/lib/server-market';
 export const dynamic='force-dynamic';
 export async function GET(request:Request){
  const headers={'Cache-Control':'no-store'},params=new URL(request.url).searchParams;
@@ -10,6 +13,9 @@ export async function GET(request:Request){
  if(!['all','SOL','wXMR'].includes(quote)||search.length>128||!['all','new','near','graduated'].includes(filter)||!['newest','oldest','market-cap','volume'].includes(sort)||!Number.isSafeInteger(page)||page<1)return Response.json({error:'Invalid directory request.'},{status:400,headers});
  try{
   const platform=grainpadPlatformId().toBase58(),now=Date.now(),result=await queryDiscovery(database(),{platform,search,filter,sort,page,quote,now});
+  // Do not delay this response or claim that background observations are already
+  // present. The next visible-directory poll reads their persisted snapshots.
+  waitUntil(refreshDiscoveryMarkets({db:database(),platform,now,readMarket:(mint:string)=>serverMarket(mint,{viewer:true})}).catch(()=>{}));
   const enrich=(rows:typeof result.selected)=>{const parsed=discoveryRecords(rows,platform);return enrichDiscovery(parsed.records,parsed.cache,platform,result.officialMint,now);};
   const tokens=enrich(result.selected),featured=enrich(result.featured);
   let identities:Record<string,{username:string}>={};try{identities=await identityCards(database(),[...tokens,...featured].map(token=>token.creator).filter((creator):creator is string=>Boolean(creator)),{limit:40});}catch{identities={};}
