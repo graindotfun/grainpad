@@ -1,3 +1,4 @@
+import {completedMetadataRetry} from '@/lib/metadata-completed-retry.mjs';
 import {canonicalTokenWebsite} from '@/lib/token-website.mjs';
 import {validateImage} from '@/lib/image-validation.mjs';
 import {env} from 'cloudflare:workers';
@@ -31,7 +32,7 @@ export async function POST(request:Request){
   sameOrigin(request);
   // Official uploads always use the creator-bound approved builder. While public
   // creation is locked, only that path or an explicitly enabled pilot is admitted.
-  const ipHash=await sha256(requestClientKey(request));
+  const client=requestClientKey(request),ipHash=await sha256(client);
   if(!await consumeRequestBudget(database(),'upload-attempts-global',200)||!await consumeRequestBudget(database(),'upload-attempts-ip:'+ipHash,30))return fail(Error('Upload request limit reached. Retry shortly.'),429);
   const body=await limitedJSON(request,2_800_000);const draft=body.draft as MetadataDraft;
   const official=isOfficialMetadataUpload(draft),pilotOnly=!TOKEN_CREATION_ENABLED;
@@ -55,16 +56,18 @@ export async function POST(request:Request){
   const {type}=validateImage(bytes,draft.imageType);
   const storage=bucket();const imageHash=await sha256(bytes);
   const reserved=launchRegistrationIdentity({name:draft.name,symbol:draft.symbol,imageHash,website,twitter,mint:draft.mint},draft.owner);if(reserved)throw Error(reserved);
-  const db=database();
-  if(!await takeBudget(db,`metadata-ip:${ipHash}`,1,UPLOADS_PER_IP_HOUR,3_600_000))return fail(Error('Too many metadata uploads from this network. Try again later.'),429);
-  if(!await takeBudget(db,'metadata-global',1,UPLOADS_PER_HOUR,3_600_000))return fail(Error('Metadata uploads are busy. Try again shortly.'),429);
   if(official&&(draft.description.trim()!==OFFICIAL_METADATA_DESCRIPTION_DRAFT||draft.twitter!==twitter))throw Error('Official metadata draft was not the published document. Nothing was stored.');
   const publication=official?await buildOfficialMetadataPublication({mint:draft.mint,imageBytes:bytes,twitter}):await buildMetadataPublication({...draft,website,twitter,...(telegram!==undefined?{telegram}:{}),...(draft.launchTweet!==undefined?{launchTweet}:{})},bytes,SITE.origin);
   assertPublicationBinding(draft,publication);
   const {metadata,metadataHash:metaHash}=publication;const json=JSON.stringify(metadata);
-  if(!await consumeRequestBudget(database(),'upload-global',2000,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-ip:'+ipHash,40,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-owner:'+draft.owner,20,{windowMs:86_400_000}))throw Error('Metadata upload budget reached. Please retry tomorrow.');
   const header=await acceptLaunchHeader({header:body.header,owner:draft.owner,mint:draft.mint,metadataHash:metaHash,imageHash:publication.imageHash});
   const identityIntent=await acceptLaunchIdentityIntent({intent:body.identityIntent,owner:draft.owner,mint:draft.mint,metadataHash:metaHash,imageHash:publication.imageHash});
+  const retry=await completedMetadataRetry(storage,{owner:draft.owner,mint:draft.mint,publication,header,identityIntent});
+  if(retry)return Response.json(retry);
+  const db=database(),ownerHash=await sha256(draft.owner),uploadKey=client==='local'?`metadata-owner:${ownerHash}`:`metadata-ip:${ipHash}`;
+  if(!await takeBudget(db,uploadKey,1,UPLOADS_PER_IP_HOUR,3_600_000))return fail(Error(client==='local'?'Too many metadata uploads from this wallet. Try again later.':'Too many metadata uploads from this network. Try again later.'),429);
+  if(!await takeBudget(db,'metadata-global',1,UPLOADS_PER_HOUR,3_600_000))return fail(Error('Metadata uploads are busy. Try again shortly.'),429);
+  if(!await consumeRequestBudget(database(),'upload-global',2000,{windowMs:86_400_000})||!await consumeRequestBudget(database(),(client==='local'?'upload-authenticated-owner:'+ownerHash:'upload-ip:'+ipHash),40,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-owner:'+draft.owner,20,{windowMs:86_400_000}))throw Error('Metadata upload budget reached. Please retry tomorrow.');
   const bindings=env as unknown as {METADATA_PRIMARY?:Fetcher;METADATA_SECONDARY?:Fetcher};
   const persistence=await persistMetadata(publication,[bindings.METADATA_PRIMARY,bindings.METADATA_SECONDARY]);
   if(!await storage.head(`assets/${imageHash}`))await storage.put(`assets/${imageHash}`,bytes,{httpMetadata:{contentType:type,cacheControl:"public, max-age=31536000, immutable"}});
