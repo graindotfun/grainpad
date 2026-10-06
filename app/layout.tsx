@@ -18,6 +18,7 @@ import "./wallet-ux.css";
 import "./wallet-picker.css";
 import "./readability.css";
 import "./profile.css";
+import "./rewards-calculator.css";
 import {ContractAddressBar} from "@/components/contract-address-bar";
 
 export const metadata: Metadata = {
