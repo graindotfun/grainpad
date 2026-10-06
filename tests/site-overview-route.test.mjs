@@ -33,7 +33,7 @@ async function route(creationEnabled){
  await build({entryPoints:['app/api/site-overview/route.ts'],outfile,bundle:true,packages:'external',platform:'node',format:'esm',logLevel:'silent',plugins:[{name:'overview-boundaries',setup(b){
   b.onResolve({filter:/^@\/lib\//},a=>a.path in stubs?{path:a.path,namespace:'stub'}:null);
   b.onLoad({filter:/.*/,namespace:'stub'},a=>({contents:stubs[a.path],loader:'js'}));
-  b.onLoad({filter:/platform-settings\.mjs$/},a=>({contents:fs.readFileSync(a.path,'utf8').replace('TOKEN_CREATION_ENABLED=false',`TOKEN_CREATION_ENABLED=${creationEnabled}`),loader:'js'}));
+  b.onLoad({filter:/platform-settings\.mjs$/},a=>({contents:fs.readFileSync(a.path,'utf8').replace(/TOKEN_CREATION_ENABLED=(true|false)/,`TOKEN_CREATION_ENABLED=${creationEnabled}`),loader:'js'}));
  }}]});
  return (await import('../'+outfile)).GET;
 }
