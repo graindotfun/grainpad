@@ -1,5 +1,7 @@
 'use client';
 import Image from 'next/image';
+import {IdentityName} from './identity-name';
+import {isOfficialProfile} from '@/lib/official-profile.mjs';
 import {shortAddress} from '@/lib/price-format';
 import {safeAvatarPath} from '@/lib/wallet-identity.mjs';
 
@@ -18,8 +20,8 @@ export function UserIdentity({wallet,identity,creator=false,compact=false}:{wall
  const primary=identity?compact?`@${identity.username}`:identity.displayName||`@${identity.username}`:shortAddress(wallet);
  return <a className="user-identity" href={href} title={wallet}>
   <UserAvatar src={identity?.avatar} label={primary} size={compact?22:28}/>
-  <span className="user-identity-name">{primary}</span>
-  {identity&&!compact&&identity.displayName?<span className="user-identity-handle">@{identity.username}</span>:null}
+  <span className="user-identity-name"><IdentityName identity={identity} fallback={primary}/></span>
+  {identity&&!compact&&identity.displayName&&!isOfficialProfile(identity)?<span className="user-identity-handle">@{identity.username}</span>:null}
   {creator?<span className="user-identity-badge">Creator</span>:null}
   {identity?.xVerified?<span className="user-identity-badge" title={identity.xUsername?`Verified X @${identity.xUsername}`:'Verified X'}>𝕏{!compact&&identity.xUsername?` @${identity.xUsername}`:''}</span>:null}
  </a>;
