@@ -1,15 +1,15 @@
 "use client";
 import {RulesBadge} from './rules-badge';
 import {useEffect, useState} from 'react';
-import {displayUnits} from '@/lib/token-units.mjs';
+import {displayRecordedBurns} from '@/lib/public-overview.mjs';
 
 export type SiteOverviewData = {
- launches:number|null; volume:null; burned:string|null; checkedAt:string|null; stale:boolean; claimsValidUntil?:number;
+ launches:number|null; volume:number|null; volumeCoverage?:string; volumeTokens?:number; burned:string|null; checkedAt:string|null; stale:boolean; claimsValidUntil?:number;
  features:{pairedLaunches:boolean; onChainRules:boolean};
 };
 
-export function useSiteOverview() {
- const [data,setData] = useState<SiteOverviewData|null>(null);
+export function useSiteOverview(initialData:SiteOverviewData|null=null) {
+ const [data,setData] = useState<SiteOverviewData|null>(initialData);
  useEffect(() => {
   const abort = new AbortController();
   let busy = false;
@@ -43,8 +43,8 @@ export function SiteStats({data}:{data:SiteOverviewData|null}) {
   <div className="stats-heading"><span className="overline">ON THE RECORD</span><span>{data?.stale?'Last known data':data?.checkedAt?'Verified records':'Data pending'}</span></div>
   <dl>
    <div><dt>Launches</dt><dd>{data?.launches?.toLocaleString('en-US') ?? '—'}</dd><small>Confirmed Grainpad launches</small></div>
-   <div><dt>Trading volume</dt><dd>—</dd><small>Volume tracking is not available yet</small></div>
-   <div><dt>GRAIN burned</dt><dd>{data?.burned == null ? '—' : displayUnits(data.burned,6)}</dd><a href="/treasury">Verified burn receipts</a></div>
+   <div><dt>Trading volume · 24h</dt><dd>{data?.volume == null ? "Indexing" : new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2}).format(data.volume)}</dd><small>{data?.volume == null ? "Verified volume data is not available yet" : `Reported volume · ${data.volumeTokens ?? 0} tracked tokens${data.volumeCoverage==='partial'?' · partial coverage':''}`}</small></div>
+   <div><dt>GRAIN burned</dt><dd>{data?.burned == null ? '—' : displayRecordedBurns(data.burned)}</dd><a href="/rewards#holder-receipts-title">Verified burn receipts</a></div>
   </dl>
   <p className="stats-note">{data?.checkedAt?`Updated ${new Date(data.checkedAt).toISOString().slice(11,16)} UTC. `:''}Only recorded activity is shown. A dash means data is not available.</p>
  </section>;
