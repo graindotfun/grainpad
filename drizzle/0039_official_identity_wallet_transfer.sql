@@ -163,7 +163,7 @@ SELECT '0039_official_identity_wallet_transfer','FuAqW3zEPjVFVeE8ditPabjU5iJbF3B
 FROM wallet_identity WHERE wallet='FuAqW3zEPjVFVeE8ditPabjU5iJbF3BzE2i4djrvWQFM' AND username='grainpad'
 ON CONFLICT(id) DO NOTHING;
 --> statement-breakpoint
-UPDATE wallet_identity SET wallet='8A6UdaWWvHnRBGYiJyyiGYyVzSN43dJRCfQx6eJqBJSz',updated_at=MAX(updated_at+1,CAST(strftime('%s','now') AS INTEGER)*1000)
+UPDATE wallet_identity SET wallet='8A6UdaWWvHnRBGYiJyyiGYyVzSN43dJRCfQx6eJqBJSz',display_name='Grainpad',updated_at=MAX(updated_at+1,CAST(strftime('%s','now') AS INTEGER)*1000)
 WHERE wallet='FuAqW3zEPjVFVeE8ditPabjU5iJbF3BzE2i4djrvWQFM' AND username='grainpad'
 AND EXISTS(SELECT 1 FROM wallet_identity_transfer WHERE id='0039_official_identity_wallet_transfer');
 --> statement-breakpoint
