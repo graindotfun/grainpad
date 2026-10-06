@@ -5,7 +5,8 @@ import {formatNumber,formatPrice} from '@/lib/price-format';
 import type {LiveTrade} from './use-live-market';
 /** A moving 2-minute time window. Repaint follows the clock; prices follow real trade events. */
 export function LiveMarketChart({events,multiplier,unit}:{events:LiveTrade[];multiplier:number;unit:string}){
- const canvas=useRef<HTMLCanvasElement>(null),values=useRef({events,multiplier,unit});values.current={events,multiplier,unit};
+ const canvas=useRef<HTMLCanvasElement>(null),values=useRef({events,multiplier,unit});
+ useEffect(()=>{values.current={events,multiplier,unit};},[events,multiplier,unit]);
  useEffect(()=>{
   const node=canvas.current;if(!node)return;const ctx=node.getContext('2d');if(!ctx)return;
   const media=matchMedia('(prefers-reduced-motion: reduce)');let frame=0,previous=performance.now(),tip:number|null=null,low:number|null=null,high:number|null=null;
