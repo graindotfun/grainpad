@@ -163,3 +163,6 @@
 /* Trading fee, holder tax, creator earnings and holder rewards, from the approved policy (components/economics-breakdown.tsx). */
 .economics-breakdown{display:grid;gap:10px;margin:14px 0}.economics-breakdown>div{border-top:1px solid var(--brand-line);padding-top:8px}.economics-breakdown dt{font-weight:600}.economics-breakdown dd{margin:4px 0 0;color:var(--muted-foreground);font-size:.92em}
 @media(min-width:760px){.economics-breakdown{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Rewards stays one main-nav item; both destinations are reachable by mouse and keyboard. */
+.rewards-nav{position:relative}.rewards-nav-menu{display:none;position:absolute;left:-16px;top:100%;min-width:230px;padding:12px;border:1px solid var(--brand-line);border-radius:8px;background:var(--card);box-shadow:0 12px 24px #0002;z-index:40}.rewards-nav:hover .rewards-nav-menu,.rewards-nav:focus-within .rewards-nav-menu{display:grid;gap:4px}.rewards-nav-menu a{padding:10px 8px;white-space:nowrap}.rewards-nav-menu a:hover,.rewards-nav-menu a:focus-visible{background:var(--muted);color:var(--foreground)}

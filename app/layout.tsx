@@ -19,6 +19,8 @@ import "./wallet-picker.css";
 import "./readability.css";
 import "./profile.css";
 import "./rewards-calculator.css";
+import "./price-tab.css";
+import {PriceTab} from "@/components/price-tab";
 import {ContractAddressBar} from "@/components/contract-address-bar";
 
 export const metadata: Metadata = {
@@ -47,7 +49,7 @@ export default function RootLayout({
         <script src="/theme-init.js"/>
         <script src="/kernel.js" defer/>
       </head>
-      <body className="antialiased"><ContractAddressBar/>{children}</body>
+      <body className="antialiased"><ContractAddressBar/>{children}<PriceTab/></body>
     </html>
   );
 }
