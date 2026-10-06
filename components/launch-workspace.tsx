@@ -37,7 +37,7 @@ import {KineticText} from "@/components/kinetic-text";
 import type {PlatformStatus} from "@/lib/platform-policy";
 import { SITE, identityPolicy, type Network } from "@/lib/site-config";
 import { assertMetadataText, metadataMessage, metadataPayload, metadataLink, type MetadataDraft } from "@/lib/metadata-shared";
-import {buildMetadataPublication} from '@/lib/metadata-publication.mjs';
+import {buildMetadataPublication,contentHash} from '@/lib/metadata-publication.mjs';
 import {HEADER_COPY} from '@/lib/header-image.mjs';
 import {WalletAvailability} from "./wallet-availability";
 import {walletProviders,watchWalletIdentity} from "@/lib/wallet";
@@ -130,12 +130,26 @@ export default function LaunchWorkspace({initialTab="launch"}:{initialTab?:"laun
    if(metadata.current?.key!==key){const [prefix,imageBase64]=image.split(",");const draft:MetadataDraft={name:name.trim(),symbol,description,imageBase64,imageType:prefix.split(":")[1].split(";")[0],owner,expires:Date.now()+10*60*1000,...links,...(creatorBuy?{creatorBuy}:{})};
     const publication=await buildMetadataPublication(draft,Uint8Array.from(atob(imageBase64),c=>c.charCodeAt(0)),SITE.origin);
     Object.assign(draft,{storageProfile:publication.profile,metadataUri:publication.uri,imageUri:publication.imageUri});
+    let uploaded:{uri:string;metadataHash:string};
+    if(isGrain){
     const payloadHash=await hash(metadataPayload(draft));setBusy("Approve metadata message in your wallet");const signed=await wallet.current.signMessage(new TextEncoder().encode(metadataMessage(window.location.origin,payloadHash)),"utf8");const signatureBytes=signed instanceof Uint8Array?signed:signed.signature;const bs58=(await import("bs58")).default;
     let headerBody:undefined|{imageBase64:string;imageType:string;signature:string};
     if(banner){const [headerPrefix,headerBase64]=banner.split(",");const headerType=headerPrefix.split(":")[1].split(";")[0];const headerBytes=Uint8Array.from(atob(headerBase64),char=>char.charCodeAt(0));const {validateHeaderImage}=await import("@/lib/header-image.mjs");validateHeaderImage(headerBytes,headerType);const {headerSealMessage}=await import("@/lib/identity-seal.mjs");const headerHash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",headerBytes)),byte=>byte.toString(16).padStart(2,"0")).join("");setBusy("This signature seals this banner to your launch identity. It does not authorize a transaction or payment.");const headerSigned=await wallet.current.signMessage(new TextEncoder().encode(headerSealMessage({mint:launchMint.publicKey.toBase58(),metadataHash:publication.metadataHash,imageHash:publication.imageHash,headerHash})),"utf8");const headerSignature=headerSigned instanceof Uint8Array?headerSigned:headerSigned.signature;headerBody={imageBase64:headerBase64,imageType:headerType,signature:bs58.encode(headerSignature)};}
     let identityIntent:undefined|{xCommunity:string;signature:string};
     if(xCommunity.trim()){const {canonicalXCommunity,launchIdentityIntentMessage,IDENTITY_UPDATE_SENTENCE}=await import("@/lib/identity-amendment.mjs");const community=canonicalXCommunity(xCommunity.trim());setBusy(IDENTITY_UPDATE_SENTENCE);const intentSigned=await wallet.current.signMessage(new TextEncoder().encode(launchIdentityIntentMessage({mint:launchMint.publicKey.toBase58(),metadataHash:publication.metadataHash,imageHash:publication.imageHash,xCommunity:community})),"utf8");const intentSignature=intentSigned instanceof Uint8Array?intentSigned:intentSigned.signature;identityIntent={xCommunity:community,signature:bs58.encode(intentSignature)};}
-    const uploaded=await jsonFetch<{uri:string;metadataHash:string}>("/api/metadata",{draft,signature:bs58.encode(signatureBytes),...(headerBody?{header:headerBody}:{}),...(identityIntent?{identityIntent}:{})});if(uploaded.uri!==publication.uri||uploaded.metadataHash!==publication.metadataHash)throw Error('Published metadata differs from your signed draft. No launch was prepared.');metadata.current={key,...uploaded};}
+    uploaded=await jsonFetch<{uri:string;metadataHash:string}>("/api/metadata",{draft,signature:bs58.encode(signatureBytes),...(headerBody?{header:headerBody}:{}),...(identityIntent?{identityIntent}:{})});
+    }else{
+    const payloadHash=await hash(metadataPayload(draft));
+    let headerBody:undefined|{imageBase64:string;imageType:string;authorization:unknown};let headerHash:string|null=null;
+    if(banner){const [headerPrefix,headerBase64]=banner.split(",");const headerType=headerPrefix.split(":")[1].split(";")[0];const headerBytes=Uint8Array.from(atob(headerBase64),char=>char.charCodeAt(0));const {validateHeaderImage,headerRenditions}=await import("@/lib/header-image.mjs");validateHeaderImage(headerBytes,headerType);headerHash=await contentHash((await headerRenditions(headerBytes)).large);headerBody={imageBase64:headerBase64,imageType:headerType,authorization:null};}
+    let identityIntent:undefined|{xCommunity:string;authorization:unknown};let community:string|null=null;
+    if(xCommunity.trim()){const {canonicalXCommunity}=await import("@/lib/identity-amendment.mjs");community=canonicalXCommunity(xCommunity.trim());identityIntent={xCommunity:community,authorization:null};}
+    setBusy("Approve token identity, banner and community together in your wallet");
+    const {signLaunchIdentityAuthorization,LAUNCH_IDENTITY_AUTHORIZATION}=await import('@/lib/launch-identity-authorization.mjs');
+    const authorization=await signLaunchIdentityAuthorization(wallet.current,{schema:LAUNCH_IDENTITY_AUTHORIZATION,origin:window.location.origin,network:'mainnet-beta',creator:owner,mint:launchMint.publicKey.toBase58(),metadataPayloadHash:payloadHash,metadataHash:publication.metadataHash,imageHash:publication.imageHash,headerHash,xCommunity:community,expires:draft.expires});
+    if(headerBody)headerBody.authorization=authorization;if(identityIntent)identityIntent.authorization=authorization;
+    uploaded=await jsonFetch<{uri:string;metadataHash:string}>("/api/metadata",{draft,authorization,...(headerBody?{header:headerBody}:{}),...(identityIntent?{identityIntent}:{})});
+    }if(uploaded.uri!==publication.uri||uploaded.metadataHash!==publication.metadataHash)throw Error('Published metadata differs from your signed draft. No launch was prepared.');metadata.current={key,...uploaded};}
    setBusy("Simulating launch and estimating cost");const p=await launchModule.prepareLaunch({network,owner,name:name.trim(),symbol,uri:metadata.current!.uri,metadataHash:metadata.current!.metadataHash,maxCost,mintKeypair:launchMint,quoteAsset:quoteSymbol,taxBps:Number(taxBps),creatorBuyAmount});setPrepared(p);setStatus("Simulation passed. Review the transaction below.");
   }catch(e){setError(errorText(e));}finally{setBusy("");}
  }

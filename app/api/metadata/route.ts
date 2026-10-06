@@ -1,3 +1,6 @@
+import {verifyLaunchIdentityAuthorization} from '@/lib/launch-identity-authorization.mjs';
+import {headerRenditions,validateHeaderImage} from '@/lib/header-image.mjs';
+import {canonicalXCommunity} from '@/lib/identity-amendment.mjs';
 import {assertPublicCreatorBuyCompatibility} from '@/lib/public-creator-buy.mjs';
 import {completedMetadataRetry} from '@/lib/metadata-completed-retry.mjs';
 import {canonicalTokenWebsite} from '@/lib/token-website.mjs';
@@ -53,8 +56,8 @@ export async function POST(request:Request){
   if(official&&draft.creatorBuy!==undefined)throw Error('Use the approved official creator buy.');
   if(!official)assertPublicCreatorBuyCompatibility(draft);
   const payload=metadataPayload(draft);const hash=await sha256(payload);
-  const owner=bs58.decode(draft.owner),sig=bs58.decode(body.signature);
-  if(owner.length!==32||sig.length!==64||!nacl.sign.detached.verify(new TextEncoder().encode(metadataMessage(new URL(request.url).origin,hash)),sig,owner))throw new Error("Wallet signature did not verify.");
+  const owner=bs58.decode(draft.owner),sig=body.authorization===undefined?bs58.decode(body.signature):null;
+  if(body.authorization===undefined&&(owner.length!==32||!sig||sig.length!==64||!nacl.sign.detached.verify(new TextEncoder().encode(metadataMessage(new URL(request.url).origin,hash)),sig,owner)))throw new Error("Wallet signature did not verify.");
   const bytes=Uint8Array.from(atob(draft.imageBase64),c=>c.charCodeAt(0));
   const {type}=validateImage(bytes,draft.imageType);
   const storage=bucket();const imageHash=await sha256(bytes);
@@ -63,6 +66,20 @@ export async function POST(request:Request){
   const publication=official?await buildOfficialMetadataPublication({mint:draft.mint,imageBytes:bytes,twitter}):await buildMetadataPublication({...draft,website,twitter,...(telegram!==undefined?{telegram}:{}),...(draft.launchTweet!==undefined?{launchTweet}:{})},bytes,SITE.origin);
   assertPublicationBinding(draft,publication);
   const {metadata,metadataHash:metaHash}=publication;const json=JSON.stringify(metadata);
+  if(body.authorization!==undefined){
+   if(official||body.signature!==undefined)throw Error('Combined authorization is only for public launches; mixed proofs are refused.');
+   let headerHash=null;
+   if(body.header!==undefined){
+    if(!body.header||Object.keys(body.header).sort().join(',')!=='authorization,imageBase64,imageType'||typeof body.header.imageBase64!=='string'||body.header.imageBase64.length>2700000||JSON.stringify(body.header.authorization)!==JSON.stringify(body.authorization))throw Error('Exact combined banner proof required.');
+    const headerBytes=Uint8Array.from(atob(body.header.imageBase64),c=>c.charCodeAt(0));validateHeaderImage(headerBytes,body.header.imageType);headerHash=await sha256((await headerRenditions(headerBytes)).large);
+   }
+   let xCommunity=null;
+   if(body.identityIntent!==undefined){
+    if(!body.identityIntent||Object.keys(body.identityIntent).sort().join(',')!=='authorization,xCommunity'||JSON.stringify(body.identityIntent.authorization)!==JSON.stringify(body.authorization))throw Error('Exact combined community proof required.');
+    xCommunity=canonicalXCommunity(body.identityIntent.xCommunity);if(xCommunity!==body.identityIntent.xCommunity)throw Error('Canonical X Community required.');
+   }
+   verifyLaunchIdentityAuthorization(body.authorization,{schema:'grainpad.launch-identity.authorization.v1',origin:new URL(request.url).origin,network:'mainnet-beta',creator:draft.owner,mint:draft.mint,metadataPayloadHash:hash,metadataHash:metaHash,imageHash:publication.imageHash,headerHash,xCommunity,expires:draft.expires});
+  }else if(body.header?.authorization!==undefined||body.identityIntent?.authorization!==undefined)throw Error('Mixed legacy and combined proofs refused.');
   const header=await acceptLaunchHeader({header:body.header,owner:draft.owner,mint:draft.mint,metadataHash:metaHash,imageHash:publication.imageHash});
   const identityIntent=await acceptLaunchIdentityIntent({intent:body.identityIntent,owner:draft.owner,mint:draft.mint,metadataHash:metaHash,imageHash:publication.imageHash});
   const retry=await completedMetadataRetry(storage,{owner:draft.owner,mint:draft.mint,publication,header,identityIntent});
@@ -77,7 +94,7 @@ export async function POST(request:Request){
   if(!await storage.head(`assets/${metaHash}`))await storage.put(`assets/${metaHash}`,json,{httpMetadata:{contentType:"application/json",cacheControl:"public, max-age=31536000, immutable"}});
   if(header&&!await storage.head(`assets/${header.sha256}`))await storage.put(`assets/${header.sha256}`,header.bytes,{httpMetadata:{contentType:header.type,cacheControl:"public, max-age=31536000, immutable"}});
   if(header&&!await storage.head(`assets/${header.smallSha256}`))await storage.put(`assets/${header.smallSha256}`,header.smallBytes,{httpMetadata:{contentType:"image/png",cacheControl:"public, max-age=31536000, immutable"}});
-  await storage.put(`owners/${metaHash}/${draft.owner}`,JSON.stringify({createdAt:new Date().toISOString(),mint:draft.mint,metadata,uri:publication.uri,profile:publication.profile,imageHash,signedPayloadHash:hash,persistence,...(header?{header:{sha256:header.sha256,smallSha256:header.smallSha256,type:header.type,mint:header.mint,metadataHash:header.metadataHash,imageHash:header.imageHash,signature:header.signature}}:{}),...(identityIntent?{identityIntent}:{})}));
+  await storage.put(`owners/${metaHash}/${draft.owner}`,JSON.stringify({createdAt:new Date().toISOString(),mint:draft.mint,metadata,uri:publication.uri,profile:publication.profile,imageHash,signedPayloadHash:hash,persistence,...(header?{header:{sha256:header.sha256,smallSha256:header.smallSha256,type:header.type,mint:header.mint,metadataHash:header.metadataHash,imageHash:header.imageHash,signature:header.signature,...(header.authorization!==undefined?{authorization:header.authorization}:{})}}:{}),...(identityIntent?{identityIntent}:{})}));
   return Response.json({uri:publication.uri,metadataHash:metaHash,image:`${SITE.origin}/api/assets/${imageHash}`});
  }catch(error){return fail(error);}
 }
