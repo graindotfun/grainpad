@@ -24,7 +24,7 @@ export async function marketLive(request:Request,runtime:LiveEnv):Promise<Respon
   const endpoint=new URL(runtime.SOLANA_RPC_URL||'https://solana-rpc.publicnode.com');
   if(endpoint.protocol!=='https:')throw Error('Invalid RPC configuration');endpoint.protocol='wss:';
   const upstream=new WebSocket(endpoint.href),[client,server]=Object.values(new WebSocketPair());server.accept();
-  let stopped=false,subscribed=false,running=false;
+  let stopped=false,subscribed=false,running=0;
   const queue:string[]=[],seen=new Set<string>();
   const send=(value:unknown)=>{if(!stopped&&server.readyState===WebSocket.OPEN)server.send(JSON.stringify(value));};
   const close=()=>{if(stopped)return;stopped=true;clearInterval(heartbeat);clearTimeout(lifetime);clearTimeout(handshake);try{upstream.close(1000,'Viewer closed');}catch{}try{server.close(1012,'Reconnect to the live market');}catch{}};
@@ -36,16 +36,23 @@ export async function marketLive(request:Request,runtime:LiveEnv):Promise<Respon
     send({type:'trade',pool:market.pool,mint,id:event.id,signature:event.signature,slot:event.slot,time:event.blockTime,value,receivedAt:Date.now(),commitment:'confirmed'});
    }
   };
-  const drain=async()=>{
-   if(running)return;running=true;
-   try{while(queue.length&&!stopped){
-    const signature=queue.shift()!;
-    try{const result=await sharedMarketCache(db,`live-trade:v1:${mint}:${signature}`,async()=>{
-     const tx=await chain('mainnet-beta','getTransaction',[signature,{encoding:'json',commitment:'confirmed',maxSupportedTransactionVersion:1}]);
-     if(!tx)throw Error('Confirmed transaction not available yet');
-     return decodeChartTrades((method:string,params:unknown[])=>chain('mainnet-beta',method,params),tx,signature,record,POLICY.cpConfig);
-    },{ttl:300000,maxStale:300000});emit(result.data);}catch{send({type:'gap',notice:'A trade could not be read. Reconnecting and refreshing history.'});close();}
-   }}finally{running=false;}
+  const drain=()=>{
+   while(running<4&&queue.length&&!stopped){
+    const signature=queue.shift()!;running++;
+    void (async()=>{
+     try{const result=await sharedMarketCache(db,`live-trade:v2:${mint}:${signature}`,async()=>{
+      let tx;
+      for(let attempt=0;attempt<3;attempt++){
+       tx=await chain('mainnet-beta','getTransaction',[signature,{encoding:'json',commitment:'confirmed',maxSupportedTransactionVersion:1}]);
+       if(tx)break;
+       if(attempt<2)await new Promise(resolve=>setTimeout(resolve,150));
+      }
+      if(!tx)throw Error('Confirmed transaction not available yet');
+      return decodeChartTrades((method:string,params:unknown[])=>chain('mainnet-beta',method,params),tx,signature,record,POLICY.cpConfig);
+     },{ttl:300000,maxStale:300000});emit(result.data);}catch{send({type:'gap',notice:'A trade could not be read. Reconnecting and refreshing history.'});close();}
+     finally{running--;drain();}
+    })();
+   }
   };
   upstream.addEventListener('open',()=>upstream.send(JSON.stringify({jsonrpc:'2.0',id:1,method:'logsSubscribe',params:[{mentions:[market.pool]},{commitment:'confirmed'}]})));
   upstream.addEventListener('message',event=>{

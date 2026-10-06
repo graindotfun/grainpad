@@ -45,3 +45,12 @@ test('day view requests intraday resolution bounded to the past 24 hours; incomp
  assert.equal(globalThis.marketHistoryTest.historyOptions.seconds,300);assert.equal(globalThis.marketHistoryTest.historyOptions.rangeSeconds,86400);
  for(const query of ['interval=1d&range=1d','interval=5m&range=1w','kind=trades&interval=5m&range=1d']){response=await call(query,false);assert.equal(response.status,400);}
 });
+
+test('minute and five-minute buttons request the actual durations at intraminute resolution',async()=>{
+ globalThis.marketHistoryTest.native={rows:[],events:[],coverage:{status:'indexed'}};
+ for(const [range,seconds,duration] of [['1m',1,60],['5m',5,300],['1h',60,3600]]){
+  const response=await call(`interval=${range}&range=${range}`,false);assert.equal(response.status,200);
+  assert.equal(globalThis.marketHistoryTest.historyOptions.seconds,seconds);assert.equal(globalThis.marketHistoryTest.historyOptions.rangeSeconds,duration);
+ }
+ assert.equal((await call('interval=1m&range=5m',false)).status,400);
+});

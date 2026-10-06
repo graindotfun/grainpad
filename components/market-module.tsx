@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useLiveMarket} from './use-live-market';
 import {LiveMarketChart} from './live-market-chart';
-import {chartHistoryPoints} from '@/lib/live-chart.mjs';
+import {rollingChartPoints} from '@/lib/live-chart.mjs';
 import {Area,AreaChart,CartesianGrid,ReferenceDot,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
 import {marketMetricSeries} from '@/lib/market-metric.mjs';
 import {ArrowUpRight,ArrowLeftRight} from 'lucide-react';
@@ -16,13 +16,13 @@ export const INTERVALS:[string,number][]=[['Live',0],['1m',60],['5m',300],['1h',
 /** /api/market/[mint]/history (PR #39 contract). `source`/`unit` say which series this is: Grainpad's indexed quote
  * candles by default, GeckoTerminal USD only as the labeled fallback for launches the index has not seen. */
 export type Coverage={status:'indexed'|'partial'|'not-indexed'|'no-trades'|'external-fallback'|string;notice:string};
-type History={rows:Candle[];available:boolean;stale:boolean;updatedAt?:number;pool:string;source?:string;unit?:string;quote?:string;coverage?:Coverage};
+type History={rows:Candle[];available:boolean;stale:boolean;updatedAt?:number;pool:string;source?:string;unit?:string;quote?:string;coverage?:Coverage;anchor?:{time:number;close:number}};
 function useHistory(market:MarketView|null,mint:string,interval:string,external:boolean){
  const key=`${mint}:${market?.pool}:${interval}:${external}`,[state,setState]=useState<{key:string;data?:History;error?:string}>({key:''});
  useEffect(()=>{
   if(!market)return;
   return startViewerPolling(async(signal:AbortSignal)=>{
-   try{const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&interval=${interval==='1d'?'5m&range=1d':interval}${external?'&source=external':''}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
+   try{const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&interval=${interval==='1d'?'5m&range=1d':`${interval}&range=${interval}`}${external?'&source=external':''}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
     const body=await r.json() as History&{error?:string};if(!r.ok)throw Error(body.error||'Price history unavailable.');
     if(body.pool!==market.pool)throw Error('Pool changed. Refreshing market…');
     setState({key,data:body});
@@ -35,7 +35,7 @@ function useHistory(market:MarketView|null,mint:string,interval:string,external:
 const isUsd=(h?:History)=>(h?.unit??'quote')==='usd';
 const tickTime=(seconds:number)=>new Date(seconds*1000).toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
 /** The one chart spec for every source: right axis, mono ticks, dashed horizontal grid, orange line, marked last point. */
-export function GrainChart({points,interval,unit,label,live=false}:{points:SeriesPoint[];interval:number;unit:'usd'|string;label:string;live?:boolean}){
+export function GrainChart({points,interval,unit,label,live=false,now}:{points:SeriesPoint[];interval:number;unit:'usd'|string;label:string;live?:boolean;now:number}){
  const [reducedMotion,setReducedMotion]=useState(true);
  useEffect(()=>{const media=window.matchMedia('(prefers-reduced-motion: reduce)'),update=()=>setReducedMotion(media.matches);update();media.addEventListener('change',update);return()=>media.removeEventListener('change',update);},[]);
  const animate=live&&!reducedMotion;
@@ -45,10 +45,10 @@ export function GrainChart({points,interval,unit,label,live=false}:{points:Serie
   <ResponsiveContainer width="100%" height="100%" minWidth={0}><AreaChart data={points} margin={{top:14,right:0,bottom:0,left:0}}>
    <defs><linearGradient id="grain-chart-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--xmr-orange)" stopOpacity={.16}/><stop offset="100%" stopColor="var(--xmr-orange)" stopOpacity={0}/></linearGradient></defs>
    <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="2 4"/>
-   <XAxis type="number" dataKey="time" domain={['dataMin','dataMax']} tickFormatter={v=>tickTime(v)} minTickGap={56} tickMargin={8} axisLine={false} tickLine={false} tick={{fill:'var(--chart-tick)',fontSize:10.5,fontFamily:'var(--font-code)'}}/>
+   <XAxis type="number" dataKey="time" domain={[now-interval,now]} allowDataOverflow tickFormatter={v=>interval<=300?new Date(v*1000).toLocaleTimeString('en-US',{hour12:false,minute:'2-digit',second:'2-digit'}):tickTime(v)} minTickGap={56} tickMargin={8} axisLine={false} tickLine={false} tick={{fill:'var(--chart-tick)',fontSize:10.5,fontFamily:'var(--font-code)'}}/>
    <YAxis orientation="right" dataKey="value" domain={['auto','auto']} tickCount={5} tickFormatter={tick} width={width} tickMargin={6} axisLine={false} tickLine={false} tick={{fill:'var(--chart-tick)',fontSize:10.5,fontFamily:'var(--font-code)'}}/>
    <Tooltip cursor={{stroke:'var(--chart-tick)',strokeDasharray:'2 3'}} isAnimationActive={false} content={({active,payload})=>{const p=payload?.[0]?.payload as SeriesPoint|undefined;return active&&p?<div className="grain-tooltip"><strong>{formatPrice(p.value,unit==='usd'?'USD':unit)}</strong><span>{new Date(p.time*1000).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>:null;}}/>
-   <Area type="linear" dataKey="value" stroke="var(--xmr-orange)" strokeWidth={2} fill="url(#grain-chart-fill)" isAnimationActive={animate} animationDuration={450} animationEasing="ease-out" dot={false} activeDot={{r:3.5,fill:'var(--xmr-orange)',stroke:'var(--chart-surface)',strokeWidth:2}}/>
+   <Area type="monotoneX" dataKey="value" stroke="var(--xmr-orange)" strokeWidth={2} fill="url(#grain-chart-fill)" isAnimationActive={animate} animationDuration={120} animationEasing="ease-out" dot={false} activeDot={{r:3.5,fill:'var(--xmr-orange)',stroke:'var(--chart-surface)',strokeWidth:2}}/>
    {last&&last.value!==null&&<ReferenceDot x={last.time} y={last.value} shape={({cx,cy}:{cx?:number;cy?:number})=><g className="market-live-tip" style={{transform:`translate(${cx??0}px, ${cy??0}px)`}}>{animate&&<circle className="market-live-ring" r={5} fill="none" stroke="var(--xmr-orange)" strokeWidth={1.5}/>}<circle r={4.5} fill="var(--xmr-orange)" stroke="var(--chart-surface)" strokeWidth={2.5}/></g>}/>}
   </AreaChart></ResponsiveContainer>
  </div>;
@@ -63,7 +63,7 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
  const source:MarketSource=choice==='usd'&&usdAvailable?'usd':'grainpad';
  const feed=useLiveMarket(mint,market?.pool),liveView=seconds===0;
  const interval=INTERVALS.find(([,s])=>s===seconds)?.[0]||'5m',history=useHistory(market,mint,liveView?'1m':interval,source==='usd');
- const [now,setNow]=useState(()=>Date.now());useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),15_000);return()=>clearInterval(id);},[]);
+ const [now,setNow]=useState(()=>Date.now());useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),1_000);return()=>clearInterval(id);},[]);
  const q=market?.quote,unit=q?.symbol||quoteSymbol||'—',n=market?.native,graduated=market?.route==='cpmm';
  const rows=history.data?.rows||[],usdSeries=isUsd(history.data);
  const metricOptions={nativePrice:n?.priceQuote??market?.quoteStats?.price??null,nativeMarketCap:n?.marketCapQuote??market?.quoteStats?.marketCap??null,quoteUsd:n?.usd??null,usdSeries:usdSeries||source==='usd'};
@@ -72,8 +72,8 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
  const points=useMemo(()=>{
   const last=rows.at(-1) as (Candle&{lastTime?:number;lastSlot?:number;lastId?:string})|undefined,cutoff=last?.lastTime??last?.time??0;
   const tail=usdSeries?[]:feed.events.filter(event=>event.time>cutoff||(event.time===cutoff&&(event.slot>(last?.lastSlot??0)||(event.slot===last?.lastSlot&&event.id.localeCompare(last?.lastId??'')>0)))).map(event=>({time:event.time,close:event.value}));
-  return chartHistoryPoints([...rows,...tail],display.multiplier??1,{partial:history.data?.coverage?.status==='partial',seconds:seconds===86400?300:seconds||60});
- },[rows,feed.events,usdSeries,display.multiplier,history.data?.coverage?.status,seconds]);
+  return rollingChartPoints(rows,tail.map(row=>({time:row.time,value:row.close})),display.multiplier??1,now/1000,seconds||120,history.data?.anchor);
+ },[rows,feed.events,usdSeries,display.multiplier,history.data?.anchor,seconds,now]);
  const liveEvents=useMemo(()=>feed.events.map(row=>({...row})),[feed.events]);
  const coverage=history.data?.coverage;
  const priceQuote=n?.priceQuote??market?.quoteStats?.price??null;
@@ -114,11 +114,11 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
    <div className="market-controls">
     {points.length>0&&<span className="market-live-status" data-live={live||undefined} title={live?'Confirmed trades streamed directly from the pool':'Reconnecting to the live pool'}><i aria-hidden="true"/>{live?'Live':'Delayed'}</span>}
     {usdAvailable&&<div className="segmented" role="group" aria-label="Price source"><button aria-pressed={source==='grainpad'} onClick={()=>setChoice('grainpad')}>On-chain</button><button aria-pressed={source==='usd'} onClick={()=>setChoice('usd')}>USD</button></div>}
-    <div className="segmented" role="group" aria-label="Chart view">{INTERVALS.map(([label,s])=><button key={label} aria-pressed={seconds===s} onClick={()=>setSeconds(s)} title={s===0?'Live trades · moving 2-minute window':s===86400?'Past 24 hours · 5-minute resolution':`${label} candles`}>{label==='1d'?'1D':label}</button>)}</div>
+    <div className="segmented" role="group" aria-label="Chart view">{INTERVALS.map(([label,s])=><button key={label} aria-pressed={seconds===s} onClick={()=>setSeconds(s)} title={s===0?'Live trades · moving 2-minute window':s===86400?'Past 24 hours · 5-minute resolution':`${label} rolling window`}>{label==='1d'?'1D':label}</button>)}</div>
    </div>
   </div>
   <dl className="market-stats stale-value">{statItems.map(([label,value,note])=><Stat key={label} label={label} value={value} note={note}/>)}</dl>
-  <div className="market-chart-frame">{liveView?(liveEvents.length?<LiveMarketChart events={liveEvents} multiplier={display.multiplier??1} unit={seriesUnit}/>:<div className="market-empty" role="status"><strong>{live?'Waiting for the first trade':'Connecting to live trades…'}</strong><span>Prices move when confirmed pool trades arrive.</span></div>):points.length?<GrainChart points={points} live={live} interval={seconds} unit={seriesUnit} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
+  <div className="market-chart-frame">{liveView?(liveEvents.length?<LiveMarketChart events={liveEvents} multiplier={display.multiplier??1} unit={seriesUnit}/>:<div className="market-empty" role="status"><strong>{live?'Waiting for the first trade':'Connecting to live trades…'}</strong><span>Prices move when confirmed pool trades arrive.</span></div>):points.length?<GrainChart points={points} now={now/1000} live={live} interval={seconds} unit={seriesUnit} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
   <div className="market-foot"><span>{liveView?<span>Live confirmed executions · moving 2-minute window · fees included</span>:<>{activeMetric==='market-cap'&&<>Market cap · current supply{display.estimatedUsd?' · current USD conversion estimate':''} · </>}{usdSeries?(history.data?.source==='geckoterminal'&&source!=='usd'?'GeckoTerminal USD fallback · not the Grainpad record':'External USD series. Swaps quote from chain.'):activeMetric==='market-cap'?'Grainpad index · execution prices × current supply · fees included':`Grainpad index · ${unit} per token · execution prices include fees`}</>}{coverage&&coverage.status!=='indexed'&&points.length>0&&<> · <span className="coverage-note" title={coverage.notice}>{COVERAGE_LABEL[coverage.status]||coverage.status}</span></>}</span>{usdSeries&&market?<a href={market.links?.gecko||`https://www.geckoterminal.com/solana/pools/${market.pool}`} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>:null}</div>
   {market&&pct!==null&&<div className="lifecycle-progress">
    <div><span>{market.route==='cpmm'?'Graduated':market.route==='graduating'?'Curve complete':'Bonding curve'}</span>{market.route==='curve'&&pct>=80&&<span className="record-tape">Near graduation</span>}{market.route!=='curve'&&<span className="record-tape">{market.route==='cpmm'?'On Raydium':'Migrating'}</span>}<strong>{market.route==='cpmm'?'100%':formatPercent(pct)}</strong></div>

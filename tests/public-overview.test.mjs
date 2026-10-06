@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canShowLaunchClaims,recordedBurns,displayRecordedBurns} from '../lib/public-overview.mjs';
+import {canShowLaunchClaims,recordedBurns,displayRecordedBurns,compactRecordedBurns,compactReportedVolume} from '../lib/public-overview.mjs';
 
 // Local evidence fixtures; never exposed through public routes.
 const now=100_000;
@@ -42,4 +42,14 @@ test('burn totals use verified burn target, exclude retired and unverified recor
  assert.throws(()=>recordedBurns([],[{...rewardBurn(),slot:43}],'official'),/Invalid verified/);
  assert.equal(displayRecordedBurns('1000000'),'1.000000');
  assert.equal(displayRecordedBurns('9007199254740993000001'),'9007199254740993.000001');
+});
+
+test('homepage amounts stay compact without overstating exact receipts',()=>{
+ assert.equal(compactRecordedBurns('1616893367599'),'1.61M');
+ assert.equal(compactReportedVolume(396358.39),'$396.3K');
+ assert.equal(compactRecordedBurns('999999999999'),'999.9K');
+ assert.equal(compactRecordedBurns('1000000000000'),'1M');
+ assert.equal(compactRecordedBurns('0'),'0');
+ assert.equal(compactReportedVolume(123.45),'$123.45');
+ assert.equal(displayRecordedBurns('1616893367599'),'1616893.367599');
 });

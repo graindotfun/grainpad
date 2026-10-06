@@ -51,7 +51,7 @@ details.setup-note>p:last-child,details.setup-note>label:last-child{margin-botto
 .site-stats dl>div{min-width:0;padding:0 28px;border-left:1px solid var(--brand-line)}
 .site-stats dl>div:first-child{border:0;padding-left:0}
 .site-stats dt{font-size:14px;color:var(--brand-muted)}
-.site-stats dd{margin:7px 0 12px;font-size:clamp(32px,3.3vw,52px);line-height:1.15;letter-spacing:-.045em;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.site-stats dd{margin:7px 0 12px;font-size:clamp(32px,3.3vw,52px);line-height:1.15;letter-spacing:-.045em;white-space:nowrap;overflow-wrap:normal;font-variant-numeric:tabular-nums}
 .site-stats small,.site-stats dl a{font-size:12px;line-height:1.6;color:var(--brand-muted)}
 .site-stats dl a{text-decoration:underline;text-underline-offset:4px}
 .stats-note{font:12px/1.7 var(--font-code);color:var(--brand-muted);margin:0}
