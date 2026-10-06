@@ -36,3 +36,22 @@ test('an unavailable closed recipient balance still requires the verified epoch 
  assert.throws(()=>parseChainEvents(tx,'closed-recipient',[record],POLICY.cpConfig),/balance receipt unavailable/);
  await assert.rejects(decodeChartTrades(rpc,{...tx,slot:99},'old-recipient',record,POLICY.cpConfig),/proof required/);
 });
+
+test('an epoch rollover retains a provably unchanged active fee for the immediately previous normal epoch',async()=>{
+ const mint=key(40),rpc2=async(method)=>{if(method==='getEpochInfo')return {epoch:2,absoluteSlot:250,slotIndex:50,slotsInEpoch:100};if(method==='getAccountInfo'){const value=await rpc(method);value.context.slot=250;return value;}return rpc(method);};
+ const proof=await readChartFeeProof(rpc2,mint);assert.equal(proof.currentFirstSlot,200);assert.equal(proof.firstSlot,100);
+ assert.equal(chartTransferFee(proof,{slot:123},mint,5000000n),100000n);
+ assert.throws(()=>chartTransferFee(proof,{slot:99},mint,5000000n),/proof required/);
+ assert.throws(()=>chartTransferFee(proof,{slot:300},mint,5000000n),/proof required/);
+ const tx=ambiguous(),real=await readChartFeeProof(rpc2,record.mint,Date.now(),250);
+ const rows=parseChartTradeEvents(tx,'retained-epoch',[record],POLICY.cpConfig,real);assert.equal(rows[0].baseAmount,'4900000');assert.equal(rows[0].chartTransferFeeProof.epoch,1);assert.equal(rows[0].chartTransferFeeProof.observedEpoch,2);
+ assert.throws(()=>parseChainEvents(tx,'retained-epoch',[record],POLICY.cpConfig),/Ambiguous Token/);
+});
+
+test('a fee activated this epoch never certifies the previous epoch, and a rollover refreshes a cached proof',async()=>{
+ let epoch=3;const changing=async(method)=>{if(method==='getEpochInfo')return {epoch,absoluteSlot:epoch*100+50,slotIndex:50,slotsInEpoch:100};if(method==='getAccountInfo'){const value=await rpc(method);value.context.slot=epoch*100+50;return value;}return rpc(method);};
+ const current=await readChartFeeProof(changing,key(41));assert.equal(current.fee.transferFeeBasisPoints,10000);assert.equal(current.firstSlot,300);
+ assert.throws(()=>chartTransferFee(current,{slot:250},key(41),5000000n),/proof required/);
+ epoch=1;const before=await readChartFeeProof(changing,key(42));assert.equal(before.lastSlot,199);
+ epoch=2;const after=await readChartFeeProof(changing,key(42),Date.now(),250);assert.equal(after.epoch,2);assert.equal(after.firstSlot,100);assert.equal(chartTransferFee(after,{slot:123},key(42),5000000n),100000n);
+});
