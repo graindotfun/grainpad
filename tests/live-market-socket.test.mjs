@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import {bui
 const mint='A'.repeat(32),pool='B'.repeat(32),signature='C'.repeat(88);
 const result=await build({entryPoints:['lib/server-market-live.ts'],bundle:true,platform:'browser',format:'esm',write:false,logLevel:'silent',plugins:[{name:'live-boundaries',setup(b){
  const stubs={
+ './chart-trade-decoder.mjs':`export const decodeChartTrades=async()=>[{id:'real-trade',mint:'${mint}',kind:'buy',blockTime:100,slot:10,signature:'${signature}',baseAmount:'1000000',quoteAmount:'2000000',baseDecimals:6,quoteDecimals:6}];`,
  './server-market':`export const serverMarket=async()=>({pool:'${pool}'});`,
  './server-owner':`export const database=()=>({prepare:()=>({bind:()=>({first:async()=>({record:JSON.stringify({mint:'${mint}',platformId:'platform',verification:'confirmed-on-chain'})})})})});`,
  './server-rpc':`export const chain=async()=>({});`,
