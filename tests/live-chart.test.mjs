@@ -26,12 +26,15 @@ test('one-minute and five-minute windows fill quiet time with the last actual pr
  assert.deepEqual(rollingChartPoints([],[],1,1000,60),[]);
  assert.deepEqual(rollingChartPoints([{time:981,close:9}],[{time:981,value:10},{time:1001,value:20}],1,1000,60),[{time:981,value:9},{time:981,value:10},{time:1000,value:10}]);
 });
-test('rounded cubic paths preserve execution samples and keep control prices inside the segment endpoints',()=>{
+test('rounded spline joins have continuous tangents, exact endpoints and no values outside the observed range',()=>{
  const points=[{x:0,y:10},{x:1,y:20},{x:2,y:12},{x:3,y:18}],segments=smoothChartSegments(points);
- for(let i=0;i<segments.length;i++){const segment=segments[i],a=points[i],b=points[i+1];assert.equal(segment.x,b.x);assert.equal(segment.y,b.y);assert(segment.y1>=Math.min(a.y,b.y)&&segment.y1<=Math.max(a.y,b.y));assert(segment.y2>=Math.min(a.y,b.y)&&segment.y2<=Math.max(a.y,b.y));}
- assert.equal(segments[0].y2,20);assert.equal(segments[1].y1,20);assert.deepEqual(smoothChartSegments([{x:0,y:1}]),[]);
+ assert.equal(segments[0].x1,0);assert.equal(segments[0].y1,10);assert.equal(segments.at(-1).x,3);assert.equal(segments.at(-1).y,18);
+ for(let i=0;i<segments.length;i++){
+  const s=segments[i];for(const y of [s.y1,s.y2,s.y])assert(y>=10&&y<=20);
+  if(i+1<segments.length){const next=segments[i+1];assert(Math.abs((s.x-s.x2)-(next.x1-s.x))<1e-12);assert(Math.abs((s.y-s.y2)-(next.y1-s.y))<1e-12);}
+ }
+ assert.deepEqual(smoothChartSegments([{x:0,y:1}]),[]);
 });
-
 test('a quiet hour keeps the last price flat instead of redrawing it as a gradual hour-long move',()=>{
  const points=rollingChartPoints([{time:100,close:10},{time:3600,close:20}],[],1,3700,3600,{time:0,close:10});
  assert.deepEqual(points,[{time:100,value:10},{time:3540,value:10},{time:3600,value:20},{time:3700,value:20}]);
