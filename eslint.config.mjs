@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     ".test-output/**",
     ".sites-runtime/**",
     "dist/**",
+    // Retained generated SDK bundles are verified byte-for-byte, not authored source.
+    "compatibility/client-signing/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
