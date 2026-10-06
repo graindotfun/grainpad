@@ -2,7 +2,7 @@ import {SITE} from '@/lib/site-config';
 import {database} from '@/lib/server-owner';
 import {grainpadPlatformId} from '@/lib/platform-policy';
 export const dynamic='force-dynamic';
-const PAGES=['/','/launch','/markets','/markets/wxmr','/rooms','/fees','/treasury','/rewards','/transparency','/platform','/docs','/roadmap','/lab'];
+const PAGES=['/','/launch','/markets','/markets/wxmr','/rooms','/fees','/treasury','/rewards','/transparency','/authority','/platform','/docs','/roadmap','/lab'];
 /** Public pages plus every indexed Grainpad token, its receipt and its crew room. D1 only. */
 export async function GET(){
  let tokens:{mint:string;created_at:string}[]=[];
