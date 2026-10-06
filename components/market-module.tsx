@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Area,AreaChart,CartesianGrid,ReferenceDot,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
 import {marketMetricSeries} from '@/lib/market-metric.mjs';
 import {ArrowUpRight,ArrowLeftRight} from 'lucide-react';
@@ -19,31 +19,34 @@ function useHistory(market:MarketView|null,mint:string,interval:string,external:
  useEffect(()=>{
   if(!market)return;
   return startViewerPolling(async(signal:AbortSignal)=>{
-   try{const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&interval=${interval}${external?'&source=external':''}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
+   try{const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&interval=${interval==='1d'?'5m&range=1d':interval}${external?'&source=external':''}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
     const body=await r.json() as History&{error?:string};if(!r.ok)throw Error(body.error||'Price history unavailable.');
     if(body.pool!==market.pool)throw Error('Pool changed. Refreshing market…');
     setState({key,data:body});
    }catch(e){if(!signal.aborted)setState(previous=>({key,data:previous.key===key?previous.data:undefined,error:e instanceof Error?e.message:'Price history unavailable.'}));}
-  },{intervalMs:30_000});
+  },{intervalMs:15_000});
  },[key,mint,interval,external,market?.pool,!!market]);// eslint-disable-line react-hooks/exhaustive-deps -- market identity is the pool; other fields refresh every poll.
  const current:{data?:History;error?:string}=state.key===key?state:{};
  return current;
 }
 const isUsd=(h?:History)=>(h?.unit??'quote')==='usd';
-const tickTime=(seconds:number,interval:number)=>new Date(seconds*1000).toLocaleString('en-US',interval>=86400?{month:'short',day:'numeric'}:{hour:'2-digit',minute:'2-digit',hour12:false});
+const tickTime=(seconds:number)=>new Date(seconds*1000).toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
 /** The one chart spec for every source: right axis, mono ticks, dashed horizontal grid, orange line, marked last point. */
-export function GrainChart({points,interval,unit,label}:{points:SeriesPoint[];interval:number;unit:'usd'|string;label:string}){
+export function GrainChart({points,interval,unit,label,live=false}:{points:SeriesPoint[];interval:number;unit:'usd'|string;label:string;live?:boolean}){
+ const [reducedMotion,setReducedMotion]=useState(true);
+ useEffect(()=>{const media=window.matchMedia('(prefers-reduced-motion: reduce)'),update=()=>setReducedMotion(media.matches);update();media.addEventListener('change',update);return()=>media.removeEventListener('change',update);},[]);
+ const animate=live&&!reducedMotion;
  const last=points.at(-1),tick=(v:number)=>unit==='usd'?formatNumber(v,{sig:3,prefix:'$'}):formatNumber(v,{sig:3});
  const width=Math.min(84,Math.max(44,Math.max(...points.map(p=>tick(p.value).length))*7+10));
- return <div className="grain-chart" role="img" aria-label={`${label}. Last ${last?formatPrice(last.value,unit==='usd'?'USD':unit):'unavailable'}.`}>
+ return <div className="grain-chart" role="img" aria-label={`${label}${interval===86400?' · past 24 hours':''}. Last ${last?formatPrice(last.value,unit==='usd'?'USD':unit):'unavailable'}.`}>
   <ResponsiveContainer width="100%" height="100%" minWidth={0}><AreaChart data={points} margin={{top:14,right:0,bottom:0,left:0}}>
    <defs><linearGradient id="grain-chart-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--xmr-orange)" stopOpacity={.16}/><stop offset="100%" stopColor="var(--xmr-orange)" stopOpacity={0}/></linearGradient></defs>
    <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="2 4"/>
-   <XAxis type="number" dataKey="time" domain={['dataMin','dataMax']} tickFormatter={v=>tickTime(v,interval)} minTickGap={56} tickMargin={8} axisLine={false} tickLine={false} tick={{fill:'var(--chart-tick)',fontSize:10.5,fontFamily:'var(--font-code)'}}/>
+   <XAxis type="number" dataKey="time" domain={['dataMin','dataMax']} tickFormatter={v=>tickTime(v)} minTickGap={56} tickMargin={8} axisLine={false} tickLine={false} tick={{fill:'var(--chart-tick)',fontSize:10.5,fontFamily:'var(--font-code)'}}/>
    <YAxis orientation="right" dataKey="value" domain={['auto','auto']} tickCount={5} tickFormatter={tick} width={width} tickMargin={6} axisLine={false} tickLine={false} tick={{fill:'var(--chart-tick)',fontSize:10.5,fontFamily:'var(--font-code)'}}/>
    <Tooltip cursor={{stroke:'var(--chart-tick)',strokeDasharray:'2 3'}} isAnimationActive={false} content={({active,payload})=>{const p=payload?.[0]?.payload as SeriesPoint|undefined;return active&&p?<div className="grain-tooltip"><strong>{formatPrice(p.value,unit==='usd'?'USD':unit)}</strong><span>{new Date(p.time*1000).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>:null;}}/>
-   <Area type="linear" dataKey="value" stroke="var(--xmr-orange)" strokeWidth={2} fill="url(#grain-chart-fill)" isAnimationActive={false} dot={false} activeDot={{r:3.5,fill:'var(--xmr-orange)',stroke:'var(--chart-surface)',strokeWidth:2}}/>
-   {last&&<ReferenceDot x={last.time} y={last.value} r={4.5} fill="var(--xmr-orange)" stroke="var(--chart-surface)" strokeWidth={2.5}/>}
+   <Area type="linear" dataKey="value" stroke="var(--xmr-orange)" strokeWidth={2} fill="url(#grain-chart-fill)" isAnimationActive={animate} animationDuration={450} animationEasing="ease-out" dot={false} activeDot={{r:3.5,fill:'var(--xmr-orange)',stroke:'var(--chart-surface)',strokeWidth:2}}/>
+   {last&&<ReferenceDot x={last.time} y={last.value} shape={({cx,cy}:{cx?:number;cy?:number})=><g className="market-live-tip" style={{transform:`translate(${cx??0}px, ${cy??0}px)`}}>{animate&&<circle className="market-live-ring" r={5} fill="none" stroke="var(--xmr-orange)" strokeWidth={1.5}/>}<circle r={4.5} fill="var(--xmr-orange)" stroke="var(--chart-surface)" strokeWidth={2.5}/></g>}/>}
   </AreaChart></ResponsiveContainer>
  </div>;
 }
@@ -61,7 +64,7 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
  const rows=history.data?.rows||[],usdSeries=isUsd(history.data);
  const metricOptions={nativePrice:n?.priceQuote??market?.quoteStats?.price??null,nativeMarketCap:n?.marketCapQuote??market?.quoteStats?.marketCap??null,quoteUsd:n?.usd??null,usdSeries:usdSeries||source==='usd'};
  const canMarketCap=marketMetricSeries([],{...metricOptions,metric:'market-cap'}).available,activeMetric=canMarketCap?metric:'price';
- const display=marketMetricSeries(rows,{...metricOptions,metric:activeMetric}),points=display.points,seriesUnit=display.usd?'usd':unit;
+ const display=useMemo(()=>marketMetricSeries(rows,{nativePrice:metricOptions.nativePrice,nativeMarketCap:metricOptions.nativeMarketCap,quoteUsd:n?.usd??null,usdSeries:usdSeries||source==='usd',metric:activeMetric}),[rows,metricOptions.nativePrice,metricOptions.nativeMarketCap,n?.usd,usdSeries,source,activeMetric]),points=display.points,seriesUnit=display.usd?'usd':unit;
  const coverage=history.data?.coverage;
  const priceQuote=n?.priceQuote??market?.quoteStats?.price??null;
  const price=source==='usd'?market?.stats?.price??null:usdSeries?rows.at(-1)?.close??null:priceQuote;
@@ -71,6 +74,7 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
  const change=source==='usd'?market?.stats?.change??null:n?.changeCoverage==='24h'?n.change24h:null;
  const usdNote=(value:number|null|undefined)=>value!=null&&n?.usd&&n.usd.freshness!=='expired'?`≈ ${formatUsd(value,3)}`:undefined;
  const delayedMs=market?.stale?now-market.updatedAt:history.data?.stale&&history.data.updatedAt?now-history.data.updatedAt:0,stale=delayedMs>0;
+ const live=points.length>0&&!error&&!history.error&&!stale&&!!market&&now-market.updatedAt<60_000;
  const raised=market?.progress&&q?formatUnits(market.progress.raised,q.decimals,3):null,target=market?.progress&&q?formatUnits(market.progress.target,q.decimals,3):null;
  const pct=market?.progress&&Number(market.progress.target)>0?Math.min(100,Math.max(0,Number(market.progress.raised)/Number(market.progress.target)*100)):null;
  const liquidity=n?.liquidityQuote??null,volume=n?.volumeCoverage==='unavailable'?null:n?.volume24hQuote??null;
@@ -96,12 +100,13 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
    {activeMetric==='market-cap'&&<p className="market-metric-note">{display.estimatedUsd?'USD estimate using the current quote-asset conversion, not historical USD prices. ':''}Market-cap history uses current supply.</p>}
    </div>
    <div className="market-controls">
+    {points.length>0&&<span className="market-live-status" data-live={live||undefined} title={live?'Refreshes from chain every 15 seconds':'Waiting for fresh market data'}><i aria-hidden="true"/>{live?'Live':'Delayed'}</span>}
     {usdAvailable&&<div className="segmented" role="group" aria-label="Price source"><button aria-pressed={source==='grainpad'} onClick={()=>setChoice('grainpad')}>On-chain</button><button aria-pressed={source==='usd'} onClick={()=>setChoice('usd')}>USD</button></div>}
-    <div className="segmented" role="group" aria-label="Chart interval">{INTERVALS.map(([label,s])=><button key={label} aria-pressed={seconds===s} onClick={()=>setSeconds(s)}>{label}</button>)}</div>
+    <div className="segmented" role="group" aria-label="Chart view">{INTERVALS.map(([label,s])=><button key={label} aria-pressed={seconds===s} onClick={()=>setSeconds(s)} title={s===86400?'Past 24 hours · 5-minute resolution':`${label} candles`}>{label==='1d'?'1D':label}</button>)}</div>
    </div>
   </div>
   <dl className="market-stats stale-value">{statItems.map(([label,value,note])=><Stat key={label} label={label} value={value} note={note}/>)}</dl>
-  <div className="market-chart-frame">{points.length?<GrainChart points={points} interval={seconds} unit={seriesUnit} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
+  <div className="market-chart-frame">{points.length?<GrainChart points={points} live={live} interval={seconds} unit={seriesUnit} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
   <div className="market-foot"><span>{activeMetric==='market-cap'&&<>Market cap · current supply{display.estimatedUsd?' · current USD conversion estimate':''} · </>}{usdSeries?(history.data?.source==='geckoterminal'&&source!=='usd'?'GeckoTerminal USD fallback · not the Grainpad record':'External USD series. Swaps quote from chain.'):activeMetric==='market-cap'?'Grainpad index · execution prices × current supply · fees included':`Grainpad index · ${unit} per token · execution prices include fees`}{coverage&&coverage.status!=='indexed'&&points.length>0&&<> · <span className="coverage-note" title={coverage.notice}>{COVERAGE_LABEL[coverage.status]||coverage.status}</span></>}</span>{usdSeries&&market?<a href={market.links?.gecko||`https://www.geckoterminal.com/solana/pools/${market.pool}`} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>:null}</div>
   {market&&pct!==null&&<div className="lifecycle-progress">
    <div><span>{market.route==='cpmm'?'Graduated':market.route==='graduating'?'Curve complete':'Bonding curve'}</span>{market.route==='curve'&&pct>=80&&<span className="record-tape">Near graduation</span>}{market.route!=='curve'&&<span className="record-tape">{market.route==='cpmm'?'On Raydium':'Migrating'}</span>}<strong>{market.route==='cpmm'?'100%':formatPercent(pct)}</strong></div>

@@ -241,3 +241,12 @@ html[data-theme="dark"] .public-tape .is-sell .ledger-side i{background:var(--se
 .token-launch-post-editor summary{cursor:pointer}
 .token-launch-post-editor label{display:block;margin:12px 0 8px}
 .token-launch-post-note{flex-basis:100%;margin:0;font-size:11px;color:var(--muted-foreground)}
+
+.market-live-tip{transition:transform 450ms ease-out;pointer-events:none}
+.market-live-ring{transform-box:fill-box;transform-origin:center;animation:market-tip-pulse 1.8s ease-out infinite}
+@keyframes market-tip-pulse{0%{transform:scale(1);opacity:.75}100%{transform:scale(2.8);opacity:0}}
+.market-live-status{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-code);font-size:10px;color:var(--chart-tick)}
+.market-live-status i{width:5px;height:5px;border-radius:50%;background:currentColor}
+.market-live-status[data-live]{color:var(--xmr-orange)}
+.market-live-status[data-live] i{box-shadow:0 0 8px color-mix(in srgb,var(--xmr-orange) 45%,transparent)}
+@media(prefers-reduced-motion:reduce){.market-live-tip{transition:none}.market-live-ring{animation:none;display:none}}

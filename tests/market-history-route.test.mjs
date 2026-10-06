@@ -10,7 +10,7 @@ await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.te
   '@/lib/server-owner':'export const database=()=>({});',
   '@/lib/server-cache':'export const sharedMarketCache=async(db,key,load,options)=>{globalThis.marketHistoryTest.refresh=options.refresh;if(!options.refresh)throw Error("No visible viewer");return {data:await load(),updatedAt:123,stale:false};};',
   '@/lib/shared-market-cache.mjs':'export const takeBudget=async()=>globalThis.marketHistoryTest.budget!==false;',
-  '@/lib/native-history.mjs':'export const readNativeHistory=async()=>globalThis.marketHistoryTest.native;export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
+  '@/lib/native-history.mjs':'export const readNativeHistory=async(db,mint,options)=>{globalThis.marketHistoryTest.historyOptions=options;return globalThis.marketHistoryTest.native;};export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
   '@/lib/realtime-ingest.mjs':'export const confirmedCatchup=async()=>[];export const mergeIndexedAndConfirmed=(indexed=[])=>indexed;',
   '@/lib/server-rpc':'export const chain=async()=>[];',
   '@/lib/platform-policy':'export const grainpadPlatformId=()=>({toBase58:()=>"platform"});'
@@ -36,4 +36,11 @@ test('native candles are served without GeckoTerminal, which remains a fallback 
   globalThis.fetch=async url=>{fetched++;assert.ok(String(url).includes('/pools/'+pool+'/ohlcv/hour?aggregate=1'));return {ok:true,json:async()=>({data:{attributes:{ohlcv_list:[[100,1,3,.5,2,10]]}}})}};
   r=await call('interval=1h');assert.equal(r.status,200);const body=await r.json();assert.equal(body.source,'geckoterminal');assert.equal(body.rows[0].close,2);
  }finally{globalThis.fetch=original;}
+});
+
+test('day view requests intraday resolution bounded to the past 24 hours; incompatible ranges are refused',async()=>{
+ globalThis.marketHistoryTest.native={rows:[{time:100,close:1}],events:[],coverage:{status:'indexed'}};
+ let response=await call('interval=5m&range=1d',false);assert.equal(response.status,200);
+ assert.equal(globalThis.marketHistoryTest.historyOptions.seconds,300);assert.equal(globalThis.marketHistoryTest.historyOptions.rangeSeconds,86400);
+ for(const query of ['interval=1d&range=1d','interval=5m&range=1w','kind=trades&interval=5m&range=1d']){response=await call(query,false);assert.equal(response.status,400);}
 });
