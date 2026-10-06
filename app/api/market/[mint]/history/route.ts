@@ -6,6 +6,8 @@ import {parseCandles,parseTrades} from '@/lib/market-display';
 import {geckoFallbackAllowed,readNativeHistory} from '@/lib/native-history.mjs';
 import {confirmedCatchup,mergeIndexedAndConfirmed} from '@/lib/realtime-ingest.mjs';
 import {buildCandles,mergeCandleHistory,recentTradeRows} from '@/lib/native-market.mjs';
+import {backfillChartTrades} from '@/lib/chart-backfill.mjs';
+import {POLICY} from '@/lib/platform-policy';
 import {chain} from '@/lib/server-rpc';
 import {grainpadPlatformId} from '@/lib/platform-policy';
 const intervals:Record<string,number>={'1m':60,'5m':300,'1h':3600,'1d':86400};
@@ -21,6 +23,12 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
   const viewer=request.headers.get('X-Grainpad-Viewer')==='visible';
   const market=await serverMarket(mint,{viewer});
   const db=database();
+  let recovery:{processed:number;trades:number;remaining:number}|undefined;
+  if(viewer){
+   try{const saved=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();
+    if(saved)recovery=(await backfillChartTrades(db,(method:string,params:unknown[])=>chain('mainnet-beta',method,params),JSON.parse(saved.record),POLICY.cpConfig)).data;
+   }catch{/* Keep existing verified history available while recovery retries. */}
+  }
   const native=await readNativeHistory(db,mint,{kind,seconds:intervals[interval],activity:market.activity,rangeSeconds:range==='1d'?86400:null});
   let rows=native.rows,coverage=native.coverage;
   const source='grainpad',unit='quote';
@@ -65,6 +73,6 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
     if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
    }catch{/* A failed external fallback is not indexed history, and it is not zero trades. */}
   }
-  return Response.json({rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source,unit,quote:market.quote.symbol,coverage},{headers});
+  return Response.json({rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source,unit,quote:market.quote.symbol,coverage,recovery},{headers});
  }catch{return Response.json({error:'Market history is temporarily unavailable. Please try again shortly.'},{status:503,headers});}
 }

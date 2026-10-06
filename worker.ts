@@ -1,3 +1,4 @@
+import {marketLive} from './lib/server-market-live';
 import handler from 'vinext/server/fetch-handler';
 import {runScheduledIndexer,refreshMoneroOnIndexerTick} from './lib/scheduled-indexer.mjs';
 import {createPublicReadCache} from './lib/public-read-cache.mjs';
@@ -11,17 +12,18 @@ const publicReads = createPublicReadCache({
 });
 
 const worker = {
- fetch(request: Request, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string}, context: ExecutionContext) {
+ fetch(request: Request, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string; SOLANA_RPC_URL?:string}, context: ExecutionContext) {
   // Strip untrusted policies before vinext's nonce extraction, which happens
   // before its middleware request-header overrides are applied.
   const headers = new Headers(request.headers);
   headers.delete('Content-Security-Policy');
   headers.delete('Content-Security-Policy-Report-Only');
   const clean = new Request(request, {headers});
+  if(/^\/api\/market\/[1-9A-HJ-NP-Za-km-z]{32,44}\/live$/.test(new URL(clean.url).pathname))return marketLive(clean,env);
   refreshMoneroOnIndexerTick(clean,handler,env,context);
   return publicReads(clean, () => handler.fetch(clean, env, context), (task: Promise<unknown>) => context.waitUntil(task));
  },
- async scheduled(_controller: ScheduledController, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string}, context: ExecutionContext) {
+ async scheduled(_controller: ScheduledController, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string; SOLANA_RPC_URL?:string}, context: ExecutionContext) {
   const jobs=[runScheduledIndexer(handler,env,context)];
   // The Monero reader is activated only when its daemon binding exists. A missing
   // operator service must not turn a successful Solana indexer tick into failure.

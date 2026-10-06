@@ -6,6 +6,7 @@ let fetched=0,loaded=0;
 globalThis.marketHistoryTest={market:{pool,mint,quote:{mint:quote,symbol:'SOL'},chart:{available:false},stale:false,activity:'unknown',updatedAt:123},serverMarket:async()=>{loaded++;return globalThis.marketHistoryTest.market;},native:{rows:[],events:[],coverage:{status:'not-indexed',notice:'Trade history is not indexed yet. That is not the same as no trades.'}}};
 await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.test-output/market-history-route.mjs',bundle:true,platform:'node',format:'esm',logLevel:'silent',plugins:[{name:'history-boundaries',setup(b){
  const stubs={
+  '@/lib/chart-backfill.mjs':'export const backfillChartTrades=async()=>({data:{processed:0,trades:0}});',
   '@/lib/server-market':'export const serverMarket=(...a)=>globalThis.marketHistoryTest.serverMarket(...a);',
   '@/lib/server-owner':'export const database=()=>({});',
   '@/lib/server-cache':'export const sharedMarketCache=async(db,key,load,options)=>{globalThis.marketHistoryTest.refresh=options.refresh;if(!options.refresh)throw Error("No visible viewer");return {data:await load(),updatedAt:123,stale:false};};',
@@ -13,7 +14,7 @@ await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.te
   '@/lib/native-history.mjs':'export const readNativeHistory=async(db,mint,options)=>{globalThis.marketHistoryTest.historyOptions=options;return globalThis.marketHistoryTest.native;};export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
   '@/lib/realtime-ingest.mjs':'export const confirmedCatchup=async()=>[];export const mergeIndexedAndConfirmed=(indexed=[])=>indexed;',
   '@/lib/server-rpc':'export const chain=async()=>[];',
-  '@/lib/platform-policy':'export const grainpadPlatformId=()=>({toBase58:()=>"platform"});'
+  '@/lib/platform-policy':'export const POLICY={cpConfig:"config"};export const grainpadPlatformId=()=>({toBase58:()=>"platform"});'
  };b.onResolve({filter:/^@\/lib\//},a=>a.path in stubs?{path:a.path,namespace:'stub'}:null);b.onLoad({filter:/.*/,namespace:'stub'},a=>({contents:stubs[a.path],loader:'js'}));
 }}]});
 const {GET}=await import('../.test-output/market-history-route.mjs');
