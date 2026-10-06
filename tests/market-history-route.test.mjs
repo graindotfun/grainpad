@@ -13,7 +13,7 @@ await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.te
   '@/lib/shared-market-cache.mjs':'export const takeBudget=async()=>globalThis.marketHistoryTest.budget!==false;',
   '@/lib/native-history.mjs':'export const readNativeHistory=async(db,mint,options)=>{globalThis.marketHistoryTest.historyOptions=options;return globalThis.marketHistoryTest.native;};export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
   '@/lib/realtime-ingest.mjs':'export const confirmedCatchup=async()=>[];export const mergeIndexedAndConfirmed=(indexed=[])=>indexed;',
-  '@/lib/server-rpc':'export const chain=async()=>[];',
+  '@/lib/server-rpc':'export const chain=async()=>[];export const chartHistoryRead=chain;',
   '@/lib/platform-policy':'export const POLICY={cpConfig:"config"};export const grainpadPlatformId=()=>({toBase58:()=>"platform"});'
  };b.onResolve({filter:/^@\/lib\//},a=>a.path in stubs?{path:a.path,namespace:'stub'}:null);b.onLoad({filter:/.*/,namespace:'stub'},a=>({contents:stubs[a.path],loader:'js'}));
 }}]});

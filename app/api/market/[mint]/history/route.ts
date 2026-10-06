@@ -8,7 +8,7 @@ import {confirmedCatchup,mergeIndexedAndConfirmed} from '@/lib/realtime-ingest.m
 import {buildCandles,mergeCandleHistory,recentTradeRows} from '@/lib/native-market.mjs';
 import {backfillChartTrades} from '@/lib/chart-backfill.mjs';
 import {POLICY} from '@/lib/platform-policy';
-import {chain} from '@/lib/server-rpc';
+import {chain,chartHistoryRead} from '@/lib/server-rpc';
 import {grainpadPlatformId} from '@/lib/platform-policy';
 const intervals:Record<string,number>={'1m':60,'5m':300,'1h':3600,'1d':86400};
 const geckoIntervals:Record<string,{timeframe:string;aggregate:number}>={'1m':{timeframe:'minute',aggregate:1},'5m':{timeframe:'minute',aggregate:5},'1h':{timeframe:'hour',aggregate:1},'1d':{timeframe:'day',aggregate:1}};
@@ -26,7 +26,7 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
   let recovery:{processed:number;trades:number;remaining:number}|undefined;
   if(viewer){
    try{const saved=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();
-    if(saved)recovery=(await backfillChartTrades(db,(method:string,params:unknown[])=>chain('mainnet-beta',method,params),JSON.parse(saved.record),POLICY.cpConfig)).data;
+    if(saved)recovery=(await backfillChartTrades(db,chartHistoryRead,JSON.parse(saved.record),POLICY.cpConfig)).data;
    }catch{/* Keep existing verified history available while recovery retries. */}
   }
   const native=await readNativeHistory(db,mint,{kind,seconds:intervals[interval],activity:market.activity,rangeSeconds:range==='1d'?86400:null});

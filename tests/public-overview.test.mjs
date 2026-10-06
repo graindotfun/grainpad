@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canShowLaunchClaims,recordedBurns} from '../lib/public-overview.mjs';
+import {canShowLaunchClaims,recordedBurns,displayRecordedBurns} from '../lib/public-overview.mjs';
 
 // Local evidence fixtures; never exposed through public routes.
 const now=100_000;
@@ -31,4 +31,15 @@ test('wXMR-only rewards claims require the verified rewards service as well as l
  const rewardPlatform={...platform,rules:[{symbol:'wXMR'}],rewards:{configurationReady:true,operational:true}};
  assert.equal(canShowLaunchClaims(row(rewardPlatform),official(),'test-platform',now),true);
  assert.equal(canShowLaunchClaims(row({...rewardPlatform,rewards:{configurationReady:true,operational:false}}),official(),'test-platform',now),false);
+});
+
+const rewardBurn=(target='official',raw='1234567',signature='burn')=>({signature,mint:'other-source',kind:'burn',slot:42,verified_at:1,record:JSON.stringify({signature,mint:'other-source',kind:'burn',slot:42,burnedRaw:raw,receipt:{mint:target,slot:42,burnedRaw:raw}})});
+test('burn totals use verified burn target, exclude retired and unverified records, and deduplicate signatures',()=>{
+ assert.equal(recordedBurns([], [rewardBurn('retired'),{...rewardBurn(),verified_at:0}], 'official'),null);
+ assert.equal(recordedBurns([], [rewardBurn()], 'official'),'1234567');
+ assert.equal(recordedBurns([{kind:'buyback',signature:'burn',burned:'1234567'}],[rewardBurn()],'official'),'1234567');
+ assert.throws(()=>recordedBurns([{kind:'buyback',signature:'burn',burned:'1'}],[rewardBurn()],'official'),/Conflicting/);
+ assert.throws(()=>recordedBurns([],[{...rewardBurn(),slot:43}],'official'),/Invalid verified/);
+ assert.equal(displayRecordedBurns('1000000'),'1.000000');
+ assert.equal(displayRecordedBurns('9007199254740993000001'),'9007199254740993.000001');
 });

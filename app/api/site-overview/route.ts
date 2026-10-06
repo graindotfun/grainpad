@@ -1,4 +1,5 @@
 import {database} from '@/lib/server-owner';
+import {readOverviewVolume} from '@/lib/server-homepage';
 
 import {sharedMarketCache} from '@/lib/server-cache';
 import {grainpadPlatformId,platformCacheKey} from '@/lib/platform-policy';
@@ -12,16 +13,21 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
  try {
   const db = database(), platformId = grainpadPlatformId().toBase58();
-  const stats = await sharedMarketCache(db, `public-overview:v2:${platformId}`, async () => {
+  const stats = await sharedMarketCache(db, `public-overview:v4:${platformId}`, async () => {
    const retired=PREVIOUS_OFFICIAL_MINTS.map(row=>row.mint);
    const count = await db.prepare(`SELECT count(*) AS total FROM launch_index WHERE network=? AND platform_id=?${retired.length?` AND mint NOT IN (${retired.map(()=>'?').join(',')})`:''}`).bind('mainnet-beta',platformId,...retired).first<{total:number}>();
-   const official = await db.prepare('SELECT mint FROM official_token WHERE id=1').first();
-   const receipts = official ? await db.prepare('SELECT kind, burned FROM treasury_receipts WHERE kind=?').bind('buyback').all() : null;
+   const official = await db.prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();
+   const [receipts, rewards] = official ? await Promise.all([
+    db.prepare('SELECT signature, kind, burned FROM treasury_receipts WHERE kind=?').bind('buyback').all(),
+    // This public store is written only after finalized chain verification. No RPC per viewer.
+    db.prepare('SELECT signature, mint, kind, slot, record, verified_at FROM holder_reward_receipt WHERE kind=? AND verified_at>0').bind('burn').all(),
+   ]) : [null, null];
+   const volume = await readOverviewVolume(db,platformId);
    return {
-    launches: count?.total || null,
-    // No volume indexer exists. Reserves and fee collections are not trade volume.
-    volume: null,
-    burned: receipts ? recordedBurns(receipts.results) : null,
+    launches: count?.total ?? null,
+    // Available trade-volume observations, never reserves or collected taxes.
+    ...volume,
+    burned: receipts ? recordedBurns(receipts.results, rewards?.results ?? [], official?.mint) : null,
    };
   }, {ttl:60_000, maxStale:300_000});
   // Read the existing platform cache; never add per-viewer RPC requests or alter verification.

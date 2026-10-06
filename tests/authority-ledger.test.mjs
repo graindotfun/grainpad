@@ -73,6 +73,10 @@ test('a scheduled tax change is surfaced for GRAIN and for curves',()=>{
  const l=buildAuthorityLedger(read);
  assert(l.warnings.some(w=>/GRAIN has a transfer-tax change scheduled for epoch 1052/.test(w)));
  assert.match(find(l,'grain-tax-rate').note,/CHANGE SCHEDULED/);
+ assert.match(find(l,'grain-tax-rate').note,/Current tax 2%/);
+ assert.match(find(buildAuthorityLedger({...read,epoch:1052}),'grain-tax-rate').note,/Current tax 100%/);
+ read.accounts[read.curves[0].mint]=mint({bps:100,newerBps:500,newerEpoch:1052n});
+ assert.equal(buildAuthorityLedger(read).sections.find(s=>s.id==='existing').curves[0].taxBasisPoints,100);
 });
 
 test('unread accounts are unavailable, and a non-mainnet genesis hides every on-chain value',()=>{
@@ -103,3 +107,4 @@ test('labels never guess; program upgrade authority decoding handles immutable p
  assert.equal(programUpgradeAuthority({owner:'other',data:['','base64']}),undefined);
  const keys=ledgerAccountKeys([{mint:'m',pool:'p'}]);assert(keys.includes(G.mint)&&keys.includes(G.pool)&&keys.includes('m')&&keys.includes('p'));assert.equal(new Set(keys).size,keys.length);
 });
+

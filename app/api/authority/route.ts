@@ -30,6 +30,8 @@ async function refresh(){
   const r=await call('getMultipleAccounts',[present.map(d=>d.data),{encoding:'base64',commitment:'finalized',minContextSlot:slot}]) as {context:{slot:number};value:RpcAccount[]};
   if(r?.value?.length===present.length)present.forEach((d,n)=>{programData[d.id]=r.value[n];});
  }
+ const epochAfter=await call('getEpochInfo',[{commitment:'finalized',minContextSlot:slot}]) as {epoch:number;absoluteSlot:number};
+ if(epochAfter.epoch!==epoch.epoch)throw Error('Epoch changed during account reads.');
  return buildAuthorityLedger({genesis,epoch:epoch.epoch,slot,observedAt:Date.now(),source:'Grainpad server read, finalized commitment',accounts,programData,curves,
   curveDiscovery:{source:'Grainpad launch index (not an independent chain scan)',complete:(rows.results?.length??0)<=MAX_CURVES,count:curves.length}});
 }
