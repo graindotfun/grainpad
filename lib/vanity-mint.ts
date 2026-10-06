@@ -1,11 +1,11 @@
 import './browser-buffer.mjs';
 import { Keypair } from "@solana/web3.js";
 
-import {MINT_SUFFIX} from "./vanity-suffix";
+import {MINT_SUFFIX,OFFICIAL_MINT_SUFFIX,type MintSuffix} from "./vanity-suffix";
 export {MINT_SUFFIX} from "./vanity-suffix";
 
 /** Import a newly generated mint-only signing key. Never an existing wallet key. */
-export function parseVanityMint(text: string): Keypair {
+function parseMint(text: string,suffix:MintSuffix): Keypair {
   if (text.length > 4096) throw Error("Mint key file is too large.");
   let raw: unknown;
   try { raw = JSON.parse(text); } catch { throw Error("Choose the generated mint key JSON file."); }
@@ -18,8 +18,11 @@ export function parseVanityMint(text: string): Keypair {
   // web3.js retains the supplied array. Give the key its own copy before wiping the parser buffer.
   try { mint = Keypair.fromSecretKey(bytes.slice()); } catch { throw Error("Mint keypair failed signature-key validation."); }
   finally { bytes.fill(0); }
-  if (!mint.publicKey.toBase58().endsWith(MINT_SUFFIX)) {
-    throw Error("Mint address must end with lowercase grn exactly.");
+  if (!mint.publicKey.toBase58().endsWith(suffix)) {
+    throw Error(`Mint address must end with lowercase ${suffix} exactly.`);
   }
   return mint;
 }
+
+export const parseVanityMint=(text:string):Keypair=>parseMint(text,MINT_SUFFIX);
+export const parseOfficialVanityMint=(text:string):Keypair=>parseMint(text,OFFICIAL_MINT_SUFFIX);

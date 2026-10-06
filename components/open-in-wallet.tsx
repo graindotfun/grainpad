@@ -12,8 +12,9 @@ const cache=new Map<string,ReturnType<typeof mobileLinks>>();
 function snapshot(){const key=window.location.href+navigator.userAgent;if(!cache.has(key))cache.set(key,mobileLinks());return cache.get(key)!;}
 
 /** Shown when no wallet is injected. On mobile, reopen this exact page inside a wallet app. */
-export function OpenInWallet(){
+export function OpenInWallet({mobileOnly=false}:{mobileOnly?:boolean}){
  const links=useSyncExternalStore(noSubscription,snapshot,()=>null);
+ if(!links&&mobileOnly)return null;
  if(!links)return <p>No supported wallet detected. Open this site in a browser with <a className="inline-link" href="https://phantom.com/" target="_blank" rel="noreferrer">Phantom</a> or <a className="inline-link" href="https://solflare.com/" target="_blank" rel="noreferrer">Solflare</a>.</p>;
  return <div className="open-in-wallet" role="group" aria-label="Open this page in a wallet app">
   <p>This browser has no Solana wallet. Open this page in your wallet app to connect and sign there.</p>

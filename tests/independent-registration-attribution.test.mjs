@@ -49,11 +49,12 @@ function chain({finalized={},confirmed={}}){
   throw Error('unexpected '+method);
  };
 }
-const metadata=extra=>({name:'Seed Cat',symbol:'SEED',description:'fixture',image:`${SITE.origin}/api/assets/${'ab'.repeat(32)}`,...extra});
+const tokenWebsite='https://grainpad.fun/token/CzvYJXb3e4KtTd2xZviV9nMUSAC1jary4wLY4cVhwgrn';
+const metadata=extra=>({grainpad:{mint:'CzvYJXb3e4KtTd2xZviV9nMUSAC1jary4wLY4cVhwgrn'},website:tokenWebsite,external_url:tokenWebsite,extensions:{website:tokenWebsite},name:'Seed Cat',symbol:'SEED',description:'fixture',image:`${SITE.origin}/api/assets/${'ab'.repeat(32)}`,...extra});
 
 test('REG-1: another wallet\'s signed metadata does not become the on-chain creator\'s declaration',async()=>{
  const author=Keypair.generate().publicKey,copycat=Keypair.generate().publicKey;
- const meta=metadata({grainpad:{quoteAsset:'SOL',declaredCreatorBuy:'5'}}),hash=hashJson(meta),storage=memory();
+ const meta=metadata({grainpad:{mint:'CzvYJXb3e4KtTd2xZviV9nMUSAC1jary4wLY4cVhwgrn',quoteAsset:'SOL',declaredCreatorBuy:'5'}}),hash=hashJson(meta),storage=memory();
  // The original author uploaded and signed this metadata. The copycat never did.
  storage.objects.set(`assets/${hash}`,JSON.stringify(meta));
  storage.objects.set(`owners/${hash}/${author}`,JSON.stringify({createdAt:'2026-09-29T00:00:00.000Z',metadata:meta}));
@@ -93,7 +94,7 @@ test('metadata that is not stored yet leaves registration retryable instead of l
 });
 
 test('creator claims survive registration; legacy declarations are revalidated before attribution',async()=>{
- const creator=Keypair.generate().publicKey,meta=metadata({grainpad:{quoteAsset:'SOL',declaredCreatorBuy:'5'}}),hash=hashJson(meta),storage=memory();
+ const creator=Keypair.generate().publicKey,meta=metadata({grainpad:{mint:'CzvYJXb3e4KtTd2xZviV9nMUSAC1jary4wLY4cVhwgrn',quoteAsset:'SOL',declaredCreatorBuy:'5'}}),hash=hashJson(meta),storage=memory();
  storage.objects.set(`assets/${hash}`,JSON.stringify(meta));
  storage.objects.set(`owners/${hash}/${creator}`,JSON.stringify({metadata:meta}));
  const args={network,mint:mint.toBase58(),storage,chain:chain({finalized:accounts(creator,meta)}),prove};

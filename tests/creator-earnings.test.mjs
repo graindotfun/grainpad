@@ -6,7 +6,7 @@ import {CREATOR_FEE_SOURCES,CREATOR_LP_NOTICE,splitFeeHistory} from '../lib/crea
 import {POLICY,assertGrainpadPolicy} from '../lib/platform-policy.mjs';
 import {PLATFORM_SETTINGS} from '../lib/platform-settings.mjs';
 const zero=PublicKey.default.toBase58();
-const policy={feeWallet:PLATFORM_SETTINGS.feeWallet,lockNftWallet:PLATFORM_SETTINGS.feeKeyWallet,platformScale:1000000,creatorScale:0,burnScale:0,platformRate:POLICY.platformRate,cpConfig:POLICY.cpConfig,creatorRate:POLICY.creatorRate,transferAuthority:zero,vestingWallet:PLATFORM_SETTINGS.vestingWallet,vestingScale:0,cpCreator:zero,restrictGlobal:1,restrictCurve:1,ruleManager:zero};
+const policy={feeWallet:PLATFORM_SETTINGS.feeWallet,lockNftWallet:PLATFORM_SETTINGS.feeKeyWallet,platformScale:1000000,creatorScale:0,burnScale:0,platformRate:POLICY.platformRate,cpConfig:POLICY.cpConfig,creatorRate:POLICY.creatorRate,transferAuthority:PLATFORM_SETTINGS.transferAuthority,vestingWallet:PLATFORM_SETTINGS.vestingWallet,vestingScale:0,cpCreator:zero,restrictGlobal:1,restrictCurve:1,ruleManager:zero};
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 test('the verified platform policy gives creators no share of graduation LP',()=>{
  assert.doesNotThrow(()=>assertGrainpadPolicy(policy));

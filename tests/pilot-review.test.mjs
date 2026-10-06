@@ -12,11 +12,11 @@ const summary=(state,extra={})=>({slot:451700000,platform:'d9EBYYKcBccQoZWn9uMHn
  admission:{SOL:false,wXMR:false},rules:{SOL:'absent',wXMR:state==='configure'?'absent':'rewards'},...extra});
 const noNetwork=new Proxy({},{get(){throw Error('Unexpected RPC call');}});
 
-test('pilot signing is locked and the lock fails closed',()=>{
- assert.equal(PILOT_SIGNING_ENABLED,false);
- assert.throws(assertPilotSigningEnabled,/locked/);
+test('only restricted signing is enabled; discarded-key previews remain non-executable',()=>{
+ assert.equal(PILOT_SIGNING_ENABLED,true);
+ assert.doesNotThrow(assertPilotSigningEnabled);
  const plan=planPilotFromSummary(summary('activation-review'),{draft,mint});
- assert.equal(plan.signingAuthorized,false);assert.equal(plan.previewOnly,true);assert.equal(plan.executable,false);assert.match(plan.notice,/not executable/);
+ assert.equal(plan.signingAuthorized,true);assert.equal(plan.previewOnly,true);assert.equal(plan.executable,false);assert.match(plan.notice,/not executable/);
 });
 
 test('the pilot transaction opens admission, launches and closes admission, with exactly the admin and mint as signers',()=>{
@@ -52,7 +52,7 @@ test('simulation is skipped while blocked and fails closed if admission would st
  const connection=(allowAfter)=>({getLatestBlockhash:async()=>({blockhash:String(PublicKey.default),lastValidBlockHeight:1}),getBalance:async()=>1_000_000_000,getFeeForMessage:async()=>({value:15000}),
   simulateTransaction:async()=>({value:{err:null,unitsConsumed:120000,accounts:[{lamports:990_000_000},allowAfter,{lamports:5_000_000,owner:String(sdk.LAUNCHPAD_PROGRAM),data:['AA==','base64']}]}})});
  const ok=await simulatePilot(connection(null),{collector,draft,mint,readSetup:async()=>summary('activation-review')});
- assert.equal(ok.simulated,true);assert.equal(ok.simulation.admissionClosedAfter,true);assert.equal(ok.pool,String(pool));assert.equal(ok.signingAuthorized,false);
+ assert.equal(ok.simulated,true);assert.equal(ok.simulation.admissionClosedAfter,true);assert.equal(ok.pool,String(pool));assert.equal(ok.signingAuthorized,true);
  await assert.rejects(()=>simulatePilot(connection({lamports:1_000_000,owner:String(sdk.LAUNCHPAD_PROGRAM),data:['AAAA','base64']}),{collector,draft,mint,readSetup:async()=>summary('activation-review')}),/admission open/);
 });
 

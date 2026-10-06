@@ -1,0 +1,5 @@
+import {sameOrigin,limitedJSON,fail,sha256} from '@/lib/server-utils';
+import {requireRpcSession} from '@/lib/server-rpc-session';import {preflightServerSolTrade} from '@/lib/server-sol-trade';
+import {consumeRequestBudget} from '@/lib/abuse-budget.mjs';import {requestClientKey} from '@/lib/client-key.mjs';import {database} from '@/lib/server-owner';
+/** Read-only fresh simulation of a stored review. It never signs, binds or relays. */
+export async function POST(request:Request){try{sameOrigin(request);await requireRpcSession(request);const client=await sha256(requestClientKey(request));if(!await consumeRequestBudget(database(),'sol-preflight:'+client,10))return fail(Error('Too many SOL route checks. Retry shortly.'),429);const input=await limitedJSON(request,200);if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).join(',')!=='id')throw Error('Invalid SOL route check.');const result=await preflightServerSolTrade(input.id);return Response.json(result,{headers:{'Cache-Control':'no-store'}});}catch(e){return fail(e);}}

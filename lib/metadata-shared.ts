@@ -1,4 +1,4 @@
-export type MetadataDraft={name:string;symbol:string;description:string;imageBase64:string;imageType:string;owner:string;expires:number;website?:string;twitter?:string;telegram?:string;declaredCreatorBuy?:string;quoteAsset?:string;storageProfile?:string;metadataUri?:string;imageUri?:string};
+export type MetadataDraft={name:string;symbol:string;description:string;imageBase64:string;imageType:string;owner:string;expires:number;mint?:string;website?:string;twitter?:string;telegram?:string;launchTweet?:string;declaredCreatorBuy?:string;quoteAsset?:string;storageProfile?:string;metadataUri?:string;imageUri?:string};
 export function metadataLink(value:unknown,kind:"website"|"twitter"|"telegram"){
   if(value===undefined||value==="")return "";
   if(typeof value!=="string"||value.length>300)throw Error("Project links must be URLs below 300 characters.");
@@ -17,6 +17,6 @@ export function assertMetadataText(d:{name:string;symbol:string;description:stri
 }
 export function metadataPayload(d:MetadataDraft){
   // Omitted fields preserve signatures from older drafts; supplied links are signed.
-  return JSON.stringify({name:d.name.trim(),symbol:d.symbol.trim(),description:d.description.trim(),imageBase64:d.imageBase64,imageType:d.imageType,owner:d.owner,expires:d.expires,...(d.website!==undefined?{website:d.website.trim()}:{}),...(d.twitter!==undefined?{twitter:d.twitter.trim()}:{}),...(d.telegram!==undefined?{telegram:d.telegram.trim()}:{}),...(d.declaredCreatorBuy!==undefined?{declaredCreatorBuy:d.declaredCreatorBuy,quoteAsset:d.quoteAsset}:{}),...(d.storageProfile!==undefined?{storageProfile:d.storageProfile,metadataUri:d.metadataUri,imageUri:d.imageUri}:{})});
+  return JSON.stringify({name:d.name.trim(),symbol:d.symbol.trim(),description:d.description.trim(),imageBase64:d.imageBase64,imageType:d.imageType,owner:d.owner,expires:d.expires,...(d.mint!==undefined?{mint:d.mint}:{}),...(d.website!==undefined?{website:d.website.trim()}:{}),...(d.twitter!==undefined?{twitter:d.twitter.trim()}:{}),...(d.telegram!==undefined?{telegram:d.telegram.trim()}:{}),...(d.launchTweet!==undefined?{launchTweet:d.launchTweet.trim()}:{}),...(d.declaredCreatorBuy!==undefined?{declaredCreatorBuy:d.declaredCreatorBuy,quoteAsset:d.quoteAsset}:{}),...(d.storageProfile!==undefined?{storageProfile:d.storageProfile,metadataUri:d.metadataUri,imageUri:d.imageUri}:{})});
 }
 export function metadataMessage(origin:string,hash:string){return `Launch Lab metadata\nOrigin: ${origin}\nSHA256: ${hash}\nThis signature publishes token metadata. It does not authorize a payment.`;}

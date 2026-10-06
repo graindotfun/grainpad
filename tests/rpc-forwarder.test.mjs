@@ -5,7 +5,7 @@ const body=method=>({jsonrpc:'2.0',id:1,method,params:[]});
 function fixture(){
  const calls=[],budgets=[],recorded=new Set();const primary='https://primary.invalid/',fallback='https://fallback.invalid/';
  const db={recorded,prepare:sql=>({bind:(signature)=>({first:async()=>sql.includes('rpc_budget')?{used:1}:recorded.has(signature)?{expires_at:Number.MAX_SAFE_INTEGER}:null,run:async()=>({})})})};
- const options={database:()=>db,env:{SOLANA_RPC_URL:primary,SOLANA_READ_RPC_URL:fallback},reserve:async(db,method,options)=>{budgets.push({method,...options});return true;},fetcher:async(url,options)=>{
+ const options={acquire:async()=>async()=>{},database:()=>db,env:{SOLANA_RPC_URL:primary,SOLANA_READ_RPC_URL:fallback},reserve:async(db,method,options)=>{budgets.push({method,...options});return true;},fetcher:async(url,options)=>{
   const payload=JSON.parse(options.body);calls.push({url,payload});if(url===primary)throw Error('primary offline');
   return Response.json({jsonrpc:'2.0',id:1,result:payload.method==='getGenesisHash'?genesis:42});
  }};return {calls,budgets,options,primary,fallback,recorded};
@@ -48,4 +48,34 @@ test('internal signed-send policy reads retain the display lane but bypass its d
  assert((await forward('mainnet-beta',body('getLatestBlockhash'),{lane:'display'})).error);
  assert.equal((await forward('mainnet-beta',body('getLatestBlockhash'),{lane:'display',submissionValidation:true})).result,42);
  assert.equal(f.budgets.at(-1).lane,'display');assert.equal(f.budgets.at(-1).dailyExempt,true);
+});
+
+test('primary-only recovery cannot turn fallback absence into renewal evidence',async()=>{
+ const seen=[];const forward=createRpcForwarder({database:()=>({}),env:{SOLANA_RPC_URL:'https://primary.example',SOLANA_READ_RPC_URL:'https://fallback.example'},reserve:async()=>true,acquire:async()=>async()=>{},fetcher:async url=>{seen.push(url);throw Error('primary unavailable');}});
+ const result=await forward('mainnet-beta',{jsonrpc:'2.0',id:1,method:'getSignatureStatuses',params:[['synthetic'],{searchTransactionHistory:true}]},{primaryOnly:true,submissionValidation:true});
+ assert(result.error);assert.deepEqual(seen,['https://primary.example']);
+});
+test('scheduled cancellation does not share a public inflight read and cancels response body',async()=>{
+ const f=fixture(),controller=new AbortController();let cancelled=false;
+ f.options.fetcher=async(_url,options)=>{f.calls.push(options);if(options.signal?.aborted)throw Error('aborted');if(!options.signal||f.calls.length===1)return new Promise(resolve=>setTimeout(()=>resolve(Response.json({jsonrpc:'2.0',id:1,result:42})),30));
+ return new Response(new ReadableStream({start(stream){options.signal.addEventListener('abort',()=>{cancelled=true;stream.error(Error('aborted'));},{once:true});},cancel(){cancelled=true;}}));};
+ const forward=createRpcForwarder(f.options);const publicRead=forward('mainnet-beta',body('getBalance'));const scheduled=forward('mainnet-beta',body('getBalance'),{signal:controller.signal});setTimeout(()=>controller.abort(),10);
+ assert.equal((await publicRead).result,42);await scheduled;assert.ok(f.calls.length>=2);assert.equal(cancelled,true);
+});
+
+test('scheduled RPC diagnostics expose bounded status/code but no provider strings',async()=>{
+ const f=fixture();f.options.fetcher=async()=>new Response('secret-body',{status:429});
+ const response=await createRpcForwarder(f.options)('mainnet-beta',body('getTransaction'),{primaryOnly:true,diagnostics:true});
+ assert.equal(response.diagnostic.category,'transport');assert.equal(response.diagnostic.attempts[0].httpStatus,429);assert(!JSON.stringify(response.diagnostic).includes('secret-body'));
+ const g=fixture();g.options.fetcher=async()=>Response.json({jsonrpc:'2.0',id:1,error:{code:-32602,message:'https://secret.example/token-secret',data:{secret:'never-copy'}}});
+ const provider=await createRpcForwarder(g.options)('mainnet-beta',body('getTransaction'),{primaryOnly:true,diagnostics:true});
+ assert.equal(provider.diagnostic.category,'provider');assert.equal(provider.diagnostic.attempts[0].providerCode,-32602);assert(!JSON.stringify(provider.diagnostic).includes('secret'));
+});
+test('budget and concurrency diagnostics remain fixed and public replies omit diagnostics',async()=>{
+ const f=fixture();f.options.reserve=async()=>false;
+ const forward=createRpcForwarder(f.options);
+ assert.equal((await forward('mainnet-beta',body('getTransaction'),{diagnostics:true})).diagnostic.category,'budget');
+ assert.equal((await forward('mainnet-beta',body('getBalance'))).diagnostic,undefined);
+ const g=fixture();g.options.acquire=async()=>null;
+ assert.equal((await createRpcForwarder(g.options)('mainnet-beta',body('getTransaction'),{primaryOnly:true,diagnostics:true})).diagnostic.category,'concurrency');
 });

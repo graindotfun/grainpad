@@ -18,7 +18,7 @@ body{background:var(--background)}
 .hero-actions{margin-top:28px;gap:28px}
 .action-button{border-radius:var(--button-radius);min-height:56px;padding:12px 15px 12px 22px;gap:26px;font-size:14px;font-weight:550}
 .action-button>svg{width:31px;height:31px;padding:6px;box-sizing:content-box;border-radius:50%;border:1px solid #17171730}
-.action-light{background:var(--grain-orange);color:#141414}.action-light:hover{background:var(--grain-orange-hover);transform:translateY(-2px)}
+.action-light{background:var(--grain-orange);color:#141414}.action-light:hover{background:var(--grain-orange);box-shadow:0 0 0 4px var(--grain-orange-ring);transform:translateY(-2px)}
 .action-text{color:#b6c1c7;font-size:13px}.hero-actions .action-text{gap:12px}.hero-status{color:#99a4ad;font-size:12px;margin-top:20px}
 .hero-baseline{margin-top:38px;padding:22px 0;color:#89969f;font-size:12px;letter-spacing:.1em}.hero-baseline>span{display:flex;align-items:center;gap:11px}.hero-baseline>span>i{height:12px;width:12px;border:1px solid #707d85;transform:rotate(45deg)}
 /* Interactive canvas is local artwork, never a market chart or a transaction state. */
@@ -30,7 +30,7 @@ body{background:var(--background)}
 .genesis-canvas{display:block;width:100%;height:100%;position:absolute;inset:0;visibility:hidden}
 .genesis-canvas[data-ready=true]{visibility:visible}
 .genesis-lattice{position:absolute;inset:0;background-image:linear-gradient(#9faeba09 1px,transparent 1px),linear-gradient(90deg,#9faeba09 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(0deg,#000,transparent 80%)}
-.genesis-stage{--grain-ink:rgb(220,225,226);--grain-charcoal:rgb(100,110,116);--grain-accent:rgb(255,102,0);--grain-shadow:rgba(127,139,145,.25)}
+.genesis-stage{--grain-ink:rgb(220,225,226);--grain-charcoal:rgb(100,110,116);--grain-accent:var(--grain-orange);--grain-shadow:rgba(127,139,145,.25)}
 .genesis-preview{position:absolute;inset:0;pointer-events:none}
 .genesis-preview-grains{position:absolute;height:79%;width:auto;aspect-ratio:1;left:50%;top:6.5%;transform:translateX(-50%);overflow:visible}
 .genesis-preview-node{position:absolute;left:calc(22% - 5px);top:calc(91% - 5px);width:10px;height:10px}
@@ -63,3 +63,5 @@ body{background:var(--background)}
 @media(prefers-reduced-motion:reduce){.hero-soft{transition:none}.genesis-lab{box-shadow:none}.genesis-motion{display:none}.genesis-instruction{display:none}.principles-list>div:hover,.closing-arrow:hover{transform:none}}
 
 @media(max-width:760px){.pointer-instruction{display:none}.touch-instruction{display:inline}}
+/* Narrow phones: keep wordmark, theme toggle, header wallet and menu inside a 360px viewport. */
+@media(max-width:380px){.landing-shell,.landing-shell.grain-updates{--page-gutter:16px;padding:0 16px}.site-header{gap:8px}.site-header .site-brand{font-size:23px;gap:6px}.site-header .site-brand img{width:24px;height:24px}.site-header-actions{gap:2px}.site-header-actions .theme-toggle{width:40px;height:40px;min-width:40px}.mobile-menu-toggle{width:40px}}

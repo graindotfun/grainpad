@@ -1,5 +1,7 @@
 # Architecture and implementation assessment
 
+> **Historical research: the early p/xmr regtest prototype.** This note describes a fakechain/regtest demonstration with test funds; the archive also supports an explicit stagenet path and preserves mainnet guards and no XMR20 compatibility. It is not Grainpad's production Monero path. Grainpad's current Monero architecture is the separate `GRN1` launch-provenance record on Monero mainnet (trading and token state remain on Solana); see `docs/MONERO_RECORD.md` in the access-controlled repository. The prototype's safety guards described below are unchanged.
+
 ## What works now
 
 The Python prototype runs native Monero offline regtest with new wallets, an integrated-address buy, a signed registration, view-only incoming-output scanning, deterministic replay and a dry-run sell authorization. Nineteen automated tests cover the worked example, conservation, malformed metadata, duplicate evidence, signature isolation, stale sells, fees and disabled transfer RPC. Native Monero v0.18.5.1 was tested separately.

@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {inspectTransactionStatus} from '../lib/transaction-status.mjs';
+function rpc(statuses,height=101){let i=0;return {getSignatureStatuses:async()=>({value:[statuses[Math.min(i++,statuses.length-1)]]}),getBlockHeight:async()=>height,getAccountInfo:async()=>null};}
+test('a confirmed transaction remains pending until finality',async()=>{assert.deepEqual(await inspectTransactionStatus(rpc([{confirmationStatus:'confirmed',err:null}]),'sig',{expiry:100}),{status:'pending'});});
+test('finalized success and error resolve independently of local expiry storage',async()=>{for(const err of [null,{InstructionError:[0,'error']}])assert.equal((await inspectTransactionStatus(rpc([{confirmationStatus:'finalized',err}]),'sig')).status,err?'failed':'finalized');});
+test('no signature without expiry cannot unlock a second trade',async()=>{for(const expiry of [undefined,NaN,0,-1])assert.equal((await inspectTransactionStatus(rpc([null]),'sig',{expiry})).status,'unknown');});
+test('absence before expiry is pending; finalized height after expiry requires a second absence',async()=>{assert.equal((await inspectTransactionStatus(rpc([null],99),'sig',{expiry:100})).status,'pending');assert.equal((await inspectTransactionStatus(rpc([null,null]),'sig',{expiry:100})).status,'expired');assert.equal((await inspectTransactionStatus(rpc([null,{confirmationStatus:'confirmed'}]),'sig',{expiry:100})).status,'pending');});
+test('transaction appearing during expiry check is not falsely expired',async()=>{assert.equal((await inspectTransactionStatus(rpc([null,{confirmationStatus:'finalized',err:null}]),'sig',{expiry:100})).status,'finalized');});
+test('existing creation target prevents expiry release',async()=>{const connection=rpc([null]);connection.getAccountInfo=async()=>({});assert.equal((await inspectTransactionStatus(connection,'sig',{expiry:100,target:'target',publicKey:x=>x})).status,'unknown');});

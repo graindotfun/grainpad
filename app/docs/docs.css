@@ -56,6 +56,8 @@
 .docs-links li:last-child{border-bottom:0}
 .docs-shell .brand-footer{margin-top:50px}
 html[data-theme="light"] .docs-shell{--docs-accent:var(--light-accent)}
+/* Rails are decorative: canonical orange; the accent variable stays ink for text. */
+html[data-theme="light"] :is(.docs-section-body .docs-status,.docs-callout){border-left-color:var(--grain-orange)}
 @media(max-width:1000px){.docs-layout{grid-template-columns:200px minmax(0,1fr);gap:35px}.docs-address-row{grid-template-columns:1fr;gap:7px}}
 @media(max-width:760px){.docs-heading{padding-bottom:26px}.docs-edition{margin-top:24px}.docs-layout{grid-template-columns:minmax(0,1fr);gap:0}.docs-index{position:static;padding:26px 0;border-bottom:1px solid var(--brand-line)}.docs-index ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}.docs-index li a{font-size:14px;gap:9px}.docs-status-link{margin-top:16px}.docs-section{padding:32px 0}.docs-callout{padding:18px}.docs-addresses{padding:0 18px}.docs-facts>div{grid-template-columns:1fr;gap:4px}.docs-facts dd{text-align:left}.docs-links li{flex-wrap:wrap;gap:5px 20px}.docs-fees{gap:12px}.docs-fees strong{font-size:32px}}
 @media(max-width:380px){.docs-index ol{grid-template-columns:1fr}.docs-fees{grid-template-columns:1fr}.docs-fees>div{display:flex;align-items:baseline;gap:16px}.docs-fees p{margin:0}}
@@ -72,3 +74,8 @@ html[data-theme="light"] .docs-shell{--docs-accent:var(--light-accent)}
 @media(max-width:420px){.docs-shell{--docs-header-height:74px}}
 /* The section margin supplies the entire sticky offset; avoid adding the global 90px twice. */
 html:has(.docs-shell){scroll-padding-top:0}
+
+.wallets-faq>details{padding:18px 0;border-bottom:1px solid var(--brand-line)}
+.wallets-faq>details>summary{cursor:pointer;font-weight:600;line-height:1.5}
+.wallets-faq>details[open]>summary{margin-bottom:14px}
+.wallets-faq .address-line{overflow-wrap:anywhere}

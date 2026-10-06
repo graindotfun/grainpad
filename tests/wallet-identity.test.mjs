@@ -1,0 +1,258 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
+import {PLATFORM_SETTINGS} from '../lib/platform-settings.mjs';
+import {validateIdentityPayload,applyIdentity,lookupUsername,assertSignedWallet,connectXMessage,identityCards,identityMessage,linkXAccount,normalizeUsername,publicProfile,readPublicIdentity,safeAvatarPath,verifyConnectXSignature,verifyIdentitySignature} from '../lib/wallet-identity.mjs';
+import {archiveXAvatar,authorizationUrl,completeXAuthorization,consumeOauthState,createPkce,oauthCookie,safeXImage,xOauthConfig,xRedirectUri,xOauthFailure,xOauthFailureDetails,X_OAUTH_COOKIE} from '../lib/x-oauth.mjs';
+
+function database(){
+ const sqlite=new DatabaseSync(':memory:');
+ for(const sql of readFileSync(new URL('../drizzle/0024_wallet_identity.sql',import.meta.url),'utf8').split('--> statement-breakpoint'))if(sql.trim())sqlite.exec(sql);
+ sqlite.exec(`CREATE TABLE launch_index (network TEXT, mint TEXT, platform_id TEXT, creator TEXT, pool TEXT, created_at TEXT, record TEXT, indexed_at INTEGER, PRIMARY KEY(network,mint));
+  CREATE TABLE room_event (id TEXT PRIMARY KEY, mint TEXT, author TEXT, kind TEXT, title TEXT, body TEXT, url TEXT, target TEXT, created_at INTEGER, payload TEXT, signature TEXT);`);
+ return {sqlite,prepare(sql){const stmt=sqlite.prepare(sql);const bound=(...values)=>({first:async()=>stmt.get(...values)??null,all:async()=>({results:stmt.all(...values)}),run:()=>stmt.run(...values)});return {bind:bound,...bound()};},async batch(statements){sqlite.exec('BEGIN IMMEDIATE');try{const result=[];for(const statement of statements)result.push(statement.run());sqlite.exec('COMMIT');return result;}catch(error){sqlite.exec('ROLLBACK');throw error;}}};
+}
+function wallet(){const pair=nacl.sign.keyPair();return {pair,address:bs58.encode(pair.publicKey)};}
+function sign(pair,message){return bs58.encode(nacl.sign.detached(new TextEncoder().encode(message),pair.secretKey));}
+const origin='https://grainpad.fun';
+function payload(address,extra={}){return {origin,wallet:address,action:'claim',username:'satoshi',displayName:'Satoshi',bio:'Public note',avatarHash:'',baseUpdatedAt:0,nonce:crypto.randomUUID(),expires:Date.now()+60_000,...extra};}
+function consistent(db){
+ const profiles=db.sqlite.prepare('SELECT * FROM wallet_identity').all();
+ const names=db.sqlite.prepare('SELECT * FROM wallet_identity_name').all();
+ const revisions=db.sqlite.prepare('SELECT * FROM wallet_identity_revision').all();
+ assert.equal(profiles.length,new Set(profiles.map(row=>row.wallet)).size);
+ assert.equal(profiles.length,new Set(profiles.map(row=>row.username)).size);
+ for(const profile of profiles){
+  const owned=names.filter(row=>row.wallet===profile.wallet);
+  const current=owned.filter(row=>row.current===1);
+  assert.equal(current.length,1);
+  assert.equal(current[0].username,profile.username);
+  assert.equal(names.filter(row=>row.username===profile.username&&row.wallet===profile.wallet).length,1);
+  const latest=revisions.filter(row=>row.wallet===profile.wallet).sort((a,b)=>a.created_at-b.created_at||(a.id<b.id?-1:1)).at(-1);
+  assert.equal(latest.id,profile.signature);
+  assert.equal(latest.payload,profile.payload);
+  assert.equal(JSON.parse(latest.payload).username,profile.username);
+ }
+ for(const name of names){
+  const profile=profiles.find(row=>row.wallet===name.wallet);
+  assert.ok(profile);
+  if(name.current===1)assert.equal(profile.username,name.username);
+  else assert.notEqual(profile.username,name.username);
+ }
+ assert.equal(names.filter(row=>row.current===1).length,profiles.length);
+ for(const revision of revisions)assert.equal(profiles.some(row=>row.wallet===revision.wallet),true);
+}
+
+test('username rules reject length, case, reserved names, confusables and homoglyphs',()=>{
+ assert.equal(normalizeUsername('satoshi').username,'satoshi');
+ assert.throws(()=>normalizeUsername('ab'),/3–20/);
+ assert.throws(()=>normalizeUsername('Satoshi'),/lowercase/);
+ assert.throws(()=>normalizeUsername('grainpad'),/reserved/);
+ assert.throws(()=>normalizeUsername('gr4inpad'),/reserved/);
+ const admin=PLATFORM_SETTINGS.admin;
+ assert.equal(normalizeUsername('grainpad',{wallet:admin}).username,'grainpad');
+ assert.throws(()=>normalizeUsername('grainpad',{wallet:wallet().address}),/reserved/);
+ assert.throws(()=>normalizeUsername('gr4inpad',{wallet:admin}),/reserved/);
+ assert.throws(()=>normalizeUsername('admin',{wallet:admin}),/reserved/);
+ assert.equal(lookupUsername('GrainPad'),'grainpad');
+ assert.throws(()=>normalizeUsername('adm1n'),/reserved/);
+ assert.throws(()=>normalizeUsername('аdmin'),/not allowed|lowercase/);
+ assert.throws(()=>normalizeUsername('admin\u200b'),/not allowed/);
+ assert.throws(()=>normalizeUsername('grain__pad'),/single underscores/);
+});
+test('mutation requires the signing wallet and ignores a different client wallet',()=>{
+ const a=wallet(),b=wallet(),body=payload(a.address);
+ const signature=sign(a.pair,identityMessage(body));
+ assert.equal(verifyIdentitySignature(body,signature,origin).wallet,a.address);
+ assert.throws(()=>verifyIdentitySignature(body,sign(b.pair,identityMessage(body)),origin),/must sign/);
+ assert.throws(()=>assertSignedWallet({wallet:b.address,payload:body,signature}),/does not match/);
+ assert.doesNotThrow(()=>assertSignedWallet({payload:body,signature}));
+ assert.throws(()=>verifyIdentitySignature({...body,expires:Date.now()-1},signature,origin),/expired/);
+ assert.throws(()=>verifyIdentitySignature({...body,bio:'<script>alert(1)</script>'},signature,origin),/not allowed/);
+ assert.throws(()=>verifyIdentitySignature({...body,baseUpdatedAt:1},signature,origin),/Invalid identity|must sign/);
+ assert.equal(safeAvatarPath('/api/assets/'+'a'.repeat(64)),'/api/assets/'+'a'.repeat(64));
+ assert.equal(safeAvatarPath('https://evil.example/a.png'),null);
+ assert.equal(safeAvatarPath('javascript:alert(1)'),null);
+});
+test('claim is race-safe, rename reserves the old name, and wallet-only lookup stays empty',async()=>{
+ const db=database(),a=wallet(),b=wallet();
+ const first=payload(a.address),signature=sign(a.pair,identityMessage(first));
+ const profile=await applyIdentity(db,null,first,signature,null,origin);
+ assert.equal(profile.username,'satoshi');assert.equal(profile.xUserId,null);assert.equal(profile.wallet,a.address);
+ assert.equal((await applyIdentity(db,null,first,signature,null,origin)).username,'satoshi');
+ const other=payload(b.address,{nonce:crypto.randomUUID()});
+ await assert.rejects(applyIdentity(db,null,other,sign(b.pair,identityMessage(other)),null,origin),/taken/);
+ const confusable=payload(b.address,{username:'sat0shi',nonce:crypto.randomUUID()});
+ await assert.rejects(applyIdentity(db,null,confusable,sign(b.pair,identityMessage(confusable)),null,origin),/taken/);
+ const renamed=payload(a.address,{action:'rename',username:'nakamoto',displayName:'Satoshi',baseUpdatedAt:profile.updatedAt,nonce:crypto.randomUUID()});
+ const renamedProfile=await applyIdentity(db,null,renamed,sign(a.pair,identityMessage(renamed)),null,origin);
+ assert.equal(renamedProfile.username,'nakamoto');
+ const stolen=payload(b.address,{username:'satoshi',nonce:crypto.randomUUID()});
+ await assert.rejects(applyIdentity(db,null,stolen,sign(b.pair,identityMessage(stolen)),null,origin),/taken/);
+ const quiet=payload(a.address,{action:'update',username:'nakamoto',displayName:'Nakamoto',baseUpdatedAt:renamedProfile.updatedAt,nonce:crypto.randomUUID()});
+ assert.equal((await applyIdentity(db,null,quiet,sign(a.pair,identityMessage(quiet)),null,origin)).displayName,'Nakamoto');
+ assert.equal(await identityCards(db,[b.address]).then(cards=>cards[b.address]||null),null);
+ const cards=await identityCards(db,[a.address,b.address]);
+ assert.equal(cards[a.address].username,'nakamoto');assert.equal(cards[b.address],undefined);
+ db.sqlite.prepare('INSERT INTO launch_index(network,mint,platform_id,creator,pool,created_at,record,indexed_at) VALUES(?,?,?,?,?,?,?,?)').run('mainnet-beta','mint111111111111111111111111111111111111','platform',a.address,'pool','2026-01-01',JSON.stringify({mint:'mint111111111111111111111111111111111111',name:'Grain',symbol:'GRAIN'}),1);
+ db.sqlite.prepare('INSERT INTO room_event(id,mint,author,kind,title,body,url,target,created_at,payload,signature) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run('id1','mint111111111111111111111111111111111111',a.address,'submission','Work','secret body','https://example.com','',1,'{}','sig');
+ const view=await readPublicIdentity(db,'Nakamoto',{platform:'platform'});
+ assert.equal(view.activity.find(event=>event.kind==='launch').title,'Grain');
+ assert.equal(view.activity[0].kind,'launch');
+ assert.equal(view.rooms[0].tokenName,'Grain');
+ assert.equal(view.profile.username,'nakamoto');assert.equal(view.created[0].symbol,'GRAIN');assert.equal(view.rooms[0].title,'Work');assert.equal(JSON.stringify(view).includes('secret body'),false);
+ const old=await readPublicIdentity(db,'satoshi');assert.equal(old.redirect,'nakamoto');
+ const linked=await linkXAccount(db,a.address,{xUserId:'42',xUsername:'satoshi'},{replace:'no',now:5,avatarHash:''});
+ assert.equal(linked,'nakamoto');
+ const renamedX=await linkXAccount(db,a.address,{xUserId:'42',xUsername:'satoshi_n'},{replace:'no',now:6});
+ assert.equal(renamedX,'nakamoto');
+ const row=db.sqlite.prepare('SELECT x_user_id,x_username FROM wallet_identity WHERE wallet=?').get(a.address);
+ assert.equal(row.x_user_id,'42');assert.equal(row.x_username,'satoshi_n');
+ await assert.rejects(linkXAccount(db,b.address,{xUserId:'42',xUsername:'satoshi_n'},{replace:'no',now:7}),/already connected|Claim/);
+ const stamp=db.sqlite.prepare('SELECT updated_at FROM wallet_identity WHERE wallet=?').get(a.address).updated_at;
+ const off=payload(a.address,{action:'disconnect-x',username:'nakamoto',displayName:'Nakamoto',bio:'Public note',baseUpdatedAt:stamp,nonce:crypto.randomUUID()});
+ const cleared=await applyIdentity(db,null,off,sign(a.pair,identityMessage(off)),null,origin);
+ assert.equal(cleared.xUserId,null);assert.equal(cleared.xVerifiedAt,null);
+ const again=await linkXAccount(db,a.address,{xUserId:'42',xUsername:'satoshi'},{replace:'no',now:8});
+ assert.equal(again,'nakamoto');
+ const shown=publicProfile(db.sqlite.prepare('SELECT * FROM wallet_identity').get());
+ assert.equal(shown.xUserId,'42');assert.equal(Object.hasOwn(shown,'signature'),false);assert.equal(Object.hasOwn(shown,'payload'),false);
+ consistent(db);
+});
+test('stale and concurrent mutations cannot split a profile from its revision or username',async()=>{
+ const db=database(),a=wallet();
+ const claimed=payload(a.address),claimSignature=sign(a.pair,identityMessage(claimed));
+ const profile=await applyIdentity(db,null,claimed,claimSignature,null,origin,Date.now());
+ const newer=payload(a.address,{action:'update',username:'satoshi',displayName:'Newer',baseUpdatedAt:profile.updatedAt,nonce:crypto.randomUUID()});
+ const saved=await applyIdentity(db,null,newer,sign(a.pair,identityMessage(newer)),null,origin,Date.now());
+ assert.equal(saved.displayName,'Newer');assert.ok(saved.updatedAt>profile.updatedAt);
+ const stale=payload(a.address,{action:'update',username:'satoshi',displayName:'Stale',baseUpdatedAt:profile.updatedAt,nonce:crypto.randomUUID()});
+ await assert.rejects(applyIdentity(db,null,stale,sign(a.pair,identityMessage(stale)),null,origin,Date.now()),/changed/);
+ assert.equal(db.sqlite.prepare('SELECT display_name,signature FROM wallet_identity WHERE wallet=?').get(a.address).display_name,'Newer');
+ assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM wallet_identity_revision WHERE id=?').get(sign(a.pair,identityMessage(stale))).n,0);
+ const originalBatch=db.batch.bind(db);
+ db.batch=async statements=>{db.sqlite.prepare('UPDATE wallet_identity SET display_name=?,updated_at=?,signature=? WHERE wallet=?').run('Racer',400,'racer-signature',a.address);return originalBatch(statements);};
+ const raced=payload(a.address,{action:'update',username:'satoshi',displayName:'Lost',baseUpdatedAt:saved.updatedAt,nonce:crypto.randomUUID()});
+ await assert.rejects(applyIdentity(db,null,raced,sign(a.pair,identityMessage(raced)),null,origin,Date.now()),/changed/);
+ db.batch=originalBatch;
+ const afterRace=db.sqlite.prepare('SELECT display_name,updated_at FROM wallet_identity WHERE wallet=?').get(a.address);
+ assert.equal(afterRace.display_name,'Racer');assert.equal(afterRace.updated_at,400);
+ assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM wallet_identity_revision WHERE id=?').get(sign(a.pair,identityMessage(raced))).n,0);
+ const renamed=payload(a.address,{action:'rename',username:'nakamoto',displayName:'Racer',baseUpdatedAt:200,nonce:crypto.randomUUID()});
+ await assert.rejects(applyIdentity(db,null,renamed,sign(a.pair,identityMessage(renamed)),null,origin,Date.now()),/changed/);
+ assert.equal(db.sqlite.prepare('SELECT username FROM wallet_identity WHERE wallet=?').get(a.address).username,'satoshi');
+ assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM wallet_identity_name WHERE username=?').get('nakamoto').n,0);
+ assert.equal(db.sqlite.prepare('SELECT current FROM wallet_identity_name WHERE username=?').get('satoshi').current,1);
+ const fresh=db.sqlite.prepare('SELECT updated_at,display_name,bio,avatar_hash FROM wallet_identity WHERE wallet=?').get(a.address);
+ const moved=payload(a.address,{action:'rename',username:'nakamoto',displayName:fresh.display_name,bio:fresh.bio,avatarHash:fresh.avatar_hash,baseUpdatedAt:fresh.updated_at,nonce:crypto.randomUUID()});
+ assert.equal((await applyIdentity(db,null,moved,sign(a.pair,identityMessage(moved)),null,origin,Date.now())).username,'nakamoto');
+ assert.equal(db.sqlite.prepare('SELECT current FROM wallet_identity_name WHERE username=?').get('satoshi').current,0);
+ assert.equal(db.sqlite.prepare('SELECT wallet,current FROM wallet_identity_name WHERE username=?').get('nakamoto').current,1);
+ await linkXAccount(db,a.address,{xUserId:'77',xUsername:'grain'},{replace:'no',now:800});
+ const linkedAt=db.sqlite.prepare('SELECT updated_at FROM wallet_identity WHERE wallet=?').get(a.address).updated_at;
+ assert.ok(linkedAt>700);
+ const disconnect=payload(a.address,{action:'disconnect-x',username:'nakamoto',displayName:fresh.display_name,bio:fresh.bio,avatarHash:fresh.avatar_hash,baseUpdatedAt:fresh.updated_at,nonce:crypto.randomUUID()});
+ await assert.rejects(applyIdentity(db,null,disconnect,sign(a.pair,identityMessage(disconnect)),null,origin,Date.now()),/changed/);
+ assert.equal(db.sqlite.prepare('SELECT x_user_id FROM wallet_identity WHERE wallet=?').get(a.address).x_user_id,'77');
+ const live=db.sqlite.prepare('SELECT * FROM wallet_identity WHERE wallet=?').get(a.address);
+ const clear=payload(a.address,{action:'disconnect-x',username:live.username,displayName:live.display_name,bio:live.bio,avatarHash:live.avatar_hash,baseUpdatedAt:live.updated_at,nonce:crypto.randomUUID()});
+ const clearSignature=sign(a.pair,identityMessage(clear));
+ assert.equal((await applyIdentity(db,null,clear,clearSignature,null,origin,Date.now())).xUserId,null);
+ assert.equal((await applyIdentity(db,null,clear,clearSignature,null,origin,Date.now())).xUserId,null);
+ assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM wallet_identity_revision WHERE id=?').get(clearSignature).n,1);
+ db.sqlite.prepare('UPDATE wallet_identity_revision SET payload=? WHERE id=?').run('{"tampered":true}',clearSignature);
+ await assert.rejects(applyIdentity(db,null,clear,clearSignature,null,origin,Date.now()),/already used/);
+ assert.equal(db.sqlite.prepare('SELECT x_user_id FROM wallet_identity WHERE wallet=?').get(a.address).x_user_id,'');
+ db.sqlite.prepare('UPDATE wallet_identity_revision SET payload=? WHERE id=?').run(db.sqlite.prepare('SELECT payload FROM wallet_identity WHERE wallet=?').get(a.address).payload,clearSignature);
+ let arrivals=0;let open;const gate=new Promise(resolve=>{open=resolve;});
+ const prepare=db.prepare.bind(db);
+ db.prepare=sql=>{const statement=prepare(sql);if(!sql.startsWith('SELECT * FROM wallet_identity WHERE wallet'))return statement;return {bind(...values){const query=statement.bind(...values),read=query.first.bind(query);return {...query,async first(){if(arrivals<2){arrivals+=1;if(arrivals===2)open();await gate;}return read();}}}};};
+ const leftWallet=wallet(),rightWallet=wallet();
+ const left=payload(leftWallet.address,{username:'taken',nonce:crypto.randomUUID()});
+ const right=payload(rightWallet.address,{username:'taken',nonce:crypto.randomUUID()});
+ const racedClaims=await Promise.allSettled([applyIdentity(db,null,left,sign(leftWallet.pair,identityMessage(left)),null,origin,Date.now()),applyIdentity(db,null,right,sign(rightWallet.pair,identityMessage(right)),null,origin,Date.now())]);
+ assert.equal(racedClaims.filter(result=>result.status==='fulfilled').length,1);
+ assert.equal(racedClaims.filter(result=>result.status==='rejected').length,1);
+ assert.match(racedClaims.find(result=>result.status==='rejected').reason.message,/taken|already has/);
+ const owners=db.sqlite.prepare('SELECT wallet FROM wallet_identity WHERE username=?').all('taken');
+ assert.equal(owners.length,1);
+ assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM wallet_identity_name WHERE username=? AND current=1').get('taken').n,1);
+ assert.equal(db.sqlite.prepare('SELECT wallet FROM wallet_identity_name WHERE username=?').get('taken').wallet,owners[0].wallet);
+ assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM wallet_identity_revision WHERE wallet=?').get(owners[0].wallet).n>=1,true);
+ const loser=owners[0].wallet===leftWallet.address?rightWallet.address:leftWallet.address;
+ assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM wallet_identity WHERE wallet=?').get(loser).n,0);
+ assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS n FROM wallet_identity_name WHERE wallet=? AND username='taken'").get(loser).n,0);
+ consistent(db);
+});
+test('X OAuth is optional, callback-bound, and does not return tokens',async()=>{
+ assert.equal(xOauthConfig({}),null);
+ assert.throws(()=>xOauthConfig({X_CLIENT_ID:'grainpad-app'}),/not configured together/);assert.throws(()=>xOauthConfig({X_CLIENT_SECRET:'test-secret-value-1'}),/not configured together/);assert.equal(xOauthConfig({X_CLIENT_ID:'',X_CLIENT_SECRET:''}),null);
+ assert.throws(()=>xOauthConfig({X_CLIENT_ID:'short',X_CLIENT_SECRET:'short'}),/not usable/);
+ const config=xOauthConfig({X_CLIENT_ID:'grainpad-app',X_CLIENT_SECRET:'test-secret-value-1'});
+ assert.equal(xRedirectUri('https://grainpad.fun'),'https://grainpad.fun/api/identity/x/callback');
+ assert.equal(xRedirectUri('http://127.0.0.1:4173'),'http://127.0.0.1:4173/api/identity/x/callback');
+ assert.throws(()=>xRedirectUri('https://evil.example'),/not allowed/);
+ assert.throws(()=>xRedirectUri('https://grainpad.fun', 'https://evil.example/callback'),/not allowed/);
+ assert.equal(safeXImage('https://pbs.twimg.com/profile_images/a.jpg'),'https://pbs.twimg.com/profile_images/a.jpg');
+ assert.equal(safeXImage('https://evil.example/a.jpg'),'');
+ assert.equal(safeXImage('javascript:alert(1)'),'');
+ const pkce=await createPkce();
+ assert.match(pkce.verifier,/^[A-Za-z0-9_-]+$/);assert.notEqual(pkce.challenge,pkce.verifier);
+ const db=database(),owner=wallet();
+ const connect={origin,wallet:owner.address,replace:'no',nonce:crypto.randomUUID(),expires:Date.now()+60_000};
+ assert.equal(verifyConnectXSignature(connect,sign(owner.pair,connectXMessage(connect)),origin).wallet,owner.address);
+ db.sqlite.prepare('INSERT INTO wallet_identity_oauth(state,wallet,verifier,redirect_uri,replace,expires_at) VALUES(?,?,?,?,?,?)').run(pkce.state,owner.address,pkce.verifier,xRedirectUri(origin),'no',Date.now()+60_000);
+ const cookie=oauthCookie(pkce.state,true);
+ assert.match(cookie,/HttpOnly/);assert.equal(cookie.includes(pkce.verifier),false);
+ assert.equal(authorizationUrl({clientId:config.clientId,redirectUri:xRedirectUri(origin),state:pkce.state,challenge:pkce.challenge}).includes(config.clientSecret),false);
+ await assert.rejects(consumeOauthState(db,pkce.state,'',Date.now()),/expired/);
+ await assert.rejects(consumeOauthState(db,pkce.state,`${X_OAUTH_COOKIE}=not-the-state`,Date.now()),/expired/);
+ assert.equal(db.sqlite.prepare('SELECT verifier FROM wallet_identity_oauth WHERE state=?').get(pkce.state).verifier,pkce.verifier);
+ const row=await consumeOauthState(db,pkce.state,`${X_OAUTH_COOKIE}=${pkce.state}`,Date.now());
+ assert.equal(row.wallet,owner.address);assert.equal(row.verifier,pkce.verifier);
+ assert.equal(db.sqlite.prepare('SELECT COUNT(*) AS n FROM wallet_identity_oauth').get().n,0);
+ await assert.rejects(consumeOauthState(db,pkce.state,`${X_OAUTH_COOKIE}=${pkce.state}`,Date.now()),/expired/);
+ const token='super-secret-access-token';
+ const account=await completeXAuthorization({config,code:'auth-code-1',verifier:pkce.verifier,redirectUri:xRedirectUri(origin),fetchImpl:async url=>{
+  if(String(url).includes('oauth2/token'))return {ok:true,json:async()=>({access_token:token,refresh_token:'refresh-secret'})};
+  return {ok:true,json:async()=>({data:{id:'99',username:'grain',profile_image_url:'https://evil.example/a.jpg'}})};
+ }});
+ assert.deepEqual(Object.keys(account).sort(),['profileImageUrl','xUserId','xUsername']);
+ assert.equal(JSON.stringify(account).includes(token),false);assert.equal(JSON.stringify(account).includes('refresh-secret'),false);assert.equal(account.profileImageUrl,'');assert.equal(account.xUserId,'99');
+ await assert.rejects(completeXAuthorization({config,code:'auth-code-1',verifier:pkce.verifier,redirectUri:xRedirectUri(origin),fetchImpl:async url=>String(url).includes('token')?{ok:true,json:async()=>({access_token:token})}:{ok:false,status:403,json:async()=>({title:'Your account is suspended.'})}}),/suspended/);
+ assert.equal(await archiveXAvatar('https://evil.example/a.jpg',async()=>{throw Error('should not fetch');}),null);
+ assert.equal(await archiveXAvatar('https://pbs.twimg.com/a.jpg',async()=>({ok:false,status:302,headers:{get:()=>''},arrayBuffer:async()=>new ArrayBuffer(0)})),null);
+});
+
+const verifyIdentityPayloadShape=p=>validateIdentityPayload(p,origin);
+test('only the canonical platform admin wallet can claim the exact platform names; nobody gets look-alikes',()=>{
+ const admin=PLATFORM_SETTINGS.admin,other=wallet().address,exactNames=['grainpad','grain','grainxmr','grainpadfun'];
+ for(const name of exactNames){
+  assert.equal(normalizeUsername(name,{wallet:admin}).username,name);
+  assert.throws(()=>normalizeUsername(name,{wallet:other}),/reserved/);
+  assert.throws(()=>normalizeUsername(name),/reserved/);
+  assert.throws(()=>normalizeUsername(name,{wallet:'forged-admin'}),/reserved/);
+ }
+ for(const lookalike of ['gr4inpad','grain_pad','grainpa_d','gra1npad','grainpadd','gralnpad'])for(const who of [admin,other])assert.throws(()=>normalizeUsername(lookalike,{wallet:who}),/reserved/);
+ for(const other_reserved of ['admin','official','team','root'])assert.throws(()=>normalizeUsername(other_reserved,{wallet:admin}),/reserved/);
+ const base={origin,wallet:admin,action:'claim',username:'grainpad',displayName:'Grainpad',bio:'',avatarHash:'',baseUpdatedAt:0,nonce:crypto.randomUUID(),expires:Date.now()+60_000};
+ assert.equal(verifyIdentityPayloadShape(base).username,'grainpad');
+ assert.throws(()=>verifyIdentityPayloadShape({...base,wallet:other}),/reserved/);
+});
+
+test('X failure diagnostics distinguish operator issues and never expose provider secrets',async()=>{
+ const cases=[['token',401,{error:'invalid_client'},'x-credentials'],['token',400,{error:'invalid_grant'},'x-callback'],['profile',403,{type:'https://api.x.com/2/problems/client-not-enrolled'},'x-enrollment'],['profile',402,{type:'https://api.x.com/2/problems/credits-depleted'},'x-credits'],['profile',403,{},'x-permission'],['profile',429,{},'x-rate']];
+ for(const [stage,status,body,code] of cases){
+  const failure=xOauthFailure(stage,status,{...body,access_token:'sensitive-token',detail:'private-provider-detail'});
+  const details=xOauthFailureDetails(failure);
+  assert.equal(details.code,code);
+  assert.equal(details.stage,stage);
+  assert.equal(JSON.stringify(details).includes('sensitive-token'),false);
+  assert.equal(JSON.stringify(details).includes('private-provider-detail'),false);
+ }
+ const config={clientId:'client-id-test',clientSecret:'client-secret-test'};
+ await assert.rejects(completeXAuthorization({config,code:'auth-code-1',verifier:'v'.repeat(43),redirectUri:'https://grainpad.fun/api/identity/x/callback',fetchImpl:async()=>({ok:false,status:401,json:async()=>({error:'invalid_client'})})}),error=>xOauthFailureDetails(error).code==='x-credentials');
+});

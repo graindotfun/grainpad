@@ -1,4 +1,5 @@
 import './browser-buffer.mjs';
+import {simulationCostProof} from './simulation-cost.mjs';
 import {estimatePriorityFee,publicPriorityPolicy} from './priority-fee.mjs';
 import {Buffer} from 'buffer';
 import {PublicKey,VersionedTransaction,TransactionMessage,ComputeBudgetProgram,type TransactionInstruction} from '@solana/web3.js';
@@ -9,11 +10,8 @@ export async function prepareInstructions(ownerAddress:string,instructions:Trans
  const priorityFee=await estimatePriorityFee(connection,instructions,await publicPriorityPolicy(),600000);
  const owner=new PublicKey(ownerAddress),latest=await connection.getLatestBlockhash(),maxLamports=solToLamports(maxCost);
  const transaction=new VersionedTransaction(new TransactionMessage({payerKey:owner,recentBlockhash:latest.blockhash,instructions:[ComputeBudgetProgram.setComputeUnitLimit({units:600000}),ComputeBudgetProgram.setComputeUnitPrice({microLamports:priorityFee.microLamports}),...instructions]}).compileToV0Message());
- const before=await connection.getBalance(owner),sim=await connection.simulateTransaction(transaction,{sigVerify:false,commitment:'confirmed',accounts:{encoding:'base64',addresses:[ownerAddress]}});
- if(sim.value.err)throw Error(`Simulation failed; nothing was sent. ${JSON.stringify(sim.value.err)}`);
- const after=sim.value.accounts?.[0]?.lamports,fee=(await connection.getFeeForMessage(transaction.message)).value;
- if(after===undefined||after===null||fee===null)throw Error('Unable to estimate transaction cost.');
- const estimatedLamports=Math.max(0,before-after);
- if(BigInt(estimatedLamports)>maxLamports||before<estimatedLamports)throw Error(`Estimated maximum debit ${formatSOL(estimatedLamports)} SOL exceeds the limit or wallet balance.`);
+ const proof=await simulationCostProof(connection,transaction,owner,{sigVerify:false,addresses:[ownerAddress]});
+ const estimatedLamports=proof.debit;
+ if(BigInt(estimatedLamports)>maxLamports||proof.before<estimatedLamports)throw Error(`Estimated maximum debit ${formatSOL(estimatedLamports)} SOL exceeds the limit or wallet balance.`);
  return {priorityFee,transaction,network:'mainnet-beta',owner:ownerAddress,estimatedLamports,maxLamports,createdAt:Date.now(),lastValidBlockHeight:latest.lastValidBlockHeight,blockhash:latest.blockhash};
 }
