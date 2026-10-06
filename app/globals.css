@@ -47,6 +47,6 @@
 
 /* Reserved public-profile mark: an understated orange signal on the official account. */
 .official-profile-name{display:inline-flex;align-items:baseline;gap:.12em;color:var(--foreground);font-weight:650;white-space:nowrap}
-.official-profile-dot{display:inline-block;flex:none;width:.2em;height:.2em;min-width:3px;min-height:3px;border-radius:50%;background:#f36b2c;box-shadow:0 0 .3em rgb(243 107 44 / .35);animation:official-profile-signal 2.8s ease-in-out infinite}
-@keyframes official-profile-signal{0%,100%{box-shadow:0 0 0 0 rgb(243 107 44 / 0),0 0 .3em rgb(243 107 44 / .35)}50%{box-shadow:0 0 0 .18em rgb(243 107 44 / .2),0 0 .55em rgb(243 107 44 / .55)}}
+.official-profile-dot{display:inline-block;flex:none;width:.2em;height:.2em;min-width:3px;min-height:3px;border-radius:50%;background:var(--grain-orange);box-shadow:0 0 .3em color-mix(in srgb,var(--grain-orange) 35%,transparent);animation:official-profile-signal 2.8s ease-in-out infinite}
+@keyframes official-profile-signal{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--grain-orange) 0%,transparent),0 0 .3em color-mix(in srgb,var(--grain-orange) 35%,transparent)}50%{box-shadow:0 0 0 .18em color-mix(in srgb,var(--grain-orange) 20%,transparent),0 0 .55em color-mix(in srgb,var(--grain-orange) 55%,transparent)}}
 @media(prefers-reduced-motion:reduce){.official-profile-dot{animation:none}}
