@@ -6,6 +6,7 @@ import {parseCandles,parseTrades} from '@/lib/market-display';
 import {geckoFallbackAllowed,readNativeHistory} from '@/lib/native-history.mjs';
 import {confirmedCatchup,mergeIndexedAndConfirmed} from '@/lib/realtime-ingest.mjs';
 import {buildCandles,mergeCandleHistory,recentTradeRows} from '@/lib/native-market.mjs';
+import {decodeChartTrades} from '@/lib/chart-trade-decoder.mjs';
 import {backfillChartTrades} from '@/lib/chart-backfill.mjs';
 import {POLICY} from '@/lib/platform-policy';
 import {chain,chartHistoryRead} from '@/lib/server-rpc';
@@ -26,14 +27,15 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
   const viewer=request.headers.get('X-Grainpad-Viewer')==='visible';
   const market=await serverMarket(mint,{viewer});
   const db=database();
-  let recovery:{processed:number;trades:number;remaining:number}|undefined;
+  let recovery:{processed:number;trades:number;remaining:number;tailOpen?:boolean}|undefined;
   if(viewer){
    try{const saved=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();
-    if(saved)recovery=(await backfillChartTrades(db,chartHistoryRead,JSON.parse(saved.record),POLICY.cpConfig)).data;
-   }catch{/* Keep existing verified history available while recovery retries. */}
+    if(saved)recovery=(await backfillChartTrades(db,chartHistoryRead,JSON.parse(saved.record),POLICY.cpConfig,{recentPool:market.pool})).data;
+   }catch{recovery={processed:0,trades:0,remaining:0,tailOpen:true};/* Keep verified history, but do not claim a complete recent tail. */}
   }
   const native=await readNativeHistory(db,mint,{kind,seconds:resolution,activity:market.activity,rangeSeconds:window?.range??null});
   let rows=native.rows,coverage=native.coverage;
+  if((recovery?.remaining||recovery?.tailOpen)&&coverage.status!=='no-trades')coverage={...coverage,status:'partial',notice:'Recent finalized trades are still being recovered. The chart includes only verified executions.'};
   const source='grainpad',unit='quote';
   if(viewer&&coverage.status!=='no-trades'){
    try{
@@ -44,7 +46,7 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
      const record=JSON.parse(saved.record);
      record.pool=market.pool;
      const knownRows=await db.prepare(`SELECT signature FROM chain_event WHERE mint=? AND kind IN ('buy','sell') ORDER BY slot DESC LIMIT 80`).bind(mint).all<{signature:string}>();
-     const events=await confirmedCatchup((method:string,params:unknown[])=>chain('mainnet-beta',method,params),record,new Set((knownRows.results||[]).map(row=>row.signature)));
+     const events=await confirmedCatchup((method:string,params:unknown[])=>chain('mainnet-beta',method,params),record,new Set((knownRows.results||[]).map(row=>row.signature)),POLICY.cpConfig,{signatures:12,transactions:8,decode:(tx:unknown,signature:string)=>decodeChartTrades((method:string,params:unknown[])=>chain('mainnet-beta',method,params),tx,signature,record,POLICY.cpConfig)});
      return {events};
     },{ttl:8_000,maxStale:20_000,refresh:true});
     const events=extra.data?.events||[];

@@ -6,9 +6,10 @@ let fetched=0,loaded=0;
 globalThis.marketHistoryTest={market:{pool,mint,quote:{mint:quote,symbol:'SOL'},chart:{available:false},stale:false,activity:'unknown',updatedAt:123},serverMarket:async()=>{loaded++;return globalThis.marketHistoryTest.market;},native:{rows:[],events:[],coverage:{status:'not-indexed',notice:'Trade history is not indexed yet. That is not the same as no trades.'}}};
 await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.test-output/market-history-route.mjs',bundle:true,platform:'node',format:'esm',logLevel:'silent',plugins:[{name:'history-boundaries',setup(b){
  const stubs={
+  '@/lib/chart-trade-decoder.mjs':'export const decodeChartTrades=async()=>[];',
   '@/lib/chart-backfill.mjs':'export const backfillChartTrades=async()=>({data:{processed:0,trades:0}});',
   '@/lib/server-market':'export const serverMarket=(...a)=>globalThis.marketHistoryTest.serverMarket(...a);',
-  '@/lib/server-owner':'export const database=()=>({});',
+  '@/lib/server-owner':'export const database=()=>({prepare:()=>({bind:()=>({first:async()=>null})})});',
   '@/lib/server-cache':'export const sharedMarketCache=async(db,key,load,options)=>{globalThis.marketHistoryTest.refresh=options.refresh;if(!options.refresh)throw Error("No visible viewer");return {data:await load(),updatedAt:123,stale:false};};',
   '@/lib/shared-market-cache.mjs':'export const takeBudget=async()=>globalThis.marketHistoryTest.budget!==false;',
   '@/lib/native-history.mjs':'export const readNativeHistory=async(db,mint,options)=>{globalThis.marketHistoryTest.historyOptions=options;return globalThis.marketHistoryTest.native;};export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
