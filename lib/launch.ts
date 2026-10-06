@@ -17,6 +17,9 @@ import {POLICY,grainpadPlatformId,decodePlatform,assertGrainpadPolicy} from "./p
 
 import {assertTokenCreationEnabled} from './platform-settings.mjs';
 import {decodeReviewedTransaction,inspectWalletTransaction,sameSimulatedAccount} from './wallet-transaction-policy.mjs';
+// Load signing guards with the launch module, before preparing a review. A tab
+// must not need a new deployment-specific chunk after it reaches wallet review.
+import {signWalletFirst} from './wallet-signing.mjs';
 import {assertBlockhashWindow} from './blockhash-window.mjs';
 import {createSigningAttempt,assertReviewFresh,safeStore,type SigningAttempt} from './signing-attempt.mjs';
 const launchMintSigners=new WeakMap<object,Keypair>();
@@ -152,7 +155,6 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
  if(p.operationKind==='launch'){
   const mint=launchMintSigners.get(reviewed);
   if(!mint)throw Error('Mint signer is no longer available. Prepare a fresh launch.');
-  const {signWalletFirst}=await import('./wallet-signing.mjs');
   signed=await signWalletFirst({transaction:p.transaction,wallet,owner:p.owner,additionalSignerPublicKeys:[mint.publicKey],cosign:(t:VersionedTransaction)=>t.sign([mint])});
  }else signed=await wallet.signTransaction(p.transaction);
  attempt.update('wallet_returned',{walletReturned:true,walletWaitMs:Date.now()-attempt.get().events.find((e:{stage:string})=>e.stage==='wallet_requested')!.at});
