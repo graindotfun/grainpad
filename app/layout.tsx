@@ -24,8 +24,8 @@ export const metadata: Metadata = {
   title: "Grainpad — From first idea to first block",
   description: `A considered start for your next token. Explore clear ${BRAND_CHAIN.label} launch conditions and create from your own wallet.`,
   metadataBase: new URL(SITE.origin),
-  openGraph: {title:"Grainpad — Ideas into existence", description:`Create your token on ${BRAND_CHAIN.label}. Review the conditions. Your wallet. Your call.`, type:"website", url:SITE.origin, images:[{url:"/brand/grainpad-x-banner.jpg",width:1500,height:500,alt:"grainpad. — launching soon, on warm paper with an orange sphere"}]},
-  twitter: {card:"summary_large_image", site:"@GrainXMR", title:"Grainpad — Ideas into existence", description:`A considered start for your next token on ${BRAND_CHAIN.label}.`, images:["/brand/grainpad-x-banner.jpg"]},
+  openGraph: {title:"Grainpad — Ideas into existence", description:`Create your token on ${BRAND_CHAIN.label}. Review the conditions. Your wallet. Your call.`, type:"website", url:SITE.origin, images:[{url:"/brand/grainpad-social-minute-two-20261006.png",width:1500,height:500,alt:"Grainpad wordmark and built for minute two tagline on textured warm paper."}]},
+  twitter: {card:"summary_large_image", site:"@GrainXMR", title:"Grainpad — Ideas into existence", description:`A considered start for your next token on ${BRAND_CHAIN.label}.`, images:["/brand/grainpad-social-minute-two-20261006.png"]},
   icons: {
     icon: BRAND_ASSETS.favicon,
     shortcut: BRAND_ASSETS.favicon,

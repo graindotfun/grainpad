@@ -1,3 +1,4 @@
+import {assertPublicCreatorBuyCompatibility} from '@/lib/public-creator-buy.mjs';
 import {completedMetadataRetry} from '@/lib/metadata-completed-retry.mjs';
 import {canonicalTokenWebsite} from '@/lib/token-website.mjs';
 import {validateImage} from '@/lib/image-validation.mjs';
@@ -49,6 +50,8 @@ export async function POST(request:Request){
   const launchTweet=canonicalLaunchTweet(draft.launchTweet);
   if(official&&launchTweet)throw Error('Use the official X field for a launch post; the separate public launch-post field is not part of official metadata.');
   if(!official&&draft.declaredCreatorBuy!==undefined&&(!['SOL','wXMR'].includes(draft.quoteAsset||'')||typeof draft.declaredCreatorBuy!=='string'||!/^\d{1,12}(\.\d{1,9})?$/.test(draft.declaredCreatorBuy)))throw Error('Creator buy declaration must be an amount in the selected quote asset.');
+  if(official&&draft.creatorBuy!==undefined)throw Error('Use the approved official creator buy.');
+  if(!official)assertPublicCreatorBuyCompatibility(draft);
   const payload=metadataPayload(draft);const hash=await sha256(payload);
   const owner=bs58.decode(draft.owner),sig=bs58.decode(body.signature);
   if(owner.length!==32||sig.length!==64||!nacl.sign.detached.verify(new TextEncoder().encode(metadataMessage(new URL(request.url).origin,hash)),sig,owner))throw new Error("Wallet signature did not verify.");

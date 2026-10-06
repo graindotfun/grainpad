@@ -7,7 +7,9 @@ import './browser-buffer.mjs';
 import { Buffer } from "buffer";
 import { Connection, PublicKey, Keypair, VersionedTransaction, TransactionMessage, ComputeBudgetProgram } from "@solana/web3.js";
 import {quoteAsset} from "./quote-assets.mjs";
-import {buildRewardsLaunch} from "./rewards-launch.mjs";
+import {buildPublicCreatorBuyIntent,buildPublicRewardsLaunch,compilePublicRewardsLaunch,readPublicCreatorBuyBalance,publicCreatorBuySimulationAddresses,assertPublicCreatorBuySimulation} from './public-creator-buy.mjs';
+import {GRAINPAD_SOL_LOOKUP_TABLE} from './sol-route-lookup.mjs';
+import {loadAddressLookupTables,resolveTransactionAddresses} from './transaction-addresses.mjs';
 import {readRewardsIssuanceState} from "./rewards-issuance.mjs";
 import {isLaunchTaxBps} from "./rewards-policy.mjs";
 import { NETWORKS, type Network } from "./site-config";
@@ -36,8 +38,9 @@ export function solToLamports(value:string):bigint{
  const [a,b=""]=value.split(".");const n=BigInt(a)*BigInt("1000000000")+BigInt(b.padEnd(9,"0"));
  if(n>BigInt(Number.MAX_SAFE_INTEGER))throw Error("Amount is too large.");return n;
 }
-export type PreparedLaunch={setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;rewards?:{taxBps:number;collector:string};fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
-export type PreparedOperation=Pick<PreparedLaunch,"rewards"|"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
+export type PublicCreatorBuy={quote:string;amountIn:string;minOut:string;taxBps:number;slippageBps:number;expectedNetOutputRaw:string;simulatedNetOutputRaw:string;transferFeeRaw:string;totalCurveFeeRaw:string;curveFeesRaw:Record<string,string>;curvePrincipalRaw:string;quoteDecimals:number;tokenDecimals:number;balanceBeforeRaw:string};
+export type PreparedLaunch={creatorBuy?:PublicCreatorBuy|null;setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;rewards?:{taxBps:number;collector:string};fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
+export type PreparedOperation=Pick<PreparedLaunch,"creatorBuy"|"rewards"|"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
 /** Pending is a normal state; uncertain attempts remain locked until resolved. */
 export async function inspectSubmitted(signature:string){
  const connection=rpc('mainnet-beta',undefined,signature);await assertNetwork(connection,'mainnet-beta');
@@ -50,7 +53,7 @@ export async function resolveSubmitted(signature:string){
  throw Error(result.reason||'Transaction is still pending or its expiry cannot be verified. Check the explorer before retrying.');
 }
 export const DEVNET_PLATFORM="";
-export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number}):Promise<PreparedLaunch>{
+export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number;creatorBuyAmount?:string}):Promise<PreparedLaunch>{
  assertTokenCreationEnabled();
  if(!input.mintKeypair)throw Error("Generate a grn mint address before preparing this launch.");
  assertMintSuffix(input.mintKeypair.publicKey.toBase58());
@@ -66,14 +69,20 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  const {platformId,platform,config,collector}=await readRewardsIssuanceState(connection);
  const mint=input.mintKeypair;
  if(mint.publicKey.equals(owner)||await connection.getAccountInfo(mint.publicKey))throw Error("Mint address is already in use. Use a fresh mint-only key, never your wallet key.");
- const built=buildRewardsLaunch({owner,mint:mint.publicKey,platform:platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quote.mint});
- const transaction=new VersionedTransaction(new TransactionMessage({payerKey:owner,recentBlockhash:(await connection.getLatestBlockhash('confirmed')).blockhash,instructions:[ComputeBudgetProgram.setComputeUnitLimit({units:600000}),ComputeBudgetProgram.setComputeUnitPrice({microLamports:10000}),...built.instructions]}).compileToV0Message());
- const latest=await connection.getLatestBlockhash("confirmed");transaction.message.recentBlockhash=latest.blockhash;
- const cost=await simulationCostProof(connection,transaction,owner,{sigVerify:false,addresses:[owner.toBase58()]}),sim=cost.sim,before=cost.before,after=cost.after,fee={value:cost.fee};
+ const intent=buildPublicCreatorBuyIntent({amount:input.creatorBuyAmount??'',taxBps:input.taxBps!});
+ const built=buildPublicRewardsLaunch({owner,mint:mint.publicKey,platform:platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quote.mint,creatorBuy:intent});
+ const lookupTables=intent?(await loadAddressLookupTables(connection,[new PublicKey(GRAINPAD_SOL_LOOKUP_TABLE)])).tables:[];
+ const latest=await connection.getLatestBlockhash('confirmed');
+ const transaction=compilePublicRewardsLaunch(built,{owner,blockhash:latest.blockhash,lookupTables});
+ const buyReview={owner:input.owner,mint:String(mint.publicKey),pool:String(built.pool),creatorBuy:built.creatorBuy};
+ const funding=await readPublicCreatorBuyBalance(connection,buyReview);
+ const addressContext=await resolveTransactionAddresses(connection,transaction,{minContextSlot:funding?.slot??1});
+ const cost=await simulationCostProof(connection,transaction,owner,{sigVerify:false,addresses:publicCreatorBuySimulationAddresses(buyReview),addressContext,minContextSlot:funding?.slot??1}),sim=cost.sim,before=cost.before,after=cost.after,fee={value:cost.fee};
+ const creatorBuy=assertPublicCreatorBuySimulation(buyReview,cost,funding);
  const estimatedLamports=cost.debit;
  if(BigInt(estimatedLamports)>maxLamports)throw Error(`Estimated cost ${formatSOL(estimatedLamports)} SOL exceeds your limit. Nothing was sent.`);
  if(before-estimatedLamports<5000000)throw Error("NO-GO: launch would leave less than the required 0.005 SOL reserve.");
- const prepared:PreparedLaunch={rewards:{taxBps:input.taxBps!,collector:String(collector)},targetAccount:mint.publicKey.toBase58(),operationKind:"launch",minimumBalanceLamports:5000000,measuredDebitLamports:Math.max(0,before-after),networkFeeLamports:fee.value,balanceBeforeLamports:before,transaction,network:input.network,owner:input.owner,mint:mint.publicKey.toBase58(),pool:built.pool.toBase58(),metadataHash:input.metadataHash,name:input.name,symbol:input.symbol,platformName:"Grainpad",quoteAsset:quote.symbol,quoteMint:quote.mint,quoteDecimals:quote.decimals,estimatedLamports,maxLamports,createdAt:Date.now(),lastValidBlockHeight:latest.lastValidBlockHeight,blockhash:latest.blockhash,fees:{protocol:config.tradeFeeRate.toString(),platform:platform.feeRate.toString(),creator:platform.creatorFeeRate.toString()},simulationLogs:sim.value.logs||[]};
+ const prepared:PreparedLaunch={creatorBuy,rewards:{taxBps:input.taxBps!,collector:String(collector)},targetAccount:mint.publicKey.toBase58(),operationKind:"launch",minimumBalanceLamports:5000000,measuredDebitLamports:Math.max(0,before-after),networkFeeLamports:fee.value,balanceBeforeLamports:before,transaction,network:input.network,owner:input.owner,mint:mint.publicKey.toBase58(),pool:built.pool.toBase58(),metadataHash:input.metadataHash,name:input.name,symbol:input.symbol,platformName:"Grainpad",quoteAsset:quote.symbol,quoteMint:quote.mint,quoteDecimals:quote.decimals,estimatedLamports,maxLamports,createdAt:Date.now(),lastValidBlockHeight:latest.lastValidBlockHeight,blockhash:latest.blockhash,fees:{protocol:config.tradeFeeRate.toString(),platform:platform.feeRate.toString(),creator:platform.creatorFeeRate.toString()},simulationLogs:sim.value.logs||[]};
  launchMintSigners.set(prepared,mint);return prepared;
 }
 async function preflightOperation(reviewed:PreparedOperation,connection:Connection,attempt:ReturnType<typeof createSigningAttempt>){
@@ -108,14 +117,18 @@ async function preflightOperation(reviewed:PreparedOperation,connection:Connecti
   if(p.operationKind==='platform')(await import('./platform-setup.mjs')).assertSetupMessage(p);
   attempt.update('blockhash_refreshed',{blockhash:p.blockhash,lastValidBlockHeight:p.lastValidBlockHeight,reviewCreatedAt:p.createdAt});
  }
- const simulationAddresses=p.operationKind==='platform'?[p.owner,grainpadPlatformId().toBase58()]:[p.owner];
- const cost=await simulationCostProof(connection,p.transaction,new PublicKey(p.owner),{sigVerify:false,addresses:simulationAddresses,minContextSlot:p.setupSlot??1,allowPayerCredit:p.operationKind!=='platform'&&p.operationKind!=='launch'}),sim=cost.sim,before=cost.before;
+ const buyReview=p as PreparedLaunch;
+ const funding=p.operationKind==='launch'?await readPublicCreatorBuyBalance(connection,buyReview):null;
+ const addressContext=await resolveTransactionAddresses(connection,p.transaction,{minContextSlot:funding?.slot??p.setupSlot??1});
+ const simulationAddresses=p.operationKind==='platform'?[p.owner,grainpadPlatformId().toBase58()]:p.operationKind==='launch'?publicCreatorBuySimulationAddresses(buyReview):[p.owner];
+ const cost=await simulationCostProof(connection,p.transaction,new PublicKey(p.owner),{sigVerify:false,addresses:simulationAddresses,minContextSlot:funding?.slot??p.setupSlot??1,addressContext,allowPayerCredit:p.operationKind!=='platform'&&p.operationKind!=='launch'}),sim=cost.sim,before=cost.before;
  if(p.operationKind==='platform'){
   const {rpcAccount}=await import('./launch-rules.mjs');const post=rpcAccount(sim.value.accounts?.[1]);
   if(!post?.owner.equals(new PublicKey(POLICY.program)))throw Error('NO-GO: simulated platform owner changed.');
   assertGrainpadPolicy(decodePlatform(post.data));
   if(sim.value.unitsConsumed!==p.simulationUnits)throw Error('NO-GO: setup compute changed; review before signing.');
  }
+ const creatorBuy=p.operationKind==='launch'?assertPublicCreatorBuySimulation(buyReview,cost,funding):p.creatorBuy;
  const after=cost.after,fee=cost.fee;
  if(after==null||fee==null)throw Error('NO-GO: simulation cost unavailable.');
  const conservativeDebit=cost.debit;
@@ -125,8 +138,8 @@ async function preflightOperation(reviewed:PreparedOperation,connection:Connecti
  const currentHeight=await connection.getBlockHeight('confirmed');
  attempt.update('preflight_verified',{currentBlockHeight:currentHeight,simulationSlot:sim.context?.slot,simulationUnits:sim.value.unitsConsumed});
  assertBlockhashWindow(p.lastValidBlockHeight,currentHeight);
- p={...p,setupSlot:sim.context?.slot,simulationUnits:sim.value.unitsConsumed,simulationLogs:sim.value.logs||[],balanceBeforeLamports:before,measuredDebitLamports:conservativeDebit,networkFeeLamports:fee};
- return {p,setupBefore,sim,conservativeDebit,fee,simulationAddresses};
+ p={...p,creatorBuy,setupSlot:sim.context?.slot,simulationUnits:sim.value.unitsConsumed,simulationLogs:sim.value.logs||[],balanceBeforeLamports:before,measuredDebitLamports:conservativeDebit,networkFeeLamports:fee};
+ return {p,setupBefore,sim,conservativeDebit,fee,simulationAddresses,addressContext};
 }
 /** Refresh and re-simulate an unsigned review without requesting a wallet. */
 export async function refreshPreparedReview<T extends PreparedOperation>(reviewed:T):Promise<T>{
@@ -145,20 +158,22 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
  if(wallet.publicKey?.toBase58()!==reviewed.owner)throw Error('Wallet changed. Prepare again.');
  if(reviewed.operationKind==='launch'){const mint=launchMintSigners.get(reviewed);if(!mint)throw Error('Fresh mint signer required.');await authorizePlannedLaunch({...reviewed,...(reviewed as PreparedLaunch),platformId:grainpadPlatformId().toBase58()},wallet,mint);}
  const connection=rpc(reviewed.network,attempt.get().id);
- const {p,setupBefore,sim,conservativeDebit,fee,simulationAddresses}=await preflightOperation(reviewed,connection,attempt);
+ const {p,setupBefore,sim,conservativeDebit,fee,simulationAddresses,addressContext}=await preflightOperation(reviewed,connection,attempt);
  const refreshable=p.operationKind==='platform'||p.operationKind==='launch';
  if(wallet.publicKey?.toBase58()!==p.owner)throw Error('Wallet changed. Prepare again.');
- const original=decodeReviewedTransaction(p.transaction);
+ const original=decodeReviewedTransaction(p.transaction,addressContext);
  if(!refreshable)assertReviewFresh(p);
  attempt.update('wallet_requested',{simulationSlot:sim.context?.slot,simulationUnits:sim.value.unitsConsumed,measuredDebitLamports:conservativeDebit,networkFeeLamports:fee});
  let signed:VersionedTransaction;
  if(p.operationKind==='launch'){
   const mint=launchMintSigners.get(reviewed);
   if(!mint)throw Error('Mint signer is no longer available. Prepare a fresh launch.');
-  signed=await signWalletFirst({transaction:p.transaction,wallet,owner:p.owner,additionalSignerPublicKeys:[mint.publicKey],cosign:(t:VersionedTransaction)=>t.sign([mint])});
+  const signingRequest={transaction:p.transaction,wallet,owner:p.owner,additionalSignerPublicKeys:[mint.publicKey],addressContext,resolveReturnedAddressContext:(t:VersionedTransaction)=>resolveTransactionAddresses(connection,t,{minContextSlot:addressContext.slot}),cosign:(t:VersionedTransaction)=>t.sign([mint])};
+  signed=await signWalletFirst(signingRequest);
  }else signed=await wallet.signTransaction(p.transaction);
  attempt.update('wallet_returned',{walletReturned:true,walletWaitMs:Date.now()-attempt.get().events.find((e:{stage:string})=>e.stage==='wallet_requested')!.at});
- const decodedDiff=inspectWalletTransaction(original,signed);
+ const signedAddressContext=await resolveTransactionAddresses(connection,signed,{minContextSlot:addressContext.slot});
+ const decodedDiff=inspectWalletTransaction(original,signed,signedAddressContext);
  attempt.update('post_sign_checks',{decodedDiff});
  if(!decodedDiff.valid)throw Error(`Wallet returned a different transaction outside the approved structure. ${decodedDiff.reasons.join(' ')} Nothing was sent.`);
  if(wallet.publicKey?.toBase58()!==p.owner)throw Error("Wallet changed during signing.");
@@ -173,7 +188,9 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
  // setup account included by the wallet, then overlay those results on the coherent snapshot.
  const returnedSetupIndices=setupKeys.flatMap((key:PublicKey,index:number)=>signed.message.staticAccountKeys.some(k=>k.equals(key))?[index]:[]);
  const returnedAddresses=p.operationKind==='platform'?[p.owner,...returnedSetupIndices.map(i=>setupKeys[i].toBase58())]:simulationAddresses;
- const finalCost=await simulationCostProof(connection,signed,new PublicKey(p.owner),{sigVerify:true,addresses:returnedAddresses,minContextSlot:sim.context.slot,allowPayerCredit:p.operationKind!=='platform'&&p.operationKind!=='launch'}),finalSim=finalCost.sim,returnedFee=finalCost.fee,sendBalance=finalCost.before,sendAfter=finalCost.after,sendDebit=finalCost.debit;
+ const finalFunding=p.operationKind==='launch'?await readPublicCreatorBuyBalance(connection,p as PreparedLaunch,{minContextSlot:sim.context.slot}):null;
+ const finalCost=await simulationCostProof(connection,signed,new PublicKey(p.owner),{sigVerify:true,addresses:returnedAddresses,minContextSlot:finalFunding?.slot??sim.context.slot,addressContext:signedAddressContext,allowPayerCredit:p.operationKind!=='platform'&&p.operationKind!=='launch'}),finalSim=finalCost.sim,returnedFee=finalCost.fee,sendBalance=finalCost.before,sendAfter=finalCost.after,sendDebit=finalCost.debit;
+ if(p.operationKind==='launch')assertPublicCreatorBuySimulation(p as PreparedLaunch,finalCost,finalFunding);
  attempt.update('post_sign_simulation',{postSignSimulationSlot:finalSim.context?.slot,postSignSimulationError:finalSim.value.err,postSignSimulationUnits:finalSim.value.unitsConsumed,postSignSimulationLogs:(finalSim.value.logs||[]).slice(-25)});
  if(p.operationKind==='platform'){
   const {rpcAccount}=await import('./launch-rules.mjs');const post=rpcAccount(finalSim.value.accounts?.[1]);

@@ -7,6 +7,7 @@ export const SITE = {
   projectWallet: PLATFORM_SETTINGS.founder,
   origin: "https://grainpad.fun",
   twitter: "https://x.com/GrainXMR",
+  discord: "https://discord.gg/PPDYqv4KWa",
   twitterHandle: "GrainXMR",
   tokenName: "Grainpad",
   tokenSymbol: "GRAIN",

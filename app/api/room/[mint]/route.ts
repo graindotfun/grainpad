@@ -7,8 +7,9 @@ import {crewAsset,verifyCrewPayment} from '@/lib/crew.mjs';
 import {chain} from '@/lib/server-rpc';
 import {sharedMarketCache} from '@/lib/server-cache';
 import {NETWORKS} from '@/lib/site-config';
-import {sameOrigin,limitedJSON,fail} from '@/lib/server-utils';
+import {sameOrigin,limitedJSON,fail,bucket} from '@/lib/server-utils';
 import {identityCards} from '@/lib/wallet-identity.mjs';
+import {verifyRoomImage} from '@/lib/room-image.mjs';
 export const dynamic='force-dynamic';
 export async function GET(request:Request,{params}:{params:Promise<{mint:string}>}){try{
  const project=await registeredProject((await params).mint),url=new URL(request.url),db=database();
@@ -31,12 +32,20 @@ async function paymentProof(db:D1Database,p:{mint:string;target:string;title:str
 export async function POST(request:Request,{params}:{params:Promise<{mint:string}>}){try{
  sameOrigin(request);const mint=(await params).mint,db=database();
  if(!await consumeRequestBudget(db,`room:ip:${requestClientKey(request)}`,20))return fail(Error('Too many publications. Wait a minute and retry.'),429);
- const {payload,signature}=await limitedJSON(request,12000);
+ const {payload,signature,imageBase64}=await limitedJSON(request,2_680_000);
  const p=verifyRoomPublication(payload,signature,new URL(request.url).origin,mint);
  if(!await consumeRequestBudget(db,`room:author:${p.author}`,60,{windowMs:3600000})||!await consumeRequestBudget(db,'room:site',1000,{windowMs:3600000}))return fail(Error('Publication limit reached. Your text is still here; retry later.'),429);
  const project=await registeredProject(mint);
  if(p.kind!=='submission'&&p.author!==project.creator)throw Error('Only the on-chain creator can publish this action.');
+ const bytes=await verifyRoomImage(p.image,imageBase64);
+ // Validate the task before storing bytes, so closed or unrelated tasks cannot accept uploads.
+ if(bytes){
+  const task=await db.prepare("SELECT n.id FROM room_event n WHERE n.id=? AND n.mint=? AND n.kind='need' AND NOT EXISTS(SELECT 1 FROM room_event c WHERE c.mint=n.mint AND c.target=n.id AND c.kind='close')").bind(p.target,mint).first();
+  if(!task)throw Error('The task is closed or unavailable. Refresh the room.');
+  await bucket().put(`assets/${p.image.hash}`,bytes,{httpMetadata:{contentType:p.image.type,cacheControl:'public, max-age=31536000, immutable'}});
+ }
  const verification=p.kind==='payment'?await paymentProof(db,p,project.creator):null;
  const event=await publishRoomEvent(db,p,signature,project.creator,Date.now(),{verification});
- return Response.json({event},{headers:{'Cache-Control':'no-store'}});
+ // Return a fresh snapshot to the submitting viewer; public GET reads have a short edge cache.
+ return Response.json({event,...(p.kind==='submission'?{room:await roomPage(db,mint)}:{})},{headers:{'Cache-Control':'no-store'}});
 }catch(e){return fail(e,400);}}
