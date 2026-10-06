@@ -86,6 +86,6 @@ test('actual pending image reader disables the only primary action and blocks a 
 test('only primary action changes from preparation to deploy and requires exact-review acknowledgement',()=>withUi(async f=>{
  const start=render(f);assert.equal(primary(start).length,1);assert.equal(text(primary(start)[0]),'Prepare launch');
  await button(start,'Prepare launch').props.onClick();let tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Deploy token');assert.equal(primary(tree)[0].props.disabled,true);
- const ack=walk(tree).find(n=>n.type==='input'&&n.props.type==='checkbox'&&n.props.checked===false);assert(ack);ack.props.onChange({target:{checked:true}});tree=render(f);assert.equal(primary(tree)[0].props.disabled,false);
+ const acknowledgement=walk(tree).find(n=>n.props?.className==='check-label');assert(acknowledgement);const ack=walk(acknowledgement).find(n=>n.type==='input'&&n.props.type==='checkbox');assert(ack);ack.props.onChange({target:{checked:true}});tree=render(f);assert.equal(primary(tree)[0].props.disabled,false);
  input(tree,'creator-buy-amount').props.onChange({target:{value:'0.1'}});tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Prepare launch');assert.equal(f.states[32],false);
 }));

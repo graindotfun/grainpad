@@ -53,7 +53,7 @@ export async function resolveSubmitted(signature:string){
  throw Error(result.reason||'Transaction is still pending or its expiry cannot be verified. Check the explorer before retrying.');
 }
 export const DEVNET_PLATFORM="";
-export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number;creatorBuyAmount?:string}):Promise<PreparedLaunch>{
+export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number;creatorBuyAmount?:string;walletFormat?:"compact"|"static"}):Promise<PreparedLaunch>{
  assertTokenCreationEnabled();
  if(!input.mintKeypair)throw Error("Generate a grn mint address before preparing this launch.");
  assertMintSuffix(input.mintKeypair.publicKey.toBase58());
@@ -71,9 +71,10 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  if(mint.publicKey.equals(owner)||await connection.getAccountInfo(mint.publicKey))throw Error("Mint address is already in use. Use a fresh mint-only key, never your wallet key.");
  const intent=buildPublicCreatorBuyIntent({amount:input.creatorBuyAmount??'',taxBps:input.taxBps!});
  const built=buildPublicRewardsLaunch({owner,mint:mint.publicKey,platform:platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quote.mint,creatorBuy:intent});
- const lookupTables=intent?(await loadAddressLookupTables(connection,[new PublicKey(GRAINPAD_SOL_LOOKUP_TABLE)])).tables:[];
+ const walletFormat=input.walletFormat??"compact";
+ const lookupTables=intent&&walletFormat==="compact"?(await loadAddressLookupTables(connection,[new PublicKey(GRAINPAD_SOL_LOOKUP_TABLE)])).tables:[];
  const latest=await connection.getLatestBlockhash('confirmed');
- const transaction=compilePublicRewardsLaunch(built,{owner,blockhash:latest.blockhash,lookupTables});
+ const transaction=compilePublicRewardsLaunch(built,{owner,blockhash:latest.blockhash,lookupTables,walletFormat});
  const buyReview={owner:input.owner,mint:String(mint.publicKey),pool:String(built.pool),creatorBuy:built.creatorBuy};
  const funding=await readPublicCreatorBuyBalance(connection,buyReview);
  const addressContext=await resolveTransactionAddresses(connection,transaction,{minContextSlot:funding?.slot??1});
@@ -163,7 +164,7 @@ export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSig
  if(wallet.publicKey?.toBase58()!==p.owner)throw Error('Wallet changed. Prepare again.');
  const original=decodeReviewedTransaction(p.transaction,addressContext);
  if(!refreshable)assertReviewFresh(p);
- attempt.update('wallet_requested',{simulationSlot:sim.context?.slot,simulationUnits:sim.value.unitsConsumed,measuredDebitLamports:conservativeDebit,networkFeeLamports:fee});
+ attempt.update('wallet_requested',{transactionBytes:p.transaction.serialize().length,lookupTableCount:p.transaction.message.addressTableLookups.length,requiredSigners:p.transaction.message.header.numRequiredSignatures,simulationSlot:sim.context?.slot,simulationUnits:sim.value.unitsConsumed,measuredDebitLamports:conservativeDebit,networkFeeLamports:fee});
  let signed:VersionedTransaction;
  if(p.operationKind==='launch'){
   const mint=launchMintSigners.get(reviewed);
