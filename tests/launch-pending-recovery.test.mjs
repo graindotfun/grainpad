@@ -39,6 +39,6 @@ test('workspace places receipt recovery before disabled fields and only verified
  assert.match(source,/void recover\(pendingData,true\)/);
  assert.match(source,/automatic\?\{attempts:1\}:undefined/);
  assert.match(source,/function prepareAnother\(\)\{if\(!result\|\|pending.current\|\|busy\)return/);
- assert.match(source,/async function prepare\(\)\{if\(pending.current\|\|signature\|\|busy\)return/);
+ assert.match(source,/async function prepare\(\)\{if\(pending.current\|\|signature\|\|busy\|\|uploadsPending.current\)return/);
  assert.match(source,/const locked=!!busy\|\|!!signature/);
 });
