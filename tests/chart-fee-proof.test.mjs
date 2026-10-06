@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import bs58
 import {PublicKey} from '@solana/web3.js';import * as sdk from '@raydium-io/raydium-sdk-v2';
 import {TOKEN_2022_PROGRAM_ID,MintLayout,getMintLen,ExtensionType,TransferFeeConfigLayout} from '@solana/spl-token';
 import {parseChainEvents,parseChartTradeEvents} from '../lib/chain-events.mjs';import {readChartFeeProof,chartTransferFee} from '../lib/chart-fee-proof.mjs';
+import {decodeChartTrades} from '../lib/chart-trade-decoder.mjs';
 import {POLICY,grainpadPlatformId} from '../lib/platform-policy.mjs';import {QUOTES} from '../lib/quote-assets.mjs';
 const key=n=>new PublicKey(new Uint8Array(32).fill(n)).toBase58(),record={mint:key(3),creator:key(4),pool:key(5),platformId:grainpadPlatformId().toBase58(),quoteMint:QUOTES.SOL.mint,quoteAsset:'SOL',quoteDecimals:9,rewards:{taxBps:200},verification:'confirmed-on-chain'};
 function mintData(){const bytes=Buffer.alloc(getMintLen([ExtensionType.TransferFeeConfig]));MintLayout.encode({mintAuthorityOption:0,mintAuthority:PublicKey.default,supply:1000000000000000n,decimals:6,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:PublicKey.default},bytes);bytes[165]=1;bytes.writeUInt16LE(ExtensionType.TransferFeeConfig,166);bytes.writeUInt16LE(TransferFeeConfigLayout.span,168);TransferFeeConfigLayout.encode({transferFeeConfigAuthority:PublicKey.default,withdrawWithheldAuthority:PublicKey.default,withheldAmount:0n,olderTransferFee:{epoch:1n,maximumFee:1000000000000000n,transferFeeBasisPoints:200},newerTransferFee:{epoch:3n,maximumFee:1000000000000000n,transferFeeBasisPoints:10000}},bytes,170);return bytes;}
@@ -26,3 +27,12 @@ test('current-epoch per-transfer proof recovers a routed chart price without wea
  assert.throws(()=>chartTransferFee(proof,tx,record.mint,1n,proof.expiresAt+1),/proof required/);
 });
 test('a wrong-genesis source cannot create a chart fee proof',async()=>{await assert.rejects(readChartFeeProof(async()=> 'foreign',key(31)),/mainnet/);});
+
+test('an unavailable closed recipient balance still requires the verified epoch proof for chart-only decoding',async()=>{
+ const tx=ambiguous();tx.meta.postTokenBalances=[];
+ assert.throws(()=>parseChainEvents(tx,'closed-recipient',[record],POLICY.cpConfig),/balance receipt unavailable/);
+ const rows=await decodeChartTrades(rpc,tx,'closed-recipient',record,POLICY.cpConfig);
+ assert.equal(rows.length,1);assert.equal(rows[0].baseAmount,'4900000');assert.equal(rows[0].chartTransferFeeProof.epoch,1);
+ assert.throws(()=>parseChainEvents(tx,'closed-recipient',[record],POLICY.cpConfig),/balance receipt unavailable/);
+ await assert.rejects(decodeChartTrades(rpc,{...tx,slot:99},'old-recipient',record,POLICY.cpConfig),/proof required/);
+});

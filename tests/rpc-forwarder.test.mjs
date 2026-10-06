@@ -79,3 +79,21 @@ test('budget and concurrency diagnostics remain fixed and public replies omit di
  const g=fixture();g.options.acquire=async()=>null;
  assert.equal((await createRpcForwarder(g.options)('mainnet-beta',body('getTransaction'),{primaryOnly:true,diagnostics:true})).diagnostic.category,'concurrency');
 });
+
+test('chart archive recovery tries verified fallback on a missing primary receipt, with every read budgeted',async()=>{
+ const f=fixture(),receipt={slot:123,transaction:{}};
+ f.options.fetcher=async(url,options)=>{const payload=JSON.parse(options.body);f.calls.push({url,payload});return Response.json({jsonrpc:'2.0',id:1,result:payload.method==='getGenesisHash'?genesis:url===f.primary?null:receipt});};
+ const forward=createRpcForwarder(f.options),query={...body('getTransaction'),params:['synthetic',{encoding:'json',commitment:'finalized',maxSupportedTransactionVersion:1}]};
+ assert.equal((await forward('mainnet-beta',query)).result,null);assert.equal(f.calls.length,1);
+ assert.deepEqual((await forward('mainnet-beta',query,{archival:true})).result,receipt);
+ assert.deepEqual(f.calls.slice(1).map(c=>c.url),[f.primary,f.fallback,f.fallback]);assert.deepEqual(f.calls.at(-1).payload,query);
+ assert.deepEqual(f.budgets.map(b=>b.method),['getTransaction','getTransaction','getGenesisHash','getTransaction']);assert(f.budgets.every(b=>b.lane==='display'&&!b.dailyExempt));
+});
+test('archive recovery cannot opt financial, nonfinalized or other network reads into null fallback',async()=>{
+ for(const [network,query,options] of [
+ ['mainnet-beta',body('sendTransaction'),{lane:'trade'}],['mainnet-beta',body('getBalance'),{}],
+ ['devnet',body('getTransaction'),{}],['mainnet-beta',{...body('getTransaction'),params:['synthetic',{commitment:'confirmed'}]},{}],
+ ['mainnet-beta',{...body('getTransaction'),params:['synthetic',{commitment:'finalized'}]},{primaryOnly:true}],
+ ['mainnet-beta',{...body('getTransaction'),params:['synthetic',{commitment:'finalized'}]},{submissionValidation:true}]
+ ]){const f=fixture();assert((await createRpcForwarder(f.options)(network,query,{...options,archival:true})).error);assert.equal(f.calls.length,0);}
+});
