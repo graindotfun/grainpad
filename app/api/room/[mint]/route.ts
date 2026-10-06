@@ -46,5 +46,6 @@ export async function POST(request:Request,{params}:{params:Promise<{mint:string
  }
  const verification=p.kind==='payment'?await paymentProof(db,p,project.creator):null;
  const event=await publishRoomEvent(db,p,signature,project.creator,Date.now(),{verification});
- return Response.json({event},{headers:{'Cache-Control':'no-store'}});
+ // Return a fresh snapshot to the submitting viewer; public GET reads have a short edge cache.
+ return Response.json({event,...(p.kind==='submission'?{room:await roomPage(db,mint)}:{})},{headers:{'Cache-Control':'no-store'}});
 }catch(e){return fail(e,400);}}
