@@ -69,12 +69,17 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
  const metricOptions={nativePrice:n?.priceQuote??market?.quoteStats?.price??null,nativeMarketCap:n?.marketCapQuote??market?.quoteStats?.marketCap??null,quoteUsd:n?.usd??null,usdSeries:usdSeries||source==='usd'};
  const canMarketCap=marketMetricSeries([],{...metricOptions,metric:'market-cap'}).available,activeMetric=canMarketCap?metric:'price';
  const display=useMemo(()=>marketMetricSeries(rows,{nativePrice:metricOptions.nativePrice,nativeMarketCap:metricOptions.nativeMarketCap,quoteUsd:n?.usd??null,usdSeries:usdSeries||source==='usd',metric:activeMetric}),[rows,metricOptions.nativePrice,metricOptions.nativeMarketCap,n?.usd,usdSeries,source,activeMetric]),seriesUnit=display.usd?'usd':unit;
- const points=useMemo(()=>chartHistoryPoints(rows,display.multiplier??1,{partial:history.data?.coverage?.status==='partial',seconds:seconds===86400?300:seconds||60}),[rows,display.multiplier,history.data?.coverage?.status,seconds]);
+ const points=useMemo(()=>{
+  const last=rows.at(-1) as (Candle&{lastTime?:number;lastSlot?:number;lastId?:string})|undefined,cutoff=last?.lastTime??last?.time??0;
+  const tail=usdSeries?[]:feed.events.filter(event=>event.time>cutoff||(event.time===cutoff&&(event.slot>(last?.lastSlot??0)||(event.slot===last?.lastSlot&&event.id.localeCompare(last?.lastId??'')>0)))).map(event=>({time:event.time,close:event.value}));
+  return chartHistoryPoints([...rows,...tail],display.multiplier??1,{partial:history.data?.coverage?.status==='partial',seconds:seconds===86400?300:seconds||60});
+ },[rows,feed.events,usdSeries,display.multiplier,history.data?.coverage?.status,seconds]);
  const liveEvents=useMemo(()=>feed.events.map(row=>({...row})),[feed.events]);
  const coverage=history.data?.coverage;
  const priceQuote=n?.priceQuote??market?.quoteStats?.price??null;
  const price=source==='usd'?market?.stats?.price??null:usdSeries?rows.at(-1)?.close??null:priceQuote;
- const liveValue=liveView?liveEvents.at(-1)?.value:null;
+ const latestLive=liveEvents.at(-1),indexedAt=(rows.at(-1) as (Candle&{lastTime?:number})|undefined)?.lastTime??0;
+ const liveValue=!usdSeries&&latestLive&&(liveView||latestLive.time>=indexedAt)?latestLive.value:null;
  const headlineValue=liveValue!=null?liveValue*(display.multiplier??1):activeMetric==='market-cap'?(price!=null&&display.multiplier!=null?price*display.multiplier:points.at(-1)?.value):price??points.at(-1)?.value;
  const headline=activeMetric==='market-cap'&&display.usd?`${display.estimatedUsd?'≈ ':''}${formatUsd(headlineValue)}`:formatPrice(headlineValue,seriesUnit);
  const metricLabel=activeMetric==='market-cap'?'Market cap':'Price';
@@ -103,7 +108,7 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
    <div>
     <h2 id="market-heading" className="sr-only">Market</h2>
     <p className="market-price"><button type="button" className="market-metric-toggle" aria-pressed={activeMetric==='market-cap'} aria-label={`Switch to ${activeMetric==='price'?'market cap':'price'}`} disabled={!canMarketCap} onClick={()=>setMetric(activeMetric==='price'?'market-cap':'price')} title="Switch price and market cap"><ArrowLeftRight size={16} aria-hidden="true"/><span>{metricLabel}</span></button><strong className="stale-value">{headline}</strong>{stale&&<span className="delay-chip" role="status" title={market?`Last updated ${new Date(market.updatedAt).toLocaleTimeString()}`:undefined}>delayed {relativeTime(now-delayedMs,now)}</span>}</p>
-    <p className="market-subline">{change!=null&&<span className={change>=0?'is-up':'is-down'}>{formatPercent(change,{signed:true})} 24h</span>}<span>{liveView&&liveValue!=null?'Last confirmed execution · fees included':activeMetric==='market-cap'?'Market cap from current supply; spot price before fees':source==='usd'?'USD price from an external pool index':priceQuote!=null?<>{graduated?'Pool spot price':'Curve spot price'}, before fees{n?.priceUsd!=null&&n.usd?.freshness!=='expired'&&<> · ≈ {formatPrice(n.priceUsd,'USD')}</>}</>:points.length&&!usdSeries?'Last indexed execution price':missingPriceNote}</span></p>
+    <p className="market-subline">{change!=null&&<span className={change>=0?'is-up':'is-down'}>{formatPercent(change,{signed:true})} 24h</span>}<span>{liveValue!=null?'Last confirmed execution · fees included':activeMetric==='market-cap'?'Market cap from current supply; spot price before fees':source==='usd'?'USD price from an external pool index':priceQuote!=null?<>{graduated?'Pool spot price':'Curve spot price'}, before fees{n?.priceUsd!=null&&n.usd?.freshness!=='expired'&&<> · ≈ {formatPrice(n.priceUsd,'USD')}</>}</>:points.length&&!usdSeries?'Last indexed execution price':missingPriceNote}</span></p>
    {activeMetric==='market-cap'&&<p className="market-metric-note">{display.estimatedUsd?'USD estimate using the current quote-asset conversion, not historical USD prices. ':''}Market-cap history uses current supply.</p>}
    </div>
    <div className="market-controls">
