@@ -12,7 +12,7 @@ import {POLICY} from '@/lib/platform-policy';
 import {chain,chartHistoryRead} from '@/lib/server-rpc';
 import {grainpadPlatformId} from '@/lib/platform-policy';
 const intervals:Record<string,number>={'1m':60,'5m':300,'1h':3600,'1d':86400};
-const chartWindows:Record<string,{interval:string;seconds:number;range:number}>={'1m':{interval:'1m',seconds:1,range:60},'5m':{interval:'5m',seconds:5,range:300},'1h':{interval:'1h',seconds:60,range:3600},'1d':{interval:'5m',seconds:300,range:86400}};
+const chartWindows:Record<string,{interval:string;seconds:number;range:number}>={'live':{interval:'1m',seconds:1,range:120},'1m':{interval:'1m',seconds:1,range:60},'5m':{interval:'5m',seconds:5,range:300},'1h':{interval:'1h',seconds:60,range:3600},'1d':{interval:'5m',seconds:300,range:86400}};
 const geckoIntervals:Record<string,{timeframe:string;aggregate:number}>={'1m':{timeframe:'minute',aggregate:1},'5m':{timeframe:'minute',aggregate:5},'1h':{timeframe:'hour',aggregate:1},'1d':{timeframe:'day',aggregate:1}};
 export const dynamic='force-dynamic';
 export async function GET(request:Request,{params}:{params:Promise<{mint:string}>}){
@@ -63,7 +63,7 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
   }
   let createdAt:string|undefined;
   try{const indexed=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();createdAt=indexed?JSON.parse(indexed.record).createdAt:undefined;}catch{createdAt=undefined;}
-  if(!rows.length&&geckoFallbackAllowed(createdAt,coverage,rows.length)){
+  if(url.searchParams.get('source')==='external'&&market.chart.available||!rows.length&&geckoFallbackAllowed(createdAt,coverage,rows.length)){
    try{
     const result=await sharedMarketCache(db,`history:v2:${market.pool}:${mint}:${kind}:${kind==='candles'?interval:'recent'}:${range||'bars'}`,async()=>{
      if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Market provider is busy. Please retry shortly.');
@@ -75,7 +75,7 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
      const parsed=kind==='trades'?parseTrades(body,mint,market.quote.mint):parseCandles(body);
      return window?parsed.filter((row:{time:number})=>row.time>=Math.floor(Date.now()/1000)-window.range):parsed;
     },{ttl:60_000,maxStale:300_000,refresh:viewer});
-    if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
+    if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',window:window?{seconds:window.range,resolution:geckoIntervals[interval].aggregate*(geckoIntervals[interval].timeframe==='minute'?60:geckoIntervals[interval].timeframe==='hour'?3600:86400)}:undefined,coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
    }catch{/* A failed external fallback is not indexed history, and it is not zero trades. */}
   }
   return Response.json({rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source,unit,quote:market.quote.symbol,coverage,recovery,anchor:native.anchor,window:window?{seconds:window.range,resolution,start:native.start}:undefined},{headers});

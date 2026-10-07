@@ -55,3 +55,18 @@ test('minute and five-minute buttons request the actual durations at intraminute
  }
  assert.equal((await call('interval=1m&range=5m',false)).status,400);
 });
+
+
+test('live candles load the entire moving two-minute window at one-second resolution',async()=>{
+ globalThis.marketHistoryTest.native={rows:[],events:[],coverage:{status:'indexed'}};
+ const response=await call('interval=1m&range=live',false);assert.equal(response.status,200);
+ assert.equal(globalThis.marketHistoryTest.historyOptions.seconds,1);assert.equal(globalThis.marketHistoryTest.historyOptions.rangeSeconds,120);
+});
+
+test('an explicit external series has actual USD candles and declares its real candle duration',async()=>{
+ const original=globalThis.fetch;globalThis.marketHistoryTest.market.chart.available=true;
+ globalThis.marketHistoryTest.native={rows:[{time:100,close:.0001}],events:[],coverage:{status:'indexed'}};
+ globalThis.fetch=async()=>({ok:true,json:async()=>({data:{attributes:{ohlcv_list:[[Math.floor(Date.now()/1000)-10,1,3,.5,2,10]]}}})});
+ try{const response=await call('interval=1m&range=1m&source=external');const data=await response.json();assert.equal(data.source,'geckoterminal');assert.equal(data.unit,'usd');assert.equal(data.rows[0].close,2);assert.equal(data.window.resolution,60);}
+ finally{globalThis.fetch=original;globalThis.marketHistoryTest.market.chart.available=false;}
+});
