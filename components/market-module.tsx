@@ -4,7 +4,7 @@ import {useLiveMarket} from './use-live-market';
 import {LiveMarketChart} from './live-market-chart';
 import {CandlestickMarketChart,LiveCandlestickMarketChart} from './candlestick-market-chart';
 import {ChartPreferences,useChartPreferences} from './chart-preferences';
-import {chartCandles,candleSeconds} from '@/lib/chart-candles.mjs';
+import {chartCandles,chartRequest} from '@/lib/chart-candles.mjs';
 import {rollingChartPoints} from '@/lib/live-chart.mjs';
 import {Area,AreaChart,CartesianGrid,ReferenceDot,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
 import {marketMetricSeries} from '@/lib/market-metric.mjs';
@@ -20,18 +20,18 @@ export const INTERVALS:[string,number][]=[['Live',0],['1m',60],['5m',300],['1h',
  * candles by default, GeckoTerminal USD only as the labeled fallback for launches the index has not seen. */
 export type Coverage={status:'indexed'|'partial'|'not-indexed'|'no-trades'|'external-fallback'|string;notice:string};
 type History={rows:Candle[];available:boolean;stale:boolean;updatedAt?:number;pool:string;source?:string;unit?:string;quote?:string;coverage?:Coverage;window?:{resolution:number};anchor?:{time:number;close:number}};
-function useHistory(market:MarketView|null,mint:string,interval:string,external:boolean){
- const key=`${mint}:${market?.pool}:${interval}:${external}`,[state,setState]=useState<{key:string;data?:History;error?:string}>({key:''});
+function useHistory(market:MarketView|null,mint:string,query:string,external:boolean){
+ const key=`${mint}:${market?.pool}:${query}:${external}`,[state,setState]=useState<{key:string;data?:History;error?:string}>({key:''});
  useEffect(()=>{
   if(!market)return;
   return startViewerPolling(async(signal:AbortSignal)=>{
-   try{const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&interval=${interval==='live'?'1m&range=live':interval==='1d'?'5m&range=1d':`${interval}&range=${interval}`}${external?'&source=external':''}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
+   try{const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&${query}${external?'&source=external':''}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
     const body=await r.json() as History&{error?:string};if(!r.ok)throw Error(body.error||'Price history unavailable.');
     if(body.pool!==market.pool)throw Error('Pool changed. Refreshing market…');
     setState({key,data:body});
    }catch(e){if(!signal.aborted)setState(previous=>({key,data:previous.key===key?previous.data:undefined,error:e instanceof Error?e.message:'Price history unavailable.'}));}
   },{intervalMs:15_000});
- },[key,mint,interval,external,market?.pool,!!market]);// eslint-disable-line react-hooks/exhaustive-deps -- market identity is the pool; other fields refresh every poll.
+ },[key,mint,query,external,market?.pool,!!market]);// eslint-disable-line react-hooks/exhaustive-deps -- market identity is the pool; other fields refresh every poll.
  const current:{data?:History;error?:string}=state.key===key?state:{};
  return current;
 }
@@ -66,11 +66,11 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
  const {preferences,update}=useChartPreferences();
  const source:MarketSource=seconds!==0&&choice==='usd'&&usdAvailable?'usd':'grainpad';
  const feed=useLiveMarket(mint,market?.pool),liveView=seconds===0;
- const interval=INTERVALS.find(([,s])=>s===seconds)?.[0]||'5m',history=useHistory(market,mint,liveView?'live':interval,source==='usd');
+ const request=chartRequest(seconds,preferences.type),history=useHistory(market,mint,request.query,source==='usd');
  const [now,setNow]=useState(()=>Date.now());useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),1_000);return()=>clearInterval(id);},[]);
  const q=market?.quote,unit=q?.symbol||quoteSymbol||'—',n=market?.native,graduated=market?.route==='cpmm';
  const rows=useMemo(()=>liveView&&isUsd(history.data)?[]:history.data?.rows||[],[liveView,history.data]),usdSeries=!liveView&&isUsd(history.data);
- const resolution=history.data?.window?.resolution??candleSeconds(seconds||120);
+ const resolution=history.data?.window?.resolution??request.resolution;
  const metricOptions={nativePrice:n?.priceQuote??market?.quoteStats?.price??null,nativeMarketCap:n?.marketCapQuote??market?.quoteStats?.marketCap??null,quoteUsd:n?.usd??null,usdSeries};
  const canMarketCap=marketMetricSeries([],{...metricOptions,metric:'market-cap'}).available,activeMetric=canMarketCap?metric:'price';
  const display=useMemo(()=>marketMetricSeries(rows,{nativePrice:metricOptions.nativePrice,nativeMarketCap:metricOptions.nativeMarketCap,quoteUsd:n?.usd??null,usdSeries,metric:activeMetric}),[rows,metricOptions.nativePrice,metricOptions.nativeMarketCap,n?.usd,usdSeries,activeMetric]),seriesUnit=display.usd?'usd':unit;
@@ -79,7 +79,7 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
   const tail=usdSeries?[]:feed.events.filter(event=>event.time>cutoff||(event.time===cutoff&&(event.slot>(last?.lastSlot??0)||(event.slot===last?.lastSlot&&event.id.localeCompare(last?.lastId??'')>0)))).map(event=>({time:event.time,close:event.value}));
   return rollingChartPoints(rows,tail.map(row=>({time:row.time,value:row.close})),display.multiplier??1,now/1000,seconds||120,history.data?.anchor);
  },[rows,feed.events,usdSeries,display.multiplier,history.data?.anchor,seconds,now]);
- const candles=useMemo(()=>chartCandles(rows,usdSeries?[]:feed.events,display.multiplier??1,now/1000,seconds||120,resolution),[rows,feed.events,usdSeries,display.multiplier,now,seconds,resolution]);
+ const candles=useMemo(()=>chartCandles(rows,usdSeries?[]:feed.events,display.multiplier??1,now/1000,request.window,resolution,history.data?.anchor).slice(preferences.type==='candles'&&!liveView?-60:0),[rows,feed.events,usdSeries,display.multiplier,now,request.window,resolution,history.data?.anchor,preferences.type,liveView]);
  const candleLast=candles.at(-1)?.close??points.at(-1)?.value??null;
  const liveEvents=useMemo(()=>feed.events.map(row=>({...row})),[feed.events]);
  const coverage=history.data?.coverage;
@@ -121,13 +121,13 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
    <div className="market-controls">
     {points.length>0&&<span className="market-live-status" data-live={live||undefined} title={live?'Confirmed trades streamed directly from the pool':'Reconnecting to the live pool'}><i aria-hidden="true"/>{live?'Live':'Delayed'}</span>}
     {usdAvailable&&!liveView&&<div className="segmented" role="group" aria-label="Price source"><button aria-pressed={source==='grainpad'} onClick={()=>setChoice('grainpad')}>On-chain</button><button aria-pressed={source==='usd'} onClick={()=>setChoice('usd')}>USD</button></div>}
-    <div className="segmented" role="group" aria-label="Chart view">{INTERVALS.map(([label,s])=><button key={label} aria-pressed={seconds===s} onClick={()=>setSeconds(s)} title={s===0?'Live trades · moving 2-minute window':s===86400?'Past 24 hours · 5-minute resolution':`${label} rolling window`}>{label==='1d'?'1D':label}</button>)}</div>
+    <div className="segmented" role="group" aria-label={preferences.type==='candles'?'Candle duration':'Chart time range'}>{INTERVALS.map(([label,s])=><button key={label} aria-pressed={seconds===s} onClick={()=>setSeconds(s)} title={s===0?'Live trades · moving 2-minute window':preferences.type==='candles'?`${label} per candle · last 60 periods`:s===86400?'Past 24 hours · 5-minute resolution':`${label} rolling window`}>{label==='1d'?'1D':label}</button>)}</div>
    </div>
   </div>
   <dl className="market-stats stale-value">{statItems.map(([label,value,note])=><Stat key={label} label={label} value={value} note={note}/>)}</dl>
   <ChartPreferences preferences={preferences} update={update}/>
-  <div className="market-chart-frame">{preferences.type==='candles'?(points.length||candles.length?(liveView?<LiveCandlestickMarketChart candles={candles} colors={preferences} unit={seriesUnit} lastPrice={candleLast} label={`${metricLabel} in ${seriesUnit}`}/>:<CandlestickMarketChart candles={candles} colors={preferences} unit={seriesUnit} lastPrice={candleLast} now={now/1000} interval={seconds} resolution={resolution} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>):<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>):liveView?(liveEvents.length?<LiveMarketChart events={liveEvents} multiplier={display.multiplier??1} unit={seriesUnit}/>:<div className="market-empty" role="status"><strong>{live?'Waiting for the first trade':'Connecting to live trades…'}</strong><span>Prices move when confirmed pool trades arrive.</span></div>):points.length?<GrainChart points={points} now={now/1000} live={live} interval={seconds} unit={seriesUnit} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
-  <div className="market-foot"><span>{preferences.type==='candles'&&<>Candles · {resolution}s bars · </>}{liveView?<span>Live confirmed executions · moving 2-minute window · fees included</span>:<>{activeMetric==='market-cap'&&<>Market cap · current supply{display.estimatedUsd?' · current USD conversion estimate':''} · </>}{usdSeries?(history.data?.source==='geckoterminal'&&source!=='usd'?'GeckoTerminal USD fallback · not the Grainpad record':'External USD series. Swaps quote from chain.'):activeMetric==='market-cap'?'Grainpad index · execution prices × current supply · fees included':`Grainpad index · ${unit} per token · execution prices include fees`}</>}{coverage&&coverage.status!=='indexed'&&points.length>0&&<> · <span className="coverage-note" title={coverage.notice}>{COVERAGE_LABEL[coverage.status]||coverage.status}</span></>}</span>{usdSeries&&market?<a href={market.links?.gecko||`https://www.geckoterminal.com/solana/pools/${market.pool}`} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>:null}</div>
+  <div className="market-chart-frame">{preferences.type==='candles'?(points.length||candles.length?(liveView?<LiveCandlestickMarketChart candles={candles} colors={preferences} unit={seriesUnit} lastPrice={candleLast} label={`${metricLabel} in ${seriesUnit}`}/>:<CandlestickMarketChart candles={candles} colors={preferences} unit={seriesUnit} lastPrice={candleLast} now={now/1000} interval={request.window} resolution={resolution} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>):<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>):liveView?(liveEvents.length?<LiveMarketChart events={liveEvents} multiplier={display.multiplier??1} unit={seriesUnit}/>:<div className="market-empty" role="status"><strong>{live?'Waiting for the first trade':'Connecting to live trades…'}</strong><span>Prices move when confirmed pool trades arrive.</span></div>):points.length?<GrainChart points={points} now={now/1000} live={live} interval={seconds} unit={seriesUnit} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
+  <div className="market-foot"><span>{preferences.type==='candles'&&<>Candles · {resolution}s bars · last price carries through empty periods · </>}{liveView?<span>Live confirmed executions · moving 2-minute window · fees included</span>:<>{activeMetric==='market-cap'&&<>Market cap · current supply{display.estimatedUsd?' · current USD conversion estimate':''} · </>}{usdSeries?(history.data?.source==='geckoterminal'&&source!=='usd'?'GeckoTerminal USD fallback · not the Grainpad record':'External USD series. Swaps quote from chain.'):activeMetric==='market-cap'?'Grainpad index · execution prices × current supply · fees included':`Grainpad index · ${unit} per token · execution prices include fees`}</>}{coverage&&coverage.status!=='indexed'&&points.length>0&&<> · <span className="coverage-note" title={coverage.notice}>{COVERAGE_LABEL[coverage.status]||coverage.status}</span></>}</span>{usdSeries&&market?<a href={market.links?.gecko||`https://www.geckoterminal.com/solana/pools/${market.pool}`} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>:null}</div>
   {market&&pct!==null&&<div className="lifecycle-progress">
    <div><span>{market.route==='cpmm'?'Graduated':market.route==='graduating'?'Curve complete':'Bonding curve'}</span>{market.route==='curve'&&pct>=80&&<span className="record-tape">Near graduation</span>}{market.route!=='curve'&&<span className="record-tape">{market.route==='cpmm'?'On Raydium':'Migrating'}</span>}<strong>{market.route==='cpmm'?'100%':formatPercent(pct)}</strong></div>
    <div className="progress-track" role="progressbar" aria-label="Graduation progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(market.route==='cpmm'?100:pct)}><i style={{transform:`scaleX(${(market.route==='cpmm'?100:pct)/100})`}}/></div>
