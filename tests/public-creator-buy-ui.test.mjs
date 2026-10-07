@@ -10,6 +10,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 const outfile='.test-output/public-creator-buy-ui.mjs';
 const candidate=process.env.GRAINPAD_LAUNCH_UI_CHECKOUT||process.cwd();
 const stubComponents={
+ '@/lib/monero-prelaunch-browser.mjs':`export async function replacePlannedLaunchAuthorization(prepared,wallet,mint){const f=globalThis.__launchUi;(f.provenanceReplacements??=[]).push(prepared);if(f.provenanceFailure)throw f.provenanceFailure;return {authorized:true};}`,
  'next/image':`export default function Image(){return null;}`,
  'next/link':`export default function Link(){return null;}`,
  '@/components/use-shared-wallet':`export function useSharedWallet(ref){ref.current=globalThis.__launchUi.wallet;}`,
@@ -89,3 +90,13 @@ test('only primary action changes from preparation to deploy and requires exact-
  const acknowledgement=walk(tree).find(n=>n.props?.className==='check-label');assert(acknowledgement);const ack=walk(acknowledgement).find(n=>n.type==='input'&&n.props.type==='checkbox');assert(ack);ack.props.onChange({target:{checked:true}});tree=render(f);assert.equal(primary(tree)[0].props.disabled,false);
  input(tree,'creator-buy-amount').props.onChange({target:{value:'0.1'}});tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Prepare launch');assert.equal(f.states[32],false);
 }));
+
+ test('public provenance conflict reuses the main action for one explicit message, preserves review and requires a new acknowledgement',()=>withUi(async f=>{
+  f.states[26]={...f.preparedResult,metadataHash:'a'.repeat(64)};f.states[32]=true;f.states[23]='No submission was attempted. Planned immutable identity or source policy changed.';f.states[36]='static';
+  const before=f.states[26],tree=render(f),action=button(tree,'Approve updated token details');assert(action);assert.equal(action.props.disabled,false);assert.match(text(tree),/original approval stays in history/);
+  await action.props.onClick();assert.equal(f.provenanceReplacements.length,1);assert.equal(f.provenanceReplacements[0].mint,mint);assert.equal(f.provenanceReplacements[0].owner,owner);assert.equal(f.provenanceReplacements[0].metadataHash,'a'.repeat(64));assert.equal(f.states[26],before);assert.equal(f.states[32],false);assert.equal(f.states[36],'static');assert.match(f.states[24],/no transaction was sent/);assert.equal(f.preparations.length,0);assert.equal(f.signs,0);assert(button(render(f),'Deploy token').props.disabled);
+ }));
+ test('public replacement refuses a switched creator before any message and keeps the pending review',()=>withUi(async f=>{
+  f.states[26]=f.preparedResult;f.states[32]=true;f.states[23]='Planned immutable identity or source policy changed.';f.wallet.publicKey={toBase58:()=>bs58.encode(nacl.sign.keyPair().publicKey)};
+  await button(render(f),'Approve updated token details').props.onClick();assert.equal(f.provenanceReplacements,undefined);assert.equal(f.states[26],f.preparedResult);assert.match(f.states[23],/original creator/);assert.equal(f.signs,0);
+ }));
