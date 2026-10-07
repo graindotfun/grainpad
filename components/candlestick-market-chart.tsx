@@ -35,7 +35,7 @@ export function CandlestickMarketChart({candles,colors,unit,now,interval,resolut
   <CandleBodies candles={candles} colors={colors} interval={interval} resolution={resolution}/>
   {lastPrice!=null&&<ReferenceLine y={lastPrice} stroke="var(--chart-tick)" strokeOpacity={.55} strokeDasharray="3 5"/>}
   <Tooltip cursor={{stroke:'var(--chart-tick)',strokeDasharray:'2 3'}} isAnimationActive={false} content={({active,payload})=>{const candle=payload?.[0]?.payload as ExecutionCandle|undefined;return active&&candle?<div className="grain-tooltip"><CandleReadout candle={candle} unit={unit}/></div>:null;}}/>
- </ComposedChart></ResponsiveContainer>{!candles.length&&<span className="candle-quiet-note">No trades in this window · last execution shown</span>}</div>;
+ </ComposedChart></ResponsiveContainer>{!candles.length&&<span className="candle-quiet-note">No candles in this window · last known execution</span>}</div>;
 }
 /** The live candle changes on each receipt; the time window scrolls on animation frames. */
 export function LiveCandlestickMarketChart({candles,colors,unit,lastPrice,label}:Omit<Props,'now'|'interval'>){
@@ -61,5 +61,5 @@ export function LiveCandlestickMarketChart({candles,colors,unit,lastPrice,label}
   };frame=requestAnimationFrame(draw);return()=>cancelAnimationFrame(frame);
  },[]);
  const hovered=candles.find(row=>row.time===hoverTime);
- return <div className="grain-live-candles"><canvas ref={canvas} className="grain-live-chart" role="img" aria-label={`${label}. Live execution candles, moving two-minute window.${lastCandleLabel(candles,unit)}`} onPointerLeave={()=>setHoverTime(null)} onPointerMove={event=>{const rect=event.currentTarget.getBoundingClientRect(),time=Date.now()/1000-120+(event.clientX-rect.left-2)/(rect.width-86)*120,nearest=candles.reduce<ExecutionCandle|null>((best,row)=>Math.abs(row.time-time)<Math.abs((best?.time??Infinity)-time)?row:best,null);setHoverTime(nearest&&Math.abs(nearest.time-time)<1?nearest.time:null);}}/>{hovered&&<div className="grain-tooltip live-candle-tooltip"><CandleReadout candle={hovered} unit={unit}/></div>}{!candles.length&&<span className="candle-quiet-note">No trades in this window · last execution shown</span>}</div>;
+ return <div className="grain-live-candles"><canvas ref={canvas} className="grain-live-chart" role="img" aria-label={`${label}. Live execution candles, moving two-minute window.${lastCandleLabel(candles,unit)}`} onPointerLeave={()=>setHoverTime(null)} onPointerMove={event=>{const rect=event.currentTarget.getBoundingClientRect(),time=Date.now()/1000-120+(event.clientX-rect.left-2)/(rect.width-86)*120,nearest=candles.reduce<ExecutionCandle|null>((best,row)=>Math.abs(row.time-time)<Math.abs((best?.time??Infinity)-time)?row:best,null);setHoverTime(nearest&&Math.abs(nearest.time-time)<1?nearest.time:null);}}/>{hovered&&<div className="grain-tooltip live-candle-tooltip"><CandleReadout candle={hovered} unit={unit}/></div>}{!candles.length&&<span className="candle-quiet-note">No candles in this window · last known execution</span>}</div>;
 }
