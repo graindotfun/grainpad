@@ -137,3 +137,22 @@ test('SOL review shows the exact debit, conversion estimate, fees, net minimum a
  for(const pattern of [/Pay with/,/0\.01 SOL/,/0\.00216728515 wXMR/,/Estimated trading fee/,/49,500 CAT/,/0\.031234567 SOL/,/0\.000000000007 wXMR · unchanged/,/temporary one is created and closed/,/stays paired with wXMR/,/1% limit fixes the minimum/])assert.match(html,pattern);
  assert.match(renderToStaticMarkup(createElement(LaunchCreatorBuyReview,{buy:{...buy,wsolExists:true,wsolBeforeRaw:'3'},symbol:'CAT'})),/0\.000000003 wSOL · unchanged, account kept/);
 });
+
+const buttonText=tree=>walk(tree).filter(n=>n.type==='button').map(text);
+test('banner-free community launch asks for one wallet message that carries metadata and community together',()=>withUi(async f=>{
+ f.states[10]='https://x.com/i/communities/123';
+ await button(render(f),'Review launch').props.onClick();
+ assert.equal(f.signs,1,'exactly one wallet message before the unsigned simulation');
+ const body=f.metadataPosts[0];assert.equal(body.signature,undefined,'no legacy metadata signature');
+ assert.equal(body.authorization.payload.xCommunity,'https://x.com/i/communities/123');assert.equal(body.authorization.payload.mint,mint);assert.equal(body.authorization.payload.creator,owner);assert.equal(body.authorization.payload.network,'mainnet-beta');
+ assert.deepEqual(body.identityIntent.authorization,body.authorization,'the community part carries the same single proof');
+ assert.equal(f.preparations.length,1);
+}));
+test('mint address is assigned automatically; recovery shows only when an interrupted allocation is saved',()=>withUi(async(f,stored)=>{
+ const labels=()=>buttonText(render(f));
+ assert(!labels().includes('Get grn address'));assert(!labels().includes('Recover my assigned address'),'a loaded mint has nothing to recover');
+ f.states[19]='';assert(!labels().includes('Get grn address'));assert(!labels().includes('Recover my assigned address'),'nothing saved, nothing to recover');
+ stored.set('grainpad-mint-allocation:'+owner,mint);assert(labels().includes('Recover my assigned address'));assert.match(text(render(f)),/Resume an interrupted launch/);
+ f.states[28]={mint};assert(!labels().includes('Recover my assigned address'),'a confirmed launch mint is not offered again');
+ f.states[28]=null;f.states[15]='';assert(!labels().includes('Recover my assigned address'),'recovery needs the original creator wallet');
+}));
