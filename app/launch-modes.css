@@ -45,9 +45,17 @@ details.launch-fold:not(.setup-note)[open]>summary::before{content:'−'}
 .launch-disclosures>.launch-advanced-title{margin-bottom:4px}
 .launch-secondary-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0}
 .launch-flow .transaction-review h3{margin:4px 0 8px}
-.launch-flow .launch-step-actions{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;gap:18px;margin-top:28px;padding:14px 14px 14px 18px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 -6px 28px #0004}
-.launch-step-actions>p{flex:1 1 auto;min-width:0;margin:0;display:flex;gap:8px;align-items:center;line-height:1.5}
-.launch-step-actions>p svg{flex:none}
+/* The action bar sits in place at the end of the form; LaunchActionBar docks it (sticky) once the first field is clear.
+   Docked, it floats --launch-dock-gap above the viewport bottom: on wide screens that clears the fixed price pill (16px + 40px). */
+@property --launch-dock-gap{syntax:'<length>';inherits:true;initial-value:0px}
+.launch-step-actions-mark{display:block;height:0}
+.launch-flow .launch-step-actions{--launch-dock-gap:calc(68px + env(safe-area-inset-bottom,0px));position:relative;z-index:5;display:flex;align-items:center;gap:18px;margin-top:28px;padding:14px 14px 14px 18px;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.launch-flow .launch-step-actions[data-dock=floating]{position:sticky;bottom:var(--launch-dock-gap);box-shadow:0 -6px 28px #0004}
+html:has(.launch-step-actions[data-dock=floating]){scroll-padding-bottom:170px}
+.launch-step-actions>p{flex:1 1 auto;min-width:0;margin:0;line-height:1.5}
+.launch-hint-full{display:flex;gap:8px;align-items:center}
+.launch-hint-full svg{flex:none}
+.launch-hint-short{display:none}
 .launch-flow .launch-step-actions .primary-action{flex:0 0 auto;width:auto;min-width:240px;max-width:60%;margin-top:0}
 .launch-step-actions .primary-action span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .launch-mode-switch{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 24px}
@@ -59,4 +67,4 @@ details.launch-fold:not(.setup-note)[open]>summary::before{content:'−'}
 .launch-how li::before{content:counter(how,decimal-leading-zero);font:11px var(--font-code);color:var(--grain-orange);grid-row:span 2;padding-top:3px}
 .launch-how strong{font-weight:500}
 .launch-how p{margin:4px 0 0;font-size:13px;line-height:1.6}
-@media(max-width:700px){.launch-steps li{padding:10px;gap:8px;font-size:12px}.launch-steps-label{white-space:normal;line-height:1.25}.launch-flow .launch-step-actions{flex-direction:column;align-items:stretch;gap:10px;bottom:8px;padding:12px}.launch-flow .launch-step-actions .primary-action{width:100%;min-width:0;max-width:none}.launch-mode-switch>button{flex:1 1 0}.launch-mode-switch .address-line{margin-left:0;width:100%}.launch-flow dd{text-align:left}.launch-fold-meta{font-size:11px}}
+@media(max-width:700px){.launch-steps li{padding:10px;gap:8px;font-size:12px}.launch-steps-label{white-space:normal;line-height:1.25}.form-panel.launch-flow{--launch-panel-pad:22px;padding-inline:var(--launch-panel-pad)}.launch-flow .launch-step-actions{--launch-dock-gap:0px;flex-direction:column;align-items:stretch;gap:6px;margin-inline:calc(-1 * var(--launch-panel-pad,25px));padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-width:1px 0 0;border-radius:0}.launch-flow .launch-step-actions[data-dock=floating]{box-shadow:0 -10px 24px #0007}html:has(.launch-step-actions[data-dock=floating]){scroll-padding-bottom:110px}.launch-step-actions>p{font-size:12px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.launch-step-actions .launch-hint-full{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.launch-step-actions .launch-hint-short{display:inline}.launch-flow .launch-step-actions .primary-action{width:100%;min-width:0;max-width:none}.launch-flow:has(>.launch-step-actions:last-child){padding-bottom:0}.launch-mode-switch>button{flex:1 1 0}.launch-mode-switch .address-line{margin-left:0;width:100%}.launch-flow dd{text-align:left}.launch-fold-meta{font-size:11px}}
