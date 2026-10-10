@@ -113,6 +113,9 @@ test('SOL payment selector relabels the amount, explains the wXMR pairing and pe
  const hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'));hydrate();assert.equal(currency(render(f)).props.value,'SOL');assert.equal(input(render(f),'creator-buy-amount').props.value,'0.5');
  currency(render(f)).props.onValueChange('wXMR');render(f);const save=f.effects.find(effect=>effect.toString().includes('localStorage.setItem("launch-lab-draft"'));save();assert.equal(JSON.parse(stored.get('launch-lab-draft')).creatorBuyCurrency,'wXMR');
  stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'wXMR'}));currency(render(f)).props.onValueChange('SOL');hydrate();assert.equal(currency(render(f)).props.value,'wXMR');
+ // A draft saved before the currency choice existed priced its buy in wXMR and must not be read as SOL.
+ stored.set('launch-lab-draft',JSON.stringify({creatorBuyAmount:'5'}));currency(render(f)).props.onValueChange('SOL');hydrate();assert.equal(currency(render(f)).props.value,'wXMR');assert.equal(input(render(f),'creator-buy-amount').props.value,'5');
+ stored.set('launch-lab-draft',JSON.stringify({creatorBuyAmount:'0'}));hydrate();assert.equal(currency(render(f)).props.value,'SOL');
  stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'DOGE'}));render(f);f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'))();assert.equal(currency(render(f)).props.value,'SOL');
 }));
 test('positive SOL buy is quoted, signed in metadata and handed to preparation unchanged; zero SOL buys nothing',()=>withUi(async f=>{
