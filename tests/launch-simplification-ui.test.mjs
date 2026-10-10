@@ -4,7 +4,7 @@ import {build} from 'esbuild';
 import {existsSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
 // Offline UI regressions for the approved launch simplifications. No wallet, network or transaction is used.
-const hooks=`export function useState(initial){const f=globalThis.__simplifyUi,i=f.stateIndex++;if(!(i in f.states))f.states[i]=initial;return [f.states[i],v=>{f.states[i]=typeof v==='function'?v(f.states[i]):v;}];}export function useRef(initial){const f=globalThis.__simplifyUi,i=f.refIndex++;return f.refs[i]??(f.refs[i]={current:initial});}export function useEffect(fn){globalThis.__simplifyUi.effects.push(fn);}export function useEffectEvent(fn){return (...a)=>fn(...a);}export function useCallback(fn){return fn;}export function useMemo(fn){return fn();}export function useId(){return 'fixture';}export function useSyncExternalStore(){return null;}`;
+const hooks=`export function useState(initial){const f=globalThis.__simplifyUi,i=f.stateIndex++;if(!(i in f.states))f.states[i]=initial;return [f.states[i],v=>{f.states[i]=typeof v==='function'?v(f.states[i]):v;}];}export function useRef(initial){const f=globalThis.__simplifyUi,i=f.refIndex++;return f.refs[i]??(f.refs[i]={current:initial});}export function useEffect(fn,deps){fn.deps=deps;globalThis.__simplifyUi.effects.push(fn);}export function useEffectEvent(fn){return (...a)=>fn(...a);}export function useCallback(fn){return fn;}export function useMemo(fn){return fn();}export function useId(){return 'fixture';}export function useSyncExternalStore(){return null;}`;
 const common={
  'next/image':`export default function Image(){return null;}`,'next/link':`export default function Link(){return null;}`,
  '@/components/use-shared-wallet':`export function useSharedWallet(ref){ref.current=globalThis.__simplifyUi.wallet;}`,
@@ -73,6 +73,16 @@ test('protected: terms that changed after display are shown again instead of bei
  f.states[22]={...f.states[22],commitment:'commit:stale'};f.calls.length=0;
  primary(render()).props.onClick();await settle();
  assert.deepEqual(f.calls,['draft']);assert.equal(f.signs,0);assert.match(f.states[2],/frozen terms changed/);assert.notEqual(f.states[22].commitment,'commit:stale');assert.equal(f.states[21],null);
+});
+
+test('protected: clearing the shown terms without changing a term input (cost-limit edit) still rebuilds them',async()=>{
+ const {f,render,showTerms}=protectedUi();await showTerms();assert(f.states[22]);
+ const deps=()=>{render();return f.effects.find(e=>e.toString().includes('buildDraft')).deps;},before=deps();
+ const field=walk(render()).find(n=>n.type==='input'&&n.props.value==='0.02');assert(field,'cost-limit field');
+ field.props.onChange({target:{value:'0.03'}});
+ assert.equal(f.states[22],null,'the edit clears the shown terms');
+ assert.notDeepEqual(deps(),before,'the frozen-terms effect re-runs even though no term input changed');
+ f.calls.length=0;await showTerms();assert.deepEqual(f.calls,['draft']);assert(f.states[22],'terms are shown again, so the action is not stuck disabled');
 });
 
 // Regular Launch: one closed-launch notice. The lock value is patched only inside this offline bundle.
