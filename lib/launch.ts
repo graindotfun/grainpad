@@ -7,7 +7,8 @@ import './browser-buffer.mjs';
 import { Buffer } from "buffer";
 import { Connection, PublicKey, Keypair, VersionedTransaction, TransactionMessage, ComputeBudgetProgram } from "@solana/web3.js";
 import {quoteAsset} from "./quote-assets.mjs";
-import {buildPublicCreatorBuyIntent,buildPublicRewardsLaunch,compilePublicRewardsLaunch,readPublicCreatorBuyBalance,publicCreatorBuySimulationAddresses,assertPublicCreatorBuySimulation} from './public-creator-buy.mjs';
+import {buildPublicCreatorBuyIntent,buildPublicRewardsLaunch,compilePublicRewardsLaunch,readPublicCreatorBuyBalance,publicCreatorBuySimulationAddresses,assertPublicCreatorBuySimulation,launchPacketBytes} from './public-creator-buy.mjs';
+import {solCreatorBuyLamports,quoteSolCreatorBuy,buildSolCreatorBuyIntent,assertSolCreatorBuyIntent,assertSolCreatorBuyFresh,readSolCreatorBuyFunding,assertSolQuoteMeetsIntent} from './public-sol-creator-buy.mjs';
 import {GRAINPAD_SOL_LOOKUP_TABLE} from './sol-route-lookup.mjs';
 import {loadAddressLookupTables,resolveTransactionAddresses} from './transaction-addresses.mjs';
 import {readRewardsIssuanceState} from "./rewards-issuance.mjs";
@@ -38,7 +39,8 @@ export function solToLamports(value:string):bigint{
  const [a,b=""]=value.split(".");const n=BigInt(a)*BigInt("1000000000")+BigInt(b.padEnd(9,"0"));
  if(n>BigInt(Number.MAX_SAFE_INTEGER))throw Error("Amount is too large.");return n;
 }
-export type PublicCreatorBuy={quote:string;amountIn:string;minOut:string;taxBps:number;slippageBps:number;expectedNetOutputRaw:string;simulatedNetOutputRaw:string;transferFeeRaw:string;totalCurveFeeRaw:string;curveFeesRaw:Record<string,string>;curvePrincipalRaw:string;quoteDecimals:number;tokenDecimals:number;balanceBeforeRaw:string};
+export type PublicCreatorBuy={quote:string;amountIn:string;minOut:string;taxBps:number;slippageBps:number;expectedNetOutputRaw:string;simulatedNetOutputRaw:string;transferFeeRaw:string;totalCurveFeeRaw:string;curveFeesRaw:Record<string,string>;curvePrincipalRaw:string;quoteDecimals:number;tokenDecimals:number;balanceBeforeRaw:string;quoteExpiresAt?:number;wxmrQuotedRaw?:string;launchDebitLamports?:string;wxmrBeforeRaw?:string|null;wsolBeforeRaw?:string|null;wxmrExists?:boolean;wsolExists?:boolean;tickArrays?:number};
+export type SolCreatorBuyIntent={quote:'SOL';amountIn:string;minOut:string;taxBps:number;slippageBps:number;quoteExpiresAt:number};
 export type PreparedLaunch={creatorBuy?:PublicCreatorBuy|null;setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;rewards?:{taxBps:number;collector:string};fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
 export type PreparedOperation=Pick<PreparedLaunch,"creatorBuy"|"rewards"|"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
 /** Pending is a normal state; uncertain attempts remain locked until resolved. */
@@ -53,7 +55,37 @@ export async function resolveSubmitted(signature:string){
  throw Error(result.reason||'Transaction is still pending or its expiry cannot be verified. Check the explorer before retrying.');
 }
 export const DEVNET_PLATFORM="";
-export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number;creatorBuyAmount?:string;walletFormat?:"compact"|"static"}):Promise<PreparedLaunch>{
+/** Draft-time SOL creator-buy quote. Reads the live SOL/wXMR pool and the owner's accounts, and refuses before any
+ * signature if the launch would not fit one packet (a placeholder of the exact URI length stands in for the
+ * not-yet-signed metadata URI). The returned intent is what the creator signs inside the metadata. */
+export async function quoteSolCreatorBuyDraft(input:{network:Network;owner:string;mint:string;name:string;symbol:string;uriLength:number;amount:string;taxBps:number}){
+ assertTokenCreationEnabled();
+ if(input.network!=="mainnet-beta")throw Error("Rewards launches are mainnet-only.");
+ const amountIn=solCreatorBuyLamports(input.amount);if(amountIn==='0')return null;
+ if(!isLaunchTaxBps(input.taxBps))throw Error('Creator buy requires the selected launch tax.');
+ if(!Number.isSafeInteger(input.uriLength)||input.uriLength<10||input.uriLength>200)throw Error('Metadata URI length is unavailable.');
+ const connection=rpc(input.network);await assertNetwork(connection,input.network);
+ const owner=new PublicKey(input.owner),mint=new PublicKey(input.mint),probe={owner:input.owner,mint:input.mint,creatorBuy:{amountIn}};
+ const funding=await readSolCreatorBuyFunding(connection,probe);
+ const quote=await quoteSolCreatorBuy(connection,{amountIn,taxBps:input.taxBps});
+ const intent=buildSolCreatorBuyIntent({amountIn,expectedNetOutputRaw:quote.expectedNetOutputRaw,taxBps:input.taxBps});
+ const {platformId}=await readRewardsIssuanceState(connection);
+ const uri=('https://grainpad.fun/api/assets/'+'0'.repeat(200)).slice(0,input.uriLength);
+ const built=buildPublicRewardsLaunch({owner,mint,platform:platformId,name:input.name,symbol:input.symbol,uri,taxBps:input.taxBps,quoteMint:quoteAsset('wXMR').mint,creatorBuy:intent,solRoute:{ticks:quote.ticks,wsolExists:funding.wsolExists,wxmrExists:funding.wxmrExists}});
+ const lookupTables=(await loadAddressLookupTables(connection,[new PublicKey(GRAINPAD_SOL_LOOKUP_TABLE)])).tables;
+ const transaction=compilePublicRewardsLaunch(built,{owner,blockhash:String(PublicKey.default),lookupTables,walletFormat:"compact"});
+ return {intent,quote,packetBytes:launchPacketBytes(transaction),wsolExists:funding.wsolExists,wxmrExists:funding.wxmrExists,ownerLamports:funding.ownerLamportsBefore};
+}
+async function prepareSolCreatorBuy(connection:Connection,input:{owner:PublicKey;mint:PublicKey;platformId:PublicKey;name:string;symbol:string;uri:string;taxBps:number;signed:unknown}){
+ const intent=assertSolCreatorBuyIntent(input.signed,input.taxBps) as SolCreatorBuyIntent;assertSolCreatorBuyFresh(intent);
+ const p={owner:String(input.owner),mint:String(input.mint),creatorBuy:intent};
+ const funding=await readSolCreatorBuyFunding(connection,p);
+ const quote=await quoteSolCreatorBuy(connection,{amountIn:intent.amountIn,taxBps:input.taxBps});
+ assertSolQuoteMeetsIntent(quote,intent);
+ const built=buildPublicRewardsLaunch({owner:input.owner,mint:input.mint,platform:input.platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quoteAsset('wXMR').mint,creatorBuy:intent,solRoute:{ticks:quote.ticks,wsolExists:funding.wsolExists,wxmrExists:funding.wxmrExists}});
+ return {intent,quote,funding,built};
+}
+export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number;creatorBuyAmount?:string;creatorBuyCurrency?:'wXMR'|'SOL';solCreatorBuyIntent?:SolCreatorBuyIntent|null;walletFormat?:"compact"|"static"}):Promise<PreparedLaunch>{
  assertTokenCreationEnabled();
  if(!input.mintKeypair)throw Error("Generate a grn mint address before preparing this launch.");
  assertMintSuffix(input.mintKeypair.publicKey.toBase58());
@@ -69,21 +101,27 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  const {platformId,platform,config,collector}=await readRewardsIssuanceState(connection);
  const mint=input.mintKeypair;
  if(mint.publicKey.equals(owner)||await connection.getAccountInfo(mint.publicKey))throw Error("Mint address is already in use. Use a fresh mint-only key, never your wallet key.");
- const intent=buildPublicCreatorBuyIntent({amount:input.creatorBuyAmount??'',taxBps:input.taxBps!});
- const built=buildPublicRewardsLaunch({owner,mint:mint.publicKey,platform:platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quote.mint,creatorBuy:intent});
+ const sol=input.creatorBuyCurrency==='SOL'&&solCreatorBuyLamports(input.creatorBuyAmount??'')!=='0';
+ if(input.creatorBuyCurrency==='SOL'&&!sol&&input.solCreatorBuyIntent)throw Error('Creator buy differs from the signed atomic purchase intent.');
+ if(sol&&(!input.solCreatorBuyIntent||input.solCreatorBuyIntent.amountIn!==solCreatorBuyLamports(input.creatorBuyAmount??'')))throw Error('Sign the SOL creator buy in your launch metadata before preparing.');
+ const solPlan=sol?await prepareSolCreatorBuy(connection,{owner,mint:mint.publicKey,platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps!,signed:input.solCreatorBuyIntent}):null;
+ const intent=sol?solPlan!.intent:buildPublicCreatorBuyIntent({amount:input.creatorBuyCurrency==='SOL'?'':input.creatorBuyAmount??'',taxBps:input.taxBps!});
+ const built=solPlan?solPlan.built:buildPublicRewardsLaunch({owner,mint:mint.publicKey,platform:platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quote.mint,creatorBuy:intent});
  const walletFormat=input.walletFormat??"compact";
  const lookupTables=intent&&walletFormat==="compact"?(await loadAddressLookupTables(connection,[new PublicKey(GRAINPAD_SOL_LOOKUP_TABLE)])).tables:[];
  const latest=await connection.getLatestBlockhash('confirmed');
  const transaction=compilePublicRewardsLaunch(built,{owner,blockhash:latest.blockhash,lookupTables,walletFormat});
- const buyReview={owner:input.owner,mint:String(mint.publicKey),pool:String(built.pool),creatorBuy:built.creatorBuy};
+ const buyReview={owner:input.owner,mint:String(mint.publicKey),pool:String(built.pool),creatorBuy:solPlan?{...built.creatorBuy,wsolExists:solPlan.funding.wsolExists,wxmrExists:solPlan.funding.wxmrExists}:built.creatorBuy};
  const funding=await readPublicCreatorBuyBalance(connection,buyReview);
  const addressContext=await resolveTransactionAddresses(connection,transaction,{minContextSlot:funding?.slot??1});
  const cost=await simulationCostProof(connection,transaction,owner,{sigVerify:false,addresses:publicCreatorBuySimulationAddresses(buyReview),addressContext,minContextSlot:funding?.slot??1}),sim=cost.sim,before=cost.before,after=cost.after,fee={value:cost.fee};
- const creatorBuy=assertPublicCreatorBuySimulation(buyReview,cost,funding);
- const estimatedLamports=cost.debit;
- if(BigInt(estimatedLamports)>maxLamports)throw Error(`Estimated cost ${formatSOL(estimatedLamports)} SOL exceeds your limit. Nothing was sent.`);
+ const checked=assertPublicCreatorBuySimulation(buyReview,cost,funding);
+ // A SOL buy reviews its live route next to the signed intent; the SOL input itself is outside the launch-cost limit.
+ const creatorBuy=solPlan&&checked?{...checked,wxmrQuotedRaw:solPlan.quote.wxmrQuotedRaw,expectedNetOutputRaw:solPlan.quote.expectedNetOutputRaw,transferFeeRaw:solPlan.quote.transferFeeRaw,totalCurveFeeRaw:solPlan.quote.totalCurveFeeRaw,curveFeesRaw:solPlan.quote.curveFeesRaw,curvePrincipalRaw:solPlan.quote.curvePrincipalRaw,quoteDecimals:9,tokenDecimals:6,tickArrays:solPlan.quote.ticks.length}:checked;
+ const estimatedLamports=cost.debit,solInput=solPlan?BigInt(solPlan.intent.amountIn):0n;
+ if(BigInt(estimatedLamports)-solInput>maxLamports)throw Error(`Estimated cost ${formatSOL(Number(BigInt(estimatedLamports)-solInput))} SOL${solPlan?' before the SOL creator buy':''} exceeds your limit. Nothing was sent.`);
  if(before-estimatedLamports<5000000)throw Error("NO-GO: launch would leave less than the required 0.005 SOL reserve.");
- const prepared:PreparedLaunch={creatorBuy,rewards:{taxBps:input.taxBps!,collector:String(collector)},targetAccount:mint.publicKey.toBase58(),operationKind:"launch",minimumBalanceLamports:5000000,measuredDebitLamports:Math.max(0,before-after),networkFeeLamports:fee.value,balanceBeforeLamports:before,transaction,network:input.network,owner:input.owner,mint:mint.publicKey.toBase58(),pool:built.pool.toBase58(),metadataHash:input.metadataHash,name:input.name,symbol:input.symbol,platformName:"Grainpad",quoteAsset:quote.symbol,quoteMint:quote.mint,quoteDecimals:quote.decimals,estimatedLamports,maxLamports,createdAt:Date.now(),lastValidBlockHeight:latest.lastValidBlockHeight,blockhash:latest.blockhash,fees:{protocol:config.tradeFeeRate.toString(),platform:platform.feeRate.toString(),creator:platform.creatorFeeRate.toString()},simulationLogs:sim.value.logs||[]};
+ const prepared:PreparedLaunch={creatorBuy,transactionBytes:launchPacketBytes(transaction),rewards:{taxBps:input.taxBps!,collector:String(collector)},targetAccount:mint.publicKey.toBase58(),operationKind:"launch",minimumBalanceLamports:5000000,measuredDebitLamports:Math.max(0,before-after),networkFeeLamports:fee.value,balanceBeforeLamports:before,transaction,network:input.network,owner:input.owner,mint:mint.publicKey.toBase58(),pool:built.pool.toBase58(),metadataHash:input.metadataHash,name:input.name,symbol:input.symbol,platformName:"Grainpad",quoteAsset:quote.symbol,quoteMint:quote.mint,quoteDecimals:quote.decimals,estimatedLamports,maxLamports:maxLamports+solInput,createdAt:Date.now(),lastValidBlockHeight:latest.lastValidBlockHeight,blockhash:latest.blockhash,fees:{protocol:config.tradeFeeRate.toString(),platform:platform.feeRate.toString(),creator:platform.creatorFeeRate.toString()},simulationLogs:sim.value.logs||[]};
  launchMintSigners.set(prepared,mint);return prepared;
 }
 async function preflightOperation(reviewed:PreparedOperation,connection:Connection,attempt:ReturnType<typeof createSigningAttempt>){

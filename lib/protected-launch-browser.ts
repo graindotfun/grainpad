@@ -9,6 +9,8 @@ import {parseTokenUnits} from './quote-assets.mjs';
 import {metadataPayload,metadataMessage,type MetadataDraft} from './metadata-shared';
 import {signWalletFirst} from './wallet-signing.mjs';
 import {verifyProtectedSubmission} from './protected-launch-review.mjs';
+import {assertProtectedFundingReview} from './protected-funding-review.mjs';
+export type ProtectedFundingExpectation={asset:string;amount:string;programId:string};
 import {rpc,assertNetwork} from './launch';
 import type {Wallet} from './wallet';
 export type ProtectedDraft={name:string;symbol:string;description:string;imageBase64:string;imageType:string;nonce:string;opensAt:number;closesAt:number;deadline:number;cap:string;minimumTokens:string;taxBps:number};
@@ -29,16 +31,18 @@ export async function publishProtectedMetadata(wallet:Wallet,draft:Awaited<Retur
  const result=await protectedJSON<{uri:string;metadataHash:string}>('/api/protected-launch/metadata',{nonce:draft.terms.nonce,draft:draft.metadata,signature:bs58.encode(signed instanceof Uint8Array?signed:signed.signature)});
  if(result.uri!==draft.terms.uri||result.metadataHash!==draft.terms.metadataHash)throw Error('Published metadata differs from this reviewed draft.');
 }
-export async function requestProtectedReview(input:Record<string,unknown>){
+export async function requestProtectedReview(input:Record<string,unknown>,expected?:ProtectedFundingExpectation){
  const temporary:Keypair[]=[];if(input.action==='fund'||input.action==='lookup'){
   if(input.asset!=='wXMR'){const output=Keypair.generate();temporary.push(output);input={...input,intermediate:String(output.publicKey)};
    const wsol=Keypair.generate();temporary.push(wsol);input={...input,...(input.asset==='SOL'?{source:String(wsol.publicKey)}:{wsolIntermediate:String(wsol.publicKey)})};}
  }
  const result=await protectedJSON<{reviews:ProtectedReview[];lookup:string|null;setupId?:string;nextStep?:number|null}>('/api/protected-launch',input);
- for(const review of result.reviews){if(review.owner!==input.owner)throw Error('Review owner changed.');const needed=review.requiredLocalSigners.map(id=>{const signer=temporary.find(s=>String(s.publicKey)===id);if(!signer)throw Error('Unexpected local signer.');return signer;});signers.set(review,needed);}
+ for(const review of result.reviews){if(review.owner!==input.owner)throw Error('Review owner changed.');if(review.summary.action==='fund'){if(!expected)throw Error('Contribution approval details are required.');assertProtectedFundingReview(review,{owner:String(input.owner),...expected});}const needed=review.requiredLocalSigners.map(id=>{const signer=temporary.find(s=>String(s.publicKey)===id);if(!signer)throw Error('Unexpected local signer.');return signer;});signers.set(review,needed);}
  return result;
 }
-export async function submitProtectedReview(review:ProtectedReview,wallet:Wallet,onSigned:(receipt:{id:string;signature:string;wire:string;lastValidBlockHeight:number})=>void){
+export async function submitProtectedReview(review:ProtectedReview,wallet:Wallet,onSigned:(receipt:{id:string;signature:string;wire:string;lastValidBlockHeight:number})=>void,expected?:ProtectedFundingExpectation){
+ // The bytes about to be signed still carry the approved currency, exact input and conversion minimum.
+ if(review.summary.action==='fund'){if(!expected)throw Error('Contribution approval details are required.');assertProtectedFundingReview(review,{owner:review.owner,...expected});}
  const availability=await protectedJSON<{availability:{enabled:boolean}}>('/api/protected-launch');if(!availability.availability.enabled)throw Error('Protected Launch deposits are not open.');
  const connection=rpc('mainnet-beta');await assertNetwork(connection,'mainnet-beta');const height=await connection.getBlockHeight('confirmed');
  if(Date.now()>=review.expiresAt||height>review.lastValidBlockHeight-10||wallet.publicKey?.toBase58()!==review.owner)throw Error('Review expired or wallet changed. Prepare a new review.');

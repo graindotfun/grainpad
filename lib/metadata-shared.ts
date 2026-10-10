@@ -1,4 +1,4 @@
-export type MetadataDraft={name:string;symbol:string;description:string;imageBase64:string;imageType:string;owner:string;expires:number;mint?:string;website?:string;twitter?:string;telegram?:string;launchTweet?:string;creatorBuy?:{quote:string;amountIn:string;minOut:string;taxBps:number;slippageBps:number};declaredCreatorBuy?:string;quoteAsset?:string;storageProfile?:string;metadataUri?:string;imageUri?:string};
+export type MetadataDraft={name:string;symbol:string;description:string;imageBase64:string;imageType:string;owner:string;expires:number;mint?:string;website?:string;twitter?:string;telegram?:string;launchTweet?:string;creatorBuy?:{quote:string;amountIn:string;minOut:string;taxBps:number;slippageBps:number;quoteExpiresAt?:number};declaredCreatorBuy?:string;quoteAsset?:string;storageProfile?:string;metadataUri?:string;imageUri?:string};
 export function metadataLink(value:unknown,kind:"website"|"twitter"|"telegram"){
   if(value===undefined||value==="")return "";
   if(typeof value!=="string"||value.length>300)throw Error("Project links must be URLs below 300 characters.");
