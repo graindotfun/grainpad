@@ -48,11 +48,13 @@ async function withUi(run){
  try{render(f);f.states[3]='Creator Cat';f.states[4]='CAT';f.states[8]='https://x.com/creatorcat';f.states[12]='data:image/png;base64,AQ==';f.states[15]=owner;f.states[19]=mint;f.states[35]={active:true};f.refs[3]={current:owner};f.refs[4]={current:{publicKey:{toBase58:()=>mint}}};return await run(f,stored);}finally{Object.assign(globalThis,old);delete globalThis.__launchUi;}
 }
 
+const currency=tree=>walk(tree).find(n=>n.props?.ariaLabel==='Creator buy payment currency');
 test('public creator buy defaults to zero and never converts an old metadata declaration into spending',()=>withUi(async(f,stored)=>{
  assert.equal(input(render(f),'creator-buy-amount').props.value,'0');stored.set('launch-lab-draft',JSON.stringify({name:'Legacy',symbol:'OLD',declaredCreatorBuy:'1.5'}));
- const tree=render(f),hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft'));assert(hydrate);hydrate();assert.equal(input(render(f),'creator-buy-amount').props.value,'0');assert.match(text(tree),/positive amount buys your token in the same transaction/);assert.doesNotMatch(text(tree),/Public declaration only/);
+ const tree=render(f),hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft'));assert(hydrate);hydrate();assert.equal(input(render(f),'creator-buy-amount').props.value,'0');assert.equal(currency(tree).props.value,'SOL');assert.match(text(tree),/positive amount swaps exactly this SOL to wXMR and buys your token in the same transaction/);assert.doesNotMatch(text(tree),/Public declaration only/);
 }));
 test('selected positive amount binds signed metadata intent and actual launch preparation',()=>withUi(async f=>{
+ currency(render(f)).props.onValueChange('wXMR');
  input(render(f),'launch-transfer-tax').props.onChange({target:{value:'200'}});input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.145'}});await button(render(f),'Review launch').props.onClick();
  assert.equal(f.preparations.length,1);assert.equal(f.preparations[0].creatorBuyAmount,'0.145');assert.equal(f.publications.length,1);assert.equal(f.metadataPosts[0].draft.creatorBuy.amountIn,'145000000000');assert.equal(f.metadataPosts[0].draft.creatorBuy.quote,'wXMR');assert.equal(f.metadataPosts[0].draft.creatorBuy.taxBps,200);assert.equal(f.metadataPosts[0].draft.declaredCreatorBuy,undefined);assert.equal(f.signs,1);
 }));
@@ -60,6 +62,7 @@ test('zero keeps create-only metadata and unsigned preparation without inventing
  await button(render(f),'Review launch').props.onClick();assert.equal(f.preparations[0].creatorBuyAmount,'0');assert.equal(f.metadataPosts[0].draft.creatorBuy,undefined);assert.match(text(render(f)),/no creator buy/);
 }));
 test('invalid purchase refuses before metadata wallet approval or transaction preparation',()=>withUi(async f=>{
+ currency(render(f)).props.onValueChange('wXMR');
  input(render(f),'creator-buy-amount').props.onChange({target:{value:'-0.1'}});await button(render(f),'Review launch').props.onClick();assert.equal(f.signs,0);assert.equal(f.publications.length,0);assert.equal(f.preparations.length,0);assert.match(text(render(f)),/up to 12 decimal places/);
 }));
 test('editing purchase amount invalidates prior review and acknowledgement; refresh also clears acknowledgement',()=>withUi(async f=>{
@@ -103,14 +106,14 @@ test('only primary action changes from preparation to deploy and requires exact-
   await button(render(f),'Approve updated token details').props.onClick();assert.equal(f.provenanceReplacements,undefined);assert.equal(f.states[26],f.preparedResult);assert.match(f.states[23],/original creator/);assert.equal(f.signs,0);
  }));
 
-const currency=tree=>walk(tree).find(n=>n.props?.ariaLabel==='Creator buy payment currency');
 test('SOL payment selector relabels the amount, explains the wXMR pairing and persists in the draft',()=>withUi(async(f,stored)=>{
- const select=currency(render(f));assert.ok(select);assert.equal(select.props.value,'wXMR');assert.deepEqual(select.props.options.map(o=>o.value),['wXMR','SOL']);
+ const select=currency(render(f));assert.ok(select);assert.equal(select.props.value,'SOL');assert.deepEqual(select.props.options.map(o=>o.value),['SOL','wXMR']);
  select.props.onValueChange('SOL');const tree=render(f);assert.equal(currency(tree).props.value,'SOL');assert.match(text(tree),/Creator buy · SOL \(optional\)/);assert.match(text(tree),/stays paired with wXMR/);assert.match(text(tree),/0\.005 SOL reserve/);
  stored.set('launch-lab-draft',JSON.stringify({name:'Draft',symbol:'DRF',creatorBuyAmount:'0.5',creatorBuyCurrency:'SOL'}));currency(render(f)).props.onValueChange('wXMR');
  const hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'));hydrate();assert.equal(currency(render(f)).props.value,'SOL');assert.equal(input(render(f),'creator-buy-amount').props.value,'0.5');
  currency(render(f)).props.onValueChange('wXMR');render(f);const save=f.effects.find(effect=>effect.toString().includes('localStorage.setItem("launch-lab-draft"'));save();assert.equal(JSON.parse(stored.get('launch-lab-draft')).creatorBuyCurrency,'wXMR');
- stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'DOGE'}));render(f);f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'))();assert.equal(currency(render(f)).props.value,'wXMR');
+ stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'wXMR'}));currency(render(f)).props.onValueChange('SOL');hydrate();assert.equal(currency(render(f)).props.value,'wXMR');
+ stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'DOGE'}));render(f);f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'))();assert.equal(currency(render(f)).props.value,'SOL');
 }));
 test('positive SOL buy is quoted, signed in metadata and handed to preparation unchanged; zero SOL buys nothing',()=>withUi(async f=>{
  currency(render(f)).props.onValueChange('SOL');input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.01'}});await button(render(f),'Review launch').props.onClick();
