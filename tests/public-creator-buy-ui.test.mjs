@@ -53,14 +53,14 @@ test('public creator buy defaults to zero and never converts an old metadata dec
  const tree=render(f),hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft'));assert(hydrate);hydrate();assert.equal(input(render(f),'creator-buy-amount').props.value,'0');assert.match(text(tree),/positive amount buys your token in the same transaction/);assert.doesNotMatch(text(tree),/Public declaration only/);
 }));
 test('selected positive amount binds signed metadata intent and actual launch preparation',()=>withUi(async f=>{
- input(render(f),'launch-transfer-tax').props.onChange({target:{value:'200'}});input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.145'}});await button(render(f),'Prepare launch').props.onClick();
+ input(render(f),'launch-transfer-tax').props.onChange({target:{value:'200'}});input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.145'}});await button(render(f),'Review launch').props.onClick();
  assert.equal(f.preparations.length,1);assert.equal(f.preparations[0].creatorBuyAmount,'0.145');assert.equal(f.publications.length,1);assert.equal(f.metadataPosts[0].draft.creatorBuy.amountIn,'145000000000');assert.equal(f.metadataPosts[0].draft.creatorBuy.quote,'wXMR');assert.equal(f.metadataPosts[0].draft.creatorBuy.taxBps,200);assert.equal(f.metadataPosts[0].draft.declaredCreatorBuy,undefined);assert.equal(f.signs,1);
 }));
 test('zero keeps create-only metadata and unsigned preparation without inventing a purchase',()=>withUi(async f=>{
- await button(render(f),'Prepare launch').props.onClick();assert.equal(f.preparations[0].creatorBuyAmount,'0');assert.equal(f.metadataPosts[0].draft.creatorBuy,undefined);assert.match(text(render(f)),/no creator buy/);
+ await button(render(f),'Review launch').props.onClick();assert.equal(f.preparations[0].creatorBuyAmount,'0');assert.equal(f.metadataPosts[0].draft.creatorBuy,undefined);assert.match(text(render(f)),/no creator buy/);
 }));
 test('invalid purchase refuses before metadata wallet approval or transaction preparation',()=>withUi(async f=>{
- input(render(f),'creator-buy-amount').props.onChange({target:{value:'-0.1'}});await button(render(f),'Prepare launch').props.onClick();assert.equal(f.signs,0);assert.equal(f.publications.length,0);assert.equal(f.preparations.length,0);assert.match(text(render(f)),/up to 12 decimal places/);
+ input(render(f),'creator-buy-amount').props.onChange({target:{value:'-0.1'}});await button(render(f),'Review launch').props.onClick();assert.equal(f.signs,0);assert.equal(f.publications.length,0);assert.equal(f.preparations.length,0);assert.match(text(render(f)),/up to 12 decimal places/);
 }));
 test('editing purchase amount invalidates prior review and acknowledgement; refresh also clears acknowledgement',()=>withUi(async f=>{
  f.states[26]=f.preparedResult;f.states[32]=true;input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.2'}});assert.equal(f.states[26],null);assert.equal(f.states[32],false);
@@ -74,7 +74,7 @@ test('actual review preserves12decimal quote and6decimal token precision and sep
 const primary=tree=>walk(tree).filter(n=>n.type==='button'&&n.props.className==='primary-action');
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 test('actual pending image reader disables the only primary action and blocks a stale Prepare handler',()=>withUi(async f=>{
- const before=render(f),prepare=button(before,'Prepare launch');assert.equal(primary(before).length,1);assert.equal(prepare.props.disabled,false);
+ const before=render(f),prepare=button(before,'Review launch');assert.equal(primary(before).length,1);assert.equal(prepare.props.disabled,false);
  const picker=walk(before).find(n=>n.type==='input'&&n.props.type==='file'&&n.props.accept==='image/png,image/jpeg,image/webp');assert(picker);
  picker.props.onChange({target:{files:[{name:'cat-selected.png',size:10,type:'image/png'}],value:'selected'}});
  assert.equal(f.readers.length,1);assert.equal(primary(render(f))[0].props.disabled,true);assert.match(text(render(f)),/Reading your selected image/);
@@ -87,16 +87,16 @@ test('actual pending image reader disables the only primary action and blocks a 
  button(selected,'Remove').props.onClick();const cleared=render(f);assert.doesNotMatch(text(cleared),/cat-selected.png/);assert.equal(walk(cleared).filter(n=>n.props?.className==='launch-upload-selected').length,0);assert.equal(primary(cleared).length,1);
 }));
 test('only primary action changes from preparation to deploy and requires exact-review acknowledgement',()=>withUi(async f=>{
- const start=render(f);assert.equal(primary(start).length,1);assert.equal(text(primary(start)[0]),'Prepare launch');
- await button(start,'Prepare launch').props.onClick();let tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Deploy token');assert.equal(primary(tree)[0].props.disabled,true);
+ const start=render(f);assert.equal(primary(start).length,1);assert.equal(text(primary(start)[0]),'Review launch');
+ await button(start,'Review launch').props.onClick();let tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Sign and launch');assert.equal(primary(tree)[0].props.disabled,true);
  const acknowledgement=walk(tree).find(n=>n.props?.className==='check-label');assert(acknowledgement);const ack=walk(acknowledgement).find(n=>n.type==='input'&&n.props.type==='checkbox');assert(ack);ack.props.onChange({target:{checked:true}});tree=render(f);assert.equal(primary(tree)[0].props.disabled,false);
- input(tree,'creator-buy-amount').props.onChange({target:{value:'0.1'}});tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Prepare launch');assert.equal(f.states[32],false);
+ input(tree,'creator-buy-amount').props.onChange({target:{value:'0.1'}});tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Review launch');assert.equal(f.states[32],false);
 }));
 
  test('public provenance conflict reuses the main action for one explicit message, preserves review and requires a new acknowledgement',()=>withUi(async f=>{
   f.states[26]={...f.preparedResult,metadataHash:'a'.repeat(64)};f.states[32]=true;f.states[23]='No submission was attempted. Planned immutable identity or source policy changed.';f.states[36]='static';
   const before=f.states[26],tree=render(f),action=button(tree,'Approve updated token details');assert(action);assert.equal(action.props.disabled,false);assert.match(text(tree),/original approval stays in history/);
-  await action.props.onClick();assert.equal(f.provenanceReplacements.length,1);assert.equal(f.provenanceReplacements[0].mint,mint);assert.equal(f.provenanceReplacements[0].owner,owner);assert.equal(f.provenanceReplacements[0].metadataHash,'a'.repeat(64));assert.equal(f.states[26],before);assert.equal(f.states[32],false);assert.equal(f.states[36],'static');assert.match(f.states[24],/no transaction was sent/);assert.equal(f.preparations.length,0);assert.equal(f.signs,0);assert(button(render(f),'Deploy token').props.disabled);
+  await action.props.onClick();assert.equal(f.provenanceReplacements.length,1);assert.equal(f.provenanceReplacements[0].mint,mint);assert.equal(f.provenanceReplacements[0].owner,owner);assert.equal(f.provenanceReplacements[0].metadataHash,'a'.repeat(64));assert.equal(f.states[26],before);assert.equal(f.states[32],false);assert.equal(f.states[36],'static');assert.match(f.states[24],/no transaction was sent/);assert.equal(f.preparations.length,0);assert.equal(f.signs,0);assert(button(render(f),'Sign and launch').props.disabled);
  }));
  test('public replacement refuses a switched creator before any message and keeps the pending review',()=>withUi(async f=>{
   f.states[26]=f.preparedResult;f.states[32]=true;f.states[23]='Planned immutable identity or source policy changed.';f.wallet.publicKey={toBase58:()=>bs58.encode(nacl.sign.keyPair().publicKey)};
@@ -113,16 +113,16 @@ test('SOL payment selector relabels the amount, explains the wXMR pairing and pe
  stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'DOGE'}));render(f);f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'))();assert.equal(currency(render(f)).props.value,'wXMR');
 }));
 test('positive SOL buy is quoted, signed in metadata and handed to preparation unchanged; zero SOL buys nothing',()=>withUi(async f=>{
- currency(render(f)).props.onValueChange('SOL');input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.01'}});await button(render(f),'Prepare launch').props.onClick();
+ currency(render(f)).props.onValueChange('SOL');input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.01'}});await button(render(f),'Review launch').props.onClick();
  assert.equal(f.solQuotes.length,1);assert.equal(f.solQuotes[0].amount,'0.01');assert.equal(f.solQuotes[0].mint,mint);assert.ok(f.solQuotes[0].uriLength>0);
  const signed=f.metadataPosts[0].draft.creatorBuy;assert.equal(signed.quote,'SOL');assert.equal(signed.amountIn,'10000000');assert.equal(f.signs,1);
  assert.equal(f.preparations[0].creatorBuyCurrency,'SOL');assert.deepEqual(f.preparations[0].solCreatorBuyIntent,signed);assert.equal(f.preparations[0].creatorBuyAmount,'0.01');
- input(render(f),'creator-buy-amount').props.onChange({target:{value:'0'}});await button(render(f),'Prepare launch').props.onClick();
+ input(render(f),'creator-buy-amount').props.onChange({target:{value:'0'}});await button(render(f),'Review launch').props.onClick();
  assert.equal(f.solQuotes.length,1);assert.equal(f.metadataPosts[1].draft.creatorBuy,undefined);assert.equal(f.preparations[1].solCreatorBuyIntent,null);
 }));
 test('a fresh signed SOL quote is reused; an expiring or stale one is re-quoted and signed again',()=>withUi(async f=>{
  currency(render(f)).props.onValueChange('SOL');
- const prepareWith=async amount=>{input(render(f),'creator-buy-amount').props.onChange({target:{value:amount}});await button(render(f),'Prepare launch').props.onClick();};
+ const prepareWith=async amount=>{input(render(f),'creator-buy-amount').props.onChange({target:{value:amount}});await button(render(f),'Review launch').props.onClick();};
  await prepareWith('0.01');await prepareWith('0.01');
  assert.equal(f.solQuotes.length,1);assert.equal(f.signs,1);assert.equal(f.preparations.length,2);
  f.prepareFailure=Object.assign(Error('The SOL price moved: the live quote is below your signed minimum tokens.'),{code:'sol-quote-stale'});

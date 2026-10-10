@@ -35,7 +35,7 @@ test('storage failure retains pending state instead of claiming successful recov
 });
 test('workspace places receipt recovery before disabled fields and only verified launches can reset',()=>{
  const source=readFileSync(new URL('../components/launch-workspace.tsx',import.meta.url),'utf8');
- assert.ok(source.indexOf('aria-label="Previous launch receipt"')<source.indexOf('<h2>Token identity</h2>'));
+ assert.ok(source.indexOf('aria-label="Previous launch receipt"')<source.indexOf('<h2>Token details</h2>'));
  assert.match(source,/void recover\(pendingData,true\)/);
  assert.match(source,/automatic\?\{attempts:1\}:undefined/);
  assert.match(source,/function prepareAnother\(\)\{if\(!result\|\|pending.current\|\|busy\)return/);
