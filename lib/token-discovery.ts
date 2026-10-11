@@ -1,5 +1,5 @@
 import type {LaunchRecord} from './launch-records';
-export type DiscoveryToken=LaunchRecord&{state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;figuresSource:'grainpad'|'geckoterminal'|null};
+export type DiscoveryToken=LaunchRecord&{state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;marketStale:boolean;figuresSource:'grainpad'|'geckoterminal'|null};
 export type DiscoveryFilter='all'|'new'|'near'|'graduated';
 export type DiscoverySort='newest'|'oldest'|'market-cap'|'volume';
 export type DiscoveryResult={coverage?:string;totalIndexed?:number;tokens:DiscoveryToken[];featured:DiscoveryToken[];total:number;filteredTotal:number;page:number;pages:number;pageSize:number;counts:{all:number;new:number;near:number;graduated:number;unknown:number};officialMint:string|null;updatedAt:number;stale:boolean};
@@ -8,10 +8,10 @@ const number=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)?v:null;
 const nonnegative=(v:unknown)=>{const n=number(v);return n!==null&&n>=0?n:null;};
 type DisplaySnapshot={mint?:string;launchPool?:string;quote?:{mint?:string;symbol?:string};route?:string;pool?:string;available?:boolean;native?:{marketCapUsd?:number|null;volume24hUsd?:number|null;volumeCoverage?:string;change24h?:number|null;changeCoverage?:string};stats?:{marketCap?:number;volume?:number;change?:number};progress?:{raised:string;target:string}};
 function parse(row:CacheRow|undefined,now:number):DisplaySnapshot|null {
- if(!row||row.updated_at>now||now-row.updated_at>300_000)return null;
+ if(!row||row.updated_at<=0||row.updated_at>now)return null;
  try{const v=JSON.parse(row.value);return v&&typeof v==='object'&&!Array.isArray(v)?v:null;}catch{return null;}
 }
-/** Read display snapshots only. Browsing the home grid must never fan out into token-page RPC refreshes. */
+/** Retain last observed display snapshots with their original timestamp. Read display snapshots only. Browsing the home grid must never fan out into token-page RPC refreshes. */
 export function enrichDiscovery(records:LaunchRecord[],cache:CacheRow[],platform:string,officialMint:string|null,now=Date.now()):DiscoveryToken[]{
  const byKey=new Map(cache.map(row=>[row.key,row]));
  return records.map(record=>{
@@ -31,10 +31,12 @@ export function enrichDiscovery(records:LaunchRecord[],cache:CacheRow[],platform
   const volume24h=useNative?nativeVolume:nonnegative(stats?.volume);
   const change24h=useNative?native?.changeCoverage==='24h'?number(native.change24h):null:number(stats?.change);
   const figuresSource=useNative?'grainpad':marketCapUsd!==null||volume24h!==null||change24h!==null?'geckoterminal':null;
+  const marketUpdatedAt=marketCapUsd!==null||volume24h!==null?(useNative?snapshotRow!.updated_at:chartRow!.updated_at):null;
+  const marketStale=Boolean(own&&now-snapshotRow!.updated_at>300_000||marketUpdatedAt!==null&&now-marketUpdatedAt>300_000);
   const shown=state==='graduated'?100:progress;
   const lifecycle=state==='graduated'?'raydium_live':state==='graduating'?'migration_pending':state==='curve'&&shown!==null&&shown>=100?'curve_complete':state==='curve'?'curve_live':'unavailable';
   return {...record,official:Boolean(officialMint&&record.mint===officialMint),state,lifecycle,progress:shown,
-   marketCapUsd,volume24h,change24h,figuresSource,marketUpdatedAt:marketCapUsd!==null||volume24h!==null?(useNative?snapshotRow!.updated_at:chartRow!.updated_at):null};
+   marketCapUsd,volume24h,change24h,figuresSource,marketUpdatedAt,marketStale};
  });
 }
 /** One bad cache or launch row must not fail the directory. */
