@@ -96,7 +96,7 @@ html[data-theme="dark"] .gx-chip.is-graduated{border-color:rgba(255,255,255,.5)}
 
 /* ---------- header ---------- */
 .site-header.gx-header{display:block;height:auto;position:sticky;top:0;z-index:50;margin:0;padding:0;border-bottom:1px solid var(--gx-rule);background:var(--gx-bg);font-family:var(--gx-sans);font-weight:600}
-.gx-header-inner{max-width:var(--gx-max);margin:0 auto;padding:0 var(--gx-pad);height:76px;display:flex;align-items:center;gap:30px}
+.gx-header-inner{box-sizing:border-box;width:100%;max-width:var(--gx-max);min-width:0;margin:0 auto;padding:0 var(--gx-pad);height:76px;display:flex;align-items:center;gap:24px}
 .gx-header .gx-logo{display:flex;align-items:center;flex:none;padding:6px 0}
 .gx-header .gx-logo img{height:28px;width:auto;display:block}
 .gx-header .gx-nav{display:flex;align-items:center;gap:24px;font-size:15px;min-width:0;flex:1;color:var(--gx-ink)}
@@ -122,7 +122,7 @@ html[data-theme] .gx-header .header-cta:hover,html[data-theme] .gx-header .site-
 .gx-mobile-secondary a{color:var(--gx-mute);font-size:16px;display:flex;gap:6px;align-items:center}
 .gx-mobile-secondary a:hover{color:var(--gx-ink)}
 @media(max-width:1240px){.gx-header .gx-nav{gap:18px;font-size:14px}.gx-header-inner{gap:22px}}
-@media(max-width:1100px){
+@media(max-width:1279px){
  .gx-header .gx-nav{display:none}
  .gx-header .mobile-menu-toggle{display:inline-flex}
 }
@@ -664,7 +664,7 @@ html[data-theme] .gx.gx-token .public-tape .is-sell .ledger-side{color:var(--gx-
  .gx.gx-token .corner-panel{padding:18px;border-radius:20px}
 }
 /* Pages not yet redesigned keep their own shell; the shared header then uses the shell's gutter. */
-.shell>.site-header.gx-header .gx-header-inner{padding-left:0;padding-right:0}
+.shell:not(.gx)>.site-header.gx-header .gx-header-inner{padding-left:0;padding-right:0}
 .gx.gx-create .launch-mode-tabs [data-slot=tabs-trigger]{padding:8px 18px;width:auto}
 .gx-receipt-note{margin:10px 0 6px;font-size:11px;line-height:1.5;color:var(--gx-mute)}
 .gx-band{position:relative}
@@ -894,3 +894,8 @@ html[data-theme] .crew-budget small{font:400 11px/1.4 var(--gx-mono)!important;c
 html[data-theme] .rewards-calc-empty{font:600 1em/1 var(--gx-sans);color:var(--gx-mute)}
 
 @media(max-width:640px){.gx-header .gx-logo-lockup{gap:9px}.gx-header .gx-logo-lockup .gx-logo-word{width:97px}.gx-header .gx-logo .gx-logo-lockup .gx-logo-mark{width:24px;height:24px}}
+
+/* Keep every header inside its page gutter, including full-width token shells. */
+.gx-header .wallet-trigger-short{display:none}
+@media(max-width:400px){.gx-header .wallet-trigger-full{display:none}.gx-header .wallet-trigger-short{display:inline}}
+@media(max-width:360px){.gx-header-inner{gap:8px}.gx-header .gx-logo-lockup .gx-logo-word{width:87px}html body .site-header.gx-header .site-wallet-trigger,html body .site-header.gx-header .site-wallet-trigger:is(:hover,:focus-visible,:active){padding:0 5px!important;min-width:38px}}
