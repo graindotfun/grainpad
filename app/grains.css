@@ -659,3 +659,66 @@ html[data-theme] .gx.gx-token .public-tape .is-sell .ledger-side{color:var(--gx-
 /* Pages not yet redesigned keep their own shell; the shared header then uses the shell's gutter. */
 .shell>.site-header.gx-header .gx-header-inner{padding-left:0;padding-right:0}
 .gx.gx-create .launch-mode-tabs [data-slot=tabs-trigger]{padding:8px 18px;width:auto}
+.gx-receipt-note{margin:10px 0 6px;font-size:11px;line-height:1.5;color:var(--gx-mute)}
+.gx-band{position:relative}
+.gx-band-delayed{position:absolute;left:0;top:0;bottom:0;z-index:1;display:flex;align-items:center;gap:8px;padding:0 16px;background:#101010;color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.gx-band-delayed::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--grain-warning)}
+
+/* ---------- harmonisation of pages not yet redesigned (CSS only) ----------
+ * Legacy pages render inside <main class="shell">; the token page also carries .shell but is .gx, so it is excluded.
+ * Same ground, header spacing, Albert Sans 600, radii and colour tokens. Mono labels keep IBM Plex Mono 400. */
+html[data-theme] .shell:not(.gx){font-family:var(--gx-sans);font-weight:600;color:var(--gx-ink);max-width:var(--gx-max);padding-left:var(--gx-pad);padding-right:var(--gx-pad)}
+html[data-theme] .shell:not(.gx)>.site-header.gx-header{margin-left:calc(-1 * var(--gx-pad));margin-right:calc(-1 * var(--gx-pad))}
+html[data-theme] .shell:not(.gx)>.site-header.gx-header .gx-header-inner{padding-left:var(--gx-pad);padding-right:var(--gx-pad)}
+html[data-theme] .shell:not(.gx) :where(h1,h2,h3,h4,p,li,dt,dd,th,td,label,summary,a,button,strong,b,span,small){font-weight:600}
+html[data-theme] .shell:not(.gx) :is(.page-heading h1,.product-title h1,h1){font-weight:600;letter-spacing:-.06em}
+html[data-theme] .shell:not(.gx) :is(h2,h3){font-weight:600;letter-spacing:-.04em}
+html[data-theme] .shell:not(.gx) :is(.eyebrow,.overline,.corner-label,.address-line,.proof-address,code,pre,kbd,.launch-desk-label,.docs-edition,.stats-note){font-weight:400}
+/* mono labels: ink text with the small orange square, never small orange text */
+html[data-theme] .shell:not(.gx) .eyebrow{display:flex;align-items:center;gap:8px;color:var(--gx-ink);font-family:var(--gx-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+html[data-theme] .shell:not(.gx) .eyebrow::before{content:"";width:7px;height:7px;flex:none;background:var(--grain-orange)}
+html[data-theme] .shell:not(.gx) :is(.muted,.small.muted,.page-heading>p,.product-title p){color:var(--gx-mute)}
+/* surfaces */
+html[data-theme] .shell:not(.gx) :is(.panel,.form-panel,.preview-panel,.product-panel,.corner-panel,.market-lane,.record-surface,.docs-callout,.lab-stats){background:var(--gx-card);border:1px solid var(--gx-rule);border-radius:var(--gx-radius);color:var(--gx-ink);box-shadow:none}
+html[data-theme] .shell:not(.gx) .preview-panel::before{display:none}
+html[data-theme] .shell:not(.gx) .preview-panel :is(.eyebrow,.ticker,.preview-description,.muted,p,dt,.proof-address code){color:var(--gx-mute)}
+html[data-theme] .shell:not(.gx) .preview-panel :is(h2,h3,dd,strong){color:var(--gx-ink)}
+html[data-theme] .shell:not(.gx) :is(.setup-note,details.setup-note){background:var(--gx-soft);border:1px solid var(--gx-rule);border-radius:18px;color:var(--gx-ink)}
+html[data-theme] .shell:not(.gx) :is(.page-heading,.product-title){border-color:var(--gx-rule)}
+html[data-theme] .shell:not(.gx) :is(hr,.preview-divider){border-color:var(--gx-rule);background:var(--gx-rule)}
+/* controls */
+html[data-theme] .shell:not(.gx) :is(input[data-slot=input],textarea,select,.grain-select-trigger){border-radius:14px;border-color:var(--gx-rule);background:var(--gx-card);color:var(--gx-ink);font-family:var(--gx-sans);font-weight:600}
+html[data-theme] .shell:not(.gx) [data-slot=button]{border-radius:999px;font-family:var(--gx-sans);font-weight:600}
+html[data-theme] .shell:not(.gx) .primary-action{background:var(--grain-orange);color:#101010;border:0}
+html[data-theme] .shell:not(.gx) .primary-action:disabled{background:var(--gx-soft2);color:var(--gx-mute)}
+html[data-theme] .shell:not(.gx) .segmented{border-radius:999px;border-color:var(--gx-rule);background:none}
+html[data-theme] .shell:not(.gx) .segmented button{border-radius:999px}
+html[data-theme] .shell:not(.gx) .segmented button[aria-pressed=true]{background:var(--gx-btn);color:var(--gx-btnfg);box-shadow:none}
+html[data-theme] .shell:not(.gx) :is(.token-chip,.text-link,.inline-link){font-weight:600}
+html[data-theme] .shell:not(.gx) .token-chip{border-radius:999px;border:1.5px solid var(--gx-rule);background:none;color:var(--gx-ink)}
+/* docs */
+html[data-theme] .shell:not(.gx) .docs-index a{color:var(--gx-mute)}
+html[data-theme] .shell:not(.gx) .docs-index a:hover{color:var(--gx-ink)}
+/* dialogs: wallet connect, trade/claim flows, room composer (portaled outside the shell) */
+html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog,.room-composer-dialog)[data-slot=dialog-content]{background:var(--gx-card)!important;color:var(--gx-ink)!important;border:1px solid var(--gx-rule)!important;border-radius:var(--gx-radius)!important;font-family:var(--gx-sans);font-weight:600;box-shadow:0 24px 60px -20px rgba(0,0,0,.35)!important}
+html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog,.room-composer-dialog) :where(h2,p,span,button,a,li,dt,dd,label,strong){font-weight:600}
+html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog,.room-composer-dialog) [data-slot=dialog-title]{font-size:22px;letter-spacing:-.03em}
+html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog,.room-composer-dialog) [data-slot=dialog-description]{color:var(--gx-mute)}
+html[data-theme] .wallet-session-dialog .wallet-row{border-color:var(--gx-rule);border-radius:16px;background:transparent;color:var(--gx-ink)}
+html[data-theme] .wallet-session-dialog .wallet-row:hover{background:var(--gx-soft)}
+html[data-theme] :is(.trade-flow-dialog,.room-composer-dialog) :is(.primary-action,button[data-variant=default]){background:var(--grain-orange);color:#101010;border-radius:999px}
+@media(max-width:640px){html[data-theme] .wallet-session-dialog[data-slot=dialog-content]{border-radius:24px 24px 0 0!important}}
+html[data-theme] .shell:not(.gx) .preview-panel a{color:var(--gx-ink)}
+.gx.gx-create .gx-preview-id .token-mark{padding:0;overflow:hidden;font-size:14px;letter-spacing:0}
+@media(max-width:700px){
+ html[data-theme] .gx.gx-create .workspace-bar .launch-mode-tabs [data-slot=tabs-trigger]{padding:8px 14px!important;min-height:38px;font-size:13px}
+}
+@media(max-width:640px){
+ .gx-footer-logo{margin-left:-12px;padding:10px 14px}
+ .gx-footer-logo img{height:56px}
+}
+@media(max-width:700px){
+ html[data-theme] .gx.gx-create .workspace-bar .launch-mode-tabs{flex-wrap:nowrap!important;gap:4px!important}
+ html[data-theme] .gx.gx-create .workspace-bar .launch-mode-tabs .launch-lab-tab{width:auto;justify-content:center;padding:8px 14px!important}
+}
+.gx.gx-create .gx-preview-id .token-mark::after{display:none}

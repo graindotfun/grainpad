@@ -11,6 +11,7 @@ import {LaunchDesk} from "@/components/launch-desk";
 import {GrainStage,grainWord,type GrainMode} from "./grain-stage";
 import {ReceiptRows,tokenStatus} from "./grain-ui";
 import {formatMarketCap} from "@/lib/token-market";
+import {startViewerPolling} from "@/lib/viewer-polling.mjs";
 import {BRAND_CHAIN} from "@/lib/brand-presentation";
 import {MONERO_NARRATIVE,moneroRecordSummary} from "@/lib/monero-record-status.mjs";
 import type {DiscoveryResult,DiscoveryToken} from "@/lib/token-discovery";
@@ -23,7 +24,6 @@ function ago(date:string,now:number){const minutes=Math.floor(Math.max(0,now-Dat
 function Hero({overview,status}:{overview:ReturnType<typeof useSiteOverview>;status:ReturnType<typeof useLaunchStatus>["status"]}){
  const [name,setName]=useState(""),[word,setWord]=useState("grainpad"),[mode,setMode]=useState<GrainMode>(0),[auto,setAuto]=useState(true),[kick,setKick]=useState(0),[reduce,setReduce]=useState(false);
  const hero=useRef<HTMLElement>(null),visible=useRef(true),tabs=useRef<(HTMLButtonElement|null)[]>([]);
- // eslint-disable-next-line react-hooks/set-state-in-effect -- Mirror the reduced-motion preference after hydration.
  useEffect(()=>{const media=matchMedia("(prefers-reduced-motion: reduce)");const sync=()=>{setReduce(media.matches);if(media.matches)setAuto(false);};sync();media.addEventListener("change",sync);return()=>media.removeEventListener("change",sync);},[]);
  useEffect(()=>{const node=hero.current;if(!node)return;const io=new IntersectionObserver(([entry])=>{visible.current=entry.isIntersecting;});io.observe(node);return()=>io.disconnect();},[]);
  // Autoplay only while the hero is on screen and the tab is visible; any tab click or keystroke stops it.
@@ -39,7 +39,7 @@ function Hero({overview,status}:{overview:ReturnType<typeof useSiteOverview>;sta
   <div className="gx-hero-copy">
    <p className="gx-label">{BRAND_CHAIN.label.toLowerCase()} · ideas into existence</p>
    <h1 id="hero-heading" className="gx-h1">ideas into existence<span className="gx-dot">.</span></h1>
-   <p className="gx-hero-sub">launch a token in minutes. every launch gets a public receipt, a live tape and a room.</p>
+   <p className="gx-hero-sub">launch a token from your own wallet. every confirmed launch gets a public receipt, a live tape and a room.</p>
    <form className="gx-composer" action="/launch" method="get">
     <label className="gx-composer-field"><span className="gx-mono gx-mute">name your idea</span><input name="name" value={name} maxLength={32} autoComplete="off" spellCheck={false} placeholder="grainpad" onChange={e=>{setName(e.target.value);setAuto(false);setMode(1);setKick(k=>k+1);}}/></label>
     <button type="submit" className="gx-pill is-orange gx-composer-go">launch it <ArrowRight size={18}/></button>
@@ -60,16 +60,23 @@ function Hero({overview,status}:{overview:ReturnType<typeof useSiteOverview>;sta
  </section>;
 }
 
-/** Orange marquee of the latest confirmed launches, from the server snapshot of the launch board. */
-function LaunchBand({data}:{data:DiscoveryResult|null}){
- const [now,setNow]=useState(data?.updatedAt??0);
+/** Orange marquee of the latest confirmed launches. Starts from the server snapshot, then polls /api/discovery while
+ * the page is visible; data older than two refresh intervals is marked delayed with its age. */
+const BAND_REFRESH_MS=60_000;
+function LaunchBand({data:initial}:{data:DiscoveryResult|null}){
+ const [data,setData]=useState(initial),[failed,setFailed]=useState(false),[now,setNow]=useState(initial?.updatedAt??0);
  // eslint-disable-next-line react-hooks/set-state-in-effect -- Ages render from the snapshot on the server, then from the viewer clock.
- useEffect(()=>{setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),60_000);return()=>clearInterval(timer);},[]);
+ useEffect(()=>{setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),15_000);return()=>clearInterval(timer);},[]);
+ useEffect(()=>startViewerPolling(async(signal:AbortSignal)=>{
+  try{const response=await fetch('/api/discovery?q=&filter=all&sort=newest&page=1&quote=all',{signal,cache:'no-store'});if(!response.ok)throw Error();const body=await response.json() as DiscoveryResult;if(!Array.isArray(body.tokens))throw Error();setData(body);setFailed(false);}
+  catch{if(!signal.aborted)setFailed(true);}
+ },{intervalMs:BAND_REFRESH_MS}),[]);
+ const age=data&&now?now-data.updatedAt:0,delayed=!!data&&(data.stale||failed||age>2*BAND_REFRESH_MS);
  const seen=new Set<string>(),tokens:DiscoveryToken[]=[];
  for(const token of [...(data?.tokens??[]),...(data?.featured??[])])if(!seen.has(token.mint)&&tokens.length<14){seen.add(token.mint);tokens.push(token);}
- if(!tokens.length)return <div className="gx-band gx-onor is-empty" role="status"><div className="gx-wrap gx-mono"><span><i/>{data?"no launches on the board yet · the first one could be yours":"the launch board is loading"}</span><a href="/launch">launch yours <ArrowRight size={13}/></a></div></div>;
- const items=tokens.map(token=>{const status=tokenStatus(token);return <a key={token.mint} href={`/token/${token.mint}`}><i/>{token.official?"official":status?.label??"launch"} <b>${token.symbol}</b> {ago(token.createdAt,now)} · mc {formatMarketCap(token.marketCapUsd)}{token.marketStale?" · delayed":""}</a>;});
- return <section className="gx-band gx-onor" aria-label="Latest Grainpad launches"><div className="gx-band-track"><div className="gx-band-set">{items}</div><div className="gx-band-set" aria-hidden="true" inert>{items}</div></div></section>;
+ if(!tokens.length)return <div className="gx-band gx-onor is-empty" role="status"><div className="gx-wrap gx-mono"><span><i/>{data?"no launches on the board yet · the first one could be yours":failed?"the launch board is unavailable right now":"the launch board is loading"}</span><a href="/launch">launch yours <ArrowRight size={13}/></a></div></div>;
+ const items=tokens.map(token=>{const status=tokenStatus(token);return <a key={token.mint} href={`/token/${token.mint}`}><i/>{token.official?"official":status?.label??"launch"} <b>${token.symbol}</b> {ago(token.createdAt,now||data!.updatedAt)} · mc {formatMarketCap(token.marketCapUsd)}{token.marketStale?" · delayed":""}</a>;});
+ return <section className="gx-band gx-onor" aria-label="Latest Grainpad launches">{delayed&&<span className="gx-band-delayed gx-mono" role="status">delayed · {ago(new Date(data!.updatedAt).toISOString(),now)}</span>}<div className="gx-band-track"><div className="gx-band-set">{items}</div><div className="gx-band-set" aria-hidden="true" inert>{items}</div></div></section>;
 }
 
 export function Home({initialOverview,initialDiscovery}:{initialOverview:import("@/components/site-overview").SiteOverviewData|null;initialDiscovery:DiscoveryResult|null}){
@@ -84,11 +91,13 @@ export function Home({initialOverview,initialDiscovery}:{initialOverview:import(
    <div className="gx-why-row">
     <div><p className="gx-label is-ink">why launch here</p><h2 id="why-heading" className="gx-why-title">every launch gets a receipt<span>.</span></h2></div>
     <div className="gx-receipt gx-why-receipt"><div className="gx-receipt-head"><span>launch receipt</span><span>what it records</span></div>
-     <ReceiptRows rows={[["creator buy","declared before launch"],["creator buys seen","indexed on-chain"],["mint & freeze authority","read from chain"],["metadata","hash on record"],["signed by","the creator’s wallet"]]}/>
+     {/* Rows follow docs/TRUST_MODEL.md (wallet and server boundary) and lib/public-receipt.mjs; nothing stronger. */}
+     <ReceiptRows rows={[["creator buy","as declared · not verified"],["creator buys seen","indexed from chain"],["launch transaction","linked"],["metadata hash","as registered"],["approved in","the creator’s own wallet"],["mint key","grn · grainpad inventory or imported"]]}/>
+     <p className="gx-receipt-note gx-mono">published for launches confirmed on-chain and indexed by grainpad.</p>
     </div>
    </div>
    <div className="gx-why-three">
-    <div><span className="gx-mono">01</span><h3>a receipt for every launch.</h3><p>the creator’s declared buy, what the chain shows, authorities and metadata. one public page per token.</p></div>
+    <div><span className="gx-mono">01</span><h3>a receipt for every launch.</h3><p>the creator’s declared buy, the buys the index saw, the launch transaction and metadata hash. one public page per indexed launch.</p></div>
     <div><span className="gx-mono">02</span><h3>the tape is ours.</h3><p>trades come from grainpad’s own index. outside sources are a second look, not the page.</p></div>
     <div><span className="gx-mono">03</span><h3>a room for the crew.</h3><p>tasks, credits and payments, tied to the wallets that did the work.</p></div>
    </div>

@@ -11,6 +11,7 @@ export type GrainPalette='theme'|'light';
 const INK_LIGHT='#101010',GREY_LIGHT='#3d3d3d',INK_DARK='#ffffff',GREY_DARK='#555555';
 const FONT='"Albert Sans Variable","Albert Sans",sans-serif';
 const DEFAULT_WORD='grainpad';
+const FRAME_MS=1000/30-2,ROTATIONS=6;
 
 /** Composer input to stage word: a-z, 0-9 and space, at most 12 characters, empty means grainpad. */
 export function grainWord(value:string|null|undefined){
@@ -175,6 +176,8 @@ class Stage{
  }
  private frame=(t:number)=>{
   this.raf=0;if(!this.running())return;
+  // At most 30 fps (design/brand-system.md); physics is time-scaled, so motion keeps its speed.
+  if(t-this.last<FRAME_MS){this.raf=requestAnimationFrame(this.frame);return;}
   const f=Math.min(2.5,Math.max(0,(t-this.last)/16.67));this.last=t;
   const mx=this.mx,my=this.my,RR=this.pulse>0?190:105,R2=RR*RR,k=.017*f,damp=Math.pow(.86,f),N=this.N,free=this.free,W=this.W,H=this.H,tt=t*.001;
   this.pulse=Math.max(0,this.pulse-.04*f);
@@ -192,17 +195,31 @@ class Stage{
   this.paint();
   this.raf=requestAnimationFrame(this.frame);
  };
+ /** Grains are grouped by colour and by one of six angles: one transform per group (18 a frame) instead of one per
+ * grain. Each grain is drawn at its counter-rotated position, so it lands where it belongs, rotated. */
+ private bucket:Uint8Array|null=null;
  private paint(){
   if(!this.ready)return;
-  const ctx=this.ctx,dpr=this.dpr,dark=this.palette==='theme'&&document.documentElement.dataset.theme==='dark';
+  const ctx=this.ctx,dpr=this.dpr,dark=this.palette==='theme'&&document.documentElement.dataset.theme==='dark',quarter=Math.PI/2;
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,this.cv.width,this.cv.height);
   const {x,y,s,a,c}=this,N=this.N;
+  if(!this.bucket||this.bucket.length!==N)this.bucket=new Uint8Array(N);
+  const bucket=this.bucket;
+  for(let i=0;i<N;i++){const turn=a[i]%quarter;bucket[i]=((turn<0?turn+quarter:turn)/quarter*ROTATIONS)%ROTATIONS|0;}
   for(let ci=0;ci<3;ci++){
    ctx.fillStyle=ci===0?GRAIN_ORANGE:ci===1?(dark?INK_DARK:INK_LIGHT):(dark?GREY_DARK:GREY_LIGHT);
-   for(let i=0;i<N;i++){if(c[i]!==ci)continue;const size=s[i],co=Math.cos(a[i])*dpr,si=Math.sin(a[i])*dpr;ctx.setTransform(co,si,-si,co,x[i]*dpr,y[i]*dpr);ctx.fillRect(-size/2,-size/2,size,size);}
+   for(let r=0;r<ROTATIONS;r++){
+    const angle=r/ROTATIONS*quarter,co=Math.cos(angle),si=Math.sin(angle);
+    ctx.setTransform(co*dpr,si*dpr,-si*dpr,co*dpr,0,0);
+    for(let i=0;i<N;i++){if(c[i]!==ci||bucket[i]!==r)continue;const h=s[i]/2,px=x[i]*co+y[i]*si,py=-x[i]*si+y[i]*co;ctx.fillRect(px-h,py-h,s[i],s[i]);}
+   }
   }
   ctx.setTransform(1,0,0,1,0,0);
  }
+
+
+
+
 }
 function shuffle<T>(list:T[],rand:()=>number){for(let i=list.length-1;i>0;i--){const j=(rand()*(i+1))|0;const t=list[i];list[i]=list[j];list[j]=t;}return list;}
 function fit(points:Point[],n:number,rand:()=>number){const base=points.length;while(points.length<n&&base)points.push(points[(rand()*base)|0]);points.length=Math.min(points.length,n);return shuffle(points,rand);}
