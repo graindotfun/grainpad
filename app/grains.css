@@ -899,3 +899,13 @@ html[data-theme] .rewards-calc-empty{font:600 1em/1 var(--gx-sans);color:var(--g
 .gx-header .wallet-trigger-short{display:none}
 @media(max-width:400px){.gx-header .wallet-trigger-full{display:none}.gx-header .wallet-trigger-short{display:inline}}
 @media(max-width:360px){.gx-header-inner{gap:8px}.gx-header .gx-logo-lockup .gx-logo-word{width:87px}html body .site-header.gx-header .site-wallet-trigger,html body .site-header.gx-header .site-wallet-trigger:is(:hover,:focus-visible,:active){padding:0 5px!important;min-width:38px}}
+
+/* Project facts: label first, then a left-aligned value. */
+html[data-theme] .token-project-context .product-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px}
+html[data-theme] .token-project-context .product-facts>div{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;padding:20px 0;text-align:left}
+html[data-theme] .token-project-context .product-facts dt{width:auto;min-width:0;max-width:none;margin:0;color:var(--gx-mute);font:600 14px/1.4 var(--gx-sans);overflow-wrap:normal;word-break:normal;text-align:left}
+html[data-theme] .token-project-context .product-facts dd{width:100%;min-width:0;margin:0;color:var(--grain-orange);font:600 clamp(20px,2vw,26px)/1.35 var(--gx-sans);text-align:left}
+html[data-theme] .token-project-context .product-facts dd a{color:var(--grain-orange);text-align:left}
+html[data-theme] .token-project-context .product-facts .user-identity-name{font:inherit}
+html[data-theme] .token-project-context .project-fact-note{display:block;margin-top:6px;color:var(--gx-mute);font:600 13px/1.4 var(--gx-sans)}
+@media(max-width:640px){html[data-theme] .token-project-context .product-facts{grid-template-columns:minmax(0,1fr)}}
