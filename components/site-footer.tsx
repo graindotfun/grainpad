@@ -8,7 +8,7 @@ import {SITE} from "@/lib/site-config";
 export function SiteFooter({textOnly=false,showResearchDisclaimer=true}:{textOnly?:boolean;showResearchDisclaimer?:boolean}={}) {
  return <footer className="gx-footer"><div className="gx-wrap">
   <div className="gx-footer-top">
-   <a href="/" className="gx-footer-logo" aria-label="Grainpad home"><Image unoptimized src={BRAND_ASSETS.logoWordmark} width={375} height={96} alt=""/></a>
+   <a href="/" className="gx-footer-logo" aria-label="Grainpad home"><Image unoptimized className="gx-logo-light" src={BRAND_ASSETS.logoWordmark} width={375} height={96} alt=""/><Image unoptimized className="gx-logo-dark" src={BRAND_ASSETS.logoWordmarkDark} width={375} height={96} alt=""/></a>
    <nav className="gx-footer-cols" aria-label="Footer">
     <div><span className="gx-label">product</span><a href="/launches">explore</a><a href="/launch">create a token</a><a href="/markets">markets</a><a href="/rooms">rooms</a><a href="/fees">creator desk</a><a href="/rewards">holder rewards</a>{!textOnly&&<a href="/lab">research lab</a>}</div>
     <div><span className="gx-label">proof</span><a href="/transparency">transparency</a><a href="/treasury">treasury</a><a href="/authority">who controls what</a><a href="/platform">platform status</a><a href="/roadmap">roadmap</a></div>

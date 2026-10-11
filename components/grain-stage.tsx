@@ -2,6 +2,7 @@
 import {useEffect,useRef} from 'react';
 import {GRAIN_ORANGE} from '@/lib/brand-colors.mjs';
 import {BRAND_ASSETS} from '@/lib/brand-assets';
+import {GRAIN_LEVELS,STATIC_LEVEL,nextGrainLevel,windowFrames} from '@/lib/grain-stage-policy.mjs';
 
 /** The grain stage: an illustration only. It never reads a wallet, a market or a transaction.
  * 0 idea: a free swarm. 1 identity: the word with an orange period. 2 on-chain: the Grainpad symbol, or a stone token. */
@@ -11,7 +12,10 @@ export type GrainPalette='theme'|'light';
 const INK_LIGHT='#101010',GREY_LIGHT='#3d3d3d',INK_DARK='#ffffff',GREY_DARK='#555555';
 const FONT='"Albert Sans Variable","Albert Sans",sans-serif';
 const DEFAULT_WORD='grainpad';
-const FRAME_MS=1000/30-2,ROTATIONS=6;
+const ROTATIONS=6,LEVEL_KEY='grainpad:grain-stage-level';
+/** rAF delivers frames on vsync, so the gate sits a little under the frame period. */
+const frameGate=(fps:number)=>fps?1000/fps-2:Infinity;
+function savedLevel(){try{const v=Number(sessionStorage.getItem(LEVEL_KEY));return Number.isInteger(v)&&v>0?Math.min(STATIC_LEVEL,v):0;}catch{return 0;}}
 
 /** Composer input to stage word: a-z, 0-9 and space, at most 12 characters, empty means grainpad. */
 export function grainWord(value:string|null|undefined){
@@ -46,24 +50,28 @@ class Stage{
  private W=0;private H=0;private dpr=1;private ready=false;
  private reduce:boolean;private visible=false;private raf=0;private last=0;
  private fontsReady=false;private disposed=false;
+ // Adaptive quality (lib/grain-stage-policy.mjs): a random rank per grain decides which grains stay when the count drops.
+ private level=0;private active=0;private gate=frameGate(30);private rank:Uint32Array|null=null;
+ private wFrames=0;private wInterval=0;private wWork=0;private wSkip=1;
  private cleanup:(()=>void)[]=[];
 
  constructor(private cv:HTMLCanvasElement,o:{count:number;floor:number;palette:GrainPalette;word:string;mode:GrainMode}){
   this.ctx=cv.getContext('2d')!;this.N=o.count;this.floorFrac=o.floor;this.palette=o.palette;this.word=o.word;this.mode=o.mode;
+  this.setLevel(savedLevel());
   const media=matchMedia('(prefers-reduced-motion: reduce)');this.reduce=media.matches;
-  const onMedia=()=>{this.reduce=media.matches;this.mx=-1e4;if(this.reduce)this.snap();this.schedule();};
+  const onMedia=()=>{this.reduce=media.matches;this.mx=-1e4;if(this.frozen)this.snap();this.schedule();};
   media.addEventListener('change',onMedia);this.cleanup.push(()=>media.removeEventListener('change',onMedia));
   const parent=cv.parentElement!;
-  const move=(e:PointerEvent)=>{if(this.reduce||!this.visible)return;const r=cv.getBoundingClientRect();this.mx=e.clientX-r.left;this.my=e.clientY-r.top;};
+  const move=(e:PointerEvent)=>{if(this.frozen||!this.visible)return;const r=cv.getBoundingClientRect();this.mx=e.clientX-r.left;this.my=e.clientY-r.top;};
   const leave=()=>{this.mx=-1e4;};
-  const down=()=>{if(!this.reduce)this.pulse=1;};
+  const down=()=>{if(!this.frozen)this.pulse=1;};
   window.addEventListener('pointermove',move,{passive:true});document.documentElement.addEventListener('pointerleave',leave,{passive:true});parent.addEventListener('pointerdown',down,{passive:true});
   this.cleanup.push(()=>{window.removeEventListener('pointermove',move);document.documentElement.removeEventListener('pointerleave',leave);parent.removeEventListener('pointerdown',down);});
   const resize=new ResizeObserver(()=>this.resize());resize.observe(parent);this.cleanup.push(()=>resize.disconnect());
   const io=new IntersectionObserver(([entry])=>{this.visible=entry.isIntersecting;this.schedule();},{rootMargin:'80px'});io.observe(cv);this.cleanup.push(()=>io.disconnect());
   const vis=()=>this.schedule();document.addEventListener('visibilitychange',vis);this.cleanup.push(()=>document.removeEventListener('visibilitychange',vis));
   // A theme switch repaints a static (reduced-motion) stage; the live loop reads the theme every frame anyway.
-  const theme=new MutationObserver(()=>{if(this.reduce)this.paint();});theme.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});this.cleanup.push(()=>theme.disconnect());
+  const theme=new MutationObserver(()=>{if(this.frozen)this.paint();});theme.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});this.cleanup.push(()=>theme.disconnect());
   const fonts=document.fonts?.load?Promise.all([document.fonts.load(`600 120px ${FONT}`),loadSymbol()]):loadSymbol();
   void fonts.catch(()=>null).then(()=>{if(this.disposed)return;this.fontsReady=true;this.ready=false;this.resize();});
  }
@@ -76,7 +84,7 @@ class Stage{
   this.W=r.width;this.H=r.height;this.dpr=Math.min(2,window.devicePixelRatio||1);
   this.cv.width=Math.round(this.W*this.dpr);this.cv.height=Math.round(this.H*this.dpr);
   this.build();this.assign(false);this.ready=true;
-  if(this.reduce)this.snap();this.schedule();
+  if(this.frozen)this.snap();this.schedule();
  }
  private off(draw:Draw){
   const c=document.createElement('canvas');c.width=Math.max(1,Math.round(this.W));c.height=Math.max(1,Math.round(this.H));
@@ -140,6 +148,7 @@ class Stage{
    this.x=new Float32Array(N);this.y=new Float32Array(N);this.vx=new Float32Array(N);this.vy=new Float32Array(N);this.tx=new Float32Array(N);this.ty=new Float32Array(N);
    this.s=new Float32Array(N);this.a=new Float32Array(N);this.ph=new Float32Array(N);this.dir=new Float32Array(N);this.sp=new Float32Array(N);this.sw=new Float64Array(N);
    this.c=new Uint8Array(N);this.nc=new Uint8Array(N);this.fl=new Uint8Array(N);
+   this.rank=new Uint32Array(N);for(let i=0;i<N;i++)this.rank[i]=i;for(let i=N-1;i>0;i--){const j=(R()*(i+1))|0,t=this.rank[i];this.rank[i]=this.rank[j];this.rank[j]=t;}
    for(let i=0;i<N;i++){const f=F[i<nS?(R()*Math.max(1,nF))|0:i-nS]||{x:R()*W,y:H-5,c:0};this.x[i]=f.x;this.y[i]=f.y;this.tx[i]=f.x;this.ty[i]=f.y;this.c[i]=this.nc[i]=f.c;this.s[i]=2.1+R()*2.6;this.a[i]=R()*6.28;this.ph[i]=R()*6.28;this.dir[i]=R()*6.28;this.sp[i]=.5+R()*1.5;}
   }
   for(let i=0;i<N;i++)this.fl[i]=i>=nS?1:0;
@@ -159,30 +168,48 @@ class Stage{
    if(burst){this.sw[i]=now+Math.random()*420;this.vx[i]+=(Math.random()-.5)*7;this.vy[i]+=-Math.random()*8-2;}else this.c[i]=this.nc[i];
   }
  }
- setMode(m:GrainMode){if(m===this.mode)return;this.mode=m;if(!this.ready)return;this.assign(true);if(this.reduce)this.snap();this.schedule();}
- setWord(w:string){if(w===this.word)return;this.word=w;if(!this.ready||this.W<10)return;this.build();this.assign(true);if(this.reduce)this.snap();this.schedule();}
- setPalette(p:GrainPalette){this.palette=p;if(this.reduce)this.paint();}
- kick(){if(this.reduce||!this.ready)return;for(let i=0;i<this.N;i++){this.dir[i]+=(Math.random()-.5)*2.2;this.vx[i]+=(Math.random()-.5)*6;this.vy[i]+=(Math.random()-.5)*6;}this.schedule();}
- /** Reduced motion: grains sit on their targets; the idea mode is a static scatter. */
+ setMode(m:GrainMode){if(m===this.mode)return;this.mode=m;if(!this.ready)return;this.assign(true);if(this.frozen)this.snap();this.schedule();}
+ setWord(w:string){if(w===this.word)return;this.word=w;if(!this.ready||this.W<10)return;this.build();this.assign(true);if(this.frozen)this.snap();this.schedule();}
+ setPalette(p:GrainPalette){this.palette=p;if(this.frozen)this.paint();}
+ kick(){if(this.frozen||!this.ready)return;for(let i=0;i<this.N;i++){this.dir[i]+=(Math.random()-.5)*2.2;this.vx[i]+=(Math.random()-.5)*6;this.vy[i]+=(Math.random()-.5)*6;}this.schedule();}
+ /** Reduced motion or the static quality level: grains sit on their targets; the idea mode is a static scatter. */
  private snap(){
   if(!this.ready)return;
   for(let i=0;i<this.N;i++){if(this.free){this.x[i]=Math.random()*this.W;this.y[i]=Math.random()*this.H;}else{this.x[i]=this.tx[i];this.y[i]=this.ty[i];}this.vx[i]=this.vy[i]=0;this.c[i]=this.nc[i];this.sw[i]=0;}
   this.paint();
  }
- private running(){return this.ready&&this.visible&&!document.hidden&&!this.reduce&&!this.disposed;}
+ /** Reduced motion and the last quality level both mean one static frame. */
+ private get frozen(){return this.reduce||this.level>=STATIC_LEVEL;}
+ private setLevel(level:number){
+  this.level=Math.max(this.level,level);const step=GRAIN_LEVELS[this.level];
+  this.active=Math.round(this.N*step.share);this.gate=frameGate(step.fps);this.cv.dataset.grainLevel=String(this.level);
+  this.wFrames=this.wInterval=this.wWork=0;this.wSkip=1;
+ }
+ /** About one second of frames over budget steps quality down; it never steps back up in this session. */
+ private observe(interval:number,work:number){
+  if(interval>250){this.wFrames=this.wInterval=this.wWork=0;return;}
+  this.wFrames++;this.wInterval+=interval;this.wWork+=work;
+  if(this.wFrames<windowFrames(this.level))return;
+  const skip=this.wSkip>0;this.wSkip=Math.max(0,this.wSkip-1);
+  const next=skip?this.level:nextGrainLevel(this.level,{frames:this.wFrames,totalIntervalMs:this.wInterval,totalWorkMs:this.wWork});
+  this.wFrames=this.wInterval=this.wWork=0;
+  if(next>this.level){this.setLevel(next);try{sessionStorage.setItem(LEVEL_KEY,String(this.level));}catch{/* The level still holds for this stage. */}if(this.frozen)this.snap();}
+ }
+ private running(){return this.ready&&this.visible&&!document.hidden&&!this.frozen&&!this.disposed;}
  private schedule(){
-  if(this.running()){if(!this.raf){this.last=performance.now();this.raf=requestAnimationFrame(this.frame);}}
-  else{cancelAnimationFrame(this.raf);this.raf=0;if(this.reduce&&this.ready)this.paint();}
+  if(this.running()){if(!this.raf){this.last=performance.now();this.wSkip=Math.max(this.wSkip,1);this.raf=requestAnimationFrame(this.frame);}}
+  else{cancelAnimationFrame(this.raf);this.raf=0;if(this.frozen&&this.ready)this.paint();}
  }
  private frame=(t:number)=>{
   this.raf=0;if(!this.running())return;
-  // At most 30 fps (design/brand-system.md); physics is time-scaled, so motion keeps its speed.
-  if(t-this.last<FRAME_MS){this.raf=requestAnimationFrame(this.frame);return;}
-  const f=Math.min(2.5,Math.max(0,(t-this.last)/16.67));this.last=t;
+  // At most 30 fps (design/brand-system.md), lower on weak devices; physics is time-scaled, so motion keeps its speed.
+  if(t-this.last<this.gate){this.raf=requestAnimationFrame(this.frame);return;}
+  const interval=t-this.last,started=performance.now(),f=Math.min(2.5,Math.max(0,interval/16.67));this.last=t;
   const mx=this.mx,my=this.my,RR=this.pulse>0?190:105,R2=RR*RR,k=.017*f,damp=Math.pow(.86,f),N=this.N,free=this.free,W=this.W,H=this.H,tt=t*.001;
   this.pulse=Math.max(0,this.pulse-.04*f);
-  const {x,y,vx,vy,tx,ty,ph,dir,sp,sw,c,nc,fl,a}=this;
+  const {x,y,vx,vy,tx,ty,ph,dir,sp,sw,c,nc,fl,a}=this,rank=this.rank!,active=this.active;
   for(let i=0;i<N;i++){
+   if(rank[i]>=active)continue;
    if(sw[i]&&t>sw[i]){c[i]=nc[i];sw[i]=0;}
    if(free){dir[i]+=(Math.random()-.5)*.16*f;const tvx=Math.cos(dir[i])*sp[i],tvy=Math.sin(dir[i])*sp[i];vx[i]+=(tvx-vx[i])*.05*f;vy[i]+=(tvy-vy[i])*.05*f;}
    else{const wob=fl[i]?0:.9;vx[i]+=(tx[i]+Math.sin(tt*1.1+ph[i])*wob-x[i])*k;vy[i]+=(ty[i]+Math.cos(tt*.9+ph[i])*wob-y[i])*k;}
@@ -193,7 +220,8 @@ class Stage{
    if(free){if(x[i]<-6)x[i]=W+6;else if(x[i]>W+6)x[i]=-6;if(y[i]<-6)y[i]=H+6;else if(y[i]>H+6)y[i]=-6;}
   }
   this.paint();
-  this.raf=requestAnimationFrame(this.frame);
+  this.observe(interval,performance.now()-started);
+  if(this.running())this.raf=requestAnimationFrame(this.frame);
  };
  /** Grains are grouped by colour and by one of six angles: one transform per group (18 a frame) instead of one per
  * grain. Each grain is drawn at its counter-rotated position, so it lands where it belongs, rotated. */
@@ -202,7 +230,7 @@ class Stage{
   if(!this.ready)return;
   const ctx=this.ctx,dpr=this.dpr,dark=this.palette==='theme'&&document.documentElement.dataset.theme==='dark',quarter=Math.PI/2;
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,this.cv.width,this.cv.height);
-  const {x,y,s,a,c}=this,N=this.N;
+  const {x,y,s,a,c}=this,N=this.N,rank=this.rank!,active=this.active;
   if(!this.bucket||this.bucket.length!==N)this.bucket=new Uint8Array(N);
   const bucket=this.bucket;
   for(let i=0;i<N;i++){const turn=a[i]%quarter;bucket[i]=((turn<0?turn+quarter:turn)/quarter*ROTATIONS)%ROTATIONS|0;}
@@ -211,15 +239,11 @@ class Stage{
    for(let r=0;r<ROTATIONS;r++){
     const angle=r/ROTATIONS*quarter,co=Math.cos(angle),si=Math.sin(angle);
     ctx.setTransform(co*dpr,si*dpr,-si*dpr,co*dpr,0,0);
-    for(let i=0;i<N;i++){if(c[i]!==ci||bucket[i]!==r)continue;const h=s[i]/2,px=x[i]*co+y[i]*si,py=-x[i]*si+y[i]*co;ctx.fillRect(px-h,py-h,s[i],s[i]);}
+    for(let i=0;i<N;i++){if(c[i]!==ci||bucket[i]!==r||rank[i]>=active)continue;const h=s[i]/2,px=x[i]*co+y[i]*si,py=-x[i]*si+y[i]*co;ctx.fillRect(px-h,py-h,s[i],s[i]);}
    }
   }
   ctx.setTransform(1,0,0,1,0,0);
  }
-
-
-
-
 }
 function shuffle<T>(list:T[],rand:()=>number){for(let i=list.length-1;i>0;i--){const j=(rand()*(i+1))|0;const t=list[i];list[i]=list[j];list[j]=t;}return list;}
 function fit(points:Point[],n:number,rand:()=>number){const base=points.length;while(points.length<n&&base)points.push(points[(rand()*base)|0]);points.length=Math.min(points.length,n);return shuffle(points,rand);}

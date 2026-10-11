@@ -15,7 +15,7 @@ html[data-theme="light"]{
 }
 html[data-theme="dark"]{
  color-scheme:dark;
- --gx-bg:#101010;--gx-ink:#fff;--gx-mute:rgba(255,255,255,.64);--gx-rule:rgba(255,255,255,.17);--gx-soft:rgba(255,255,255,.055);--gx-soft2:rgba(255,255,255,.1);--gx-card:#171717;--gx-btn:#fff;--gx-btnfg:#101010;--gx-plate:#fff;--gx-label:var(--grain-orange);
+ --gx-bg:#101010;--gx-ink:#fff;--gx-mute:rgba(255,255,255,.64);--gx-rule:rgba(255,255,255,.17);--gx-soft:rgba(255,255,255,.055);--gx-soft2:rgba(255,255,255,.1);--gx-card:#171717;--gx-btn:#fff;--gx-btnfg:#101010;--gx-plate:transparent;--gx-label:var(--grain-orange);
  --background:#101010;--foreground:#fff;--off-white:#fff;--card:#171717;--card-foreground:#fff;--popover:#1c1c1c;--popover-foreground:#fff;
  --primary:#fff;--primary-foreground:#101010;--secondary:#232323;--muted:#1d1d1d;--muted-foreground:#a3a3a3;--accent:#242424;--border:#333;--line:rgba(255,255,255,.15);--brand-line:#2e2e2e;
 }
@@ -96,7 +96,7 @@ html[data-theme="dark"] .gx-chip.is-graduated{border-color:rgba(255,255,255,.5)}
 /* ---------- header ---------- */
 .site-header.gx-header{display:block;height:auto;position:sticky;top:0;z-index:50;margin:0;padding:0;border-bottom:1px solid var(--gx-rule);background:var(--gx-bg);font-family:var(--gx-sans);font-weight:600}
 .gx-header-inner{max-width:var(--gx-max);margin:0 auto;padding:0 var(--gx-pad);height:76px;display:flex;align-items:center;gap:30px}
-.gx-header .gx-logo{display:flex;align-items:center;flex:none;padding:6px 12px;margin-left:-12px;border-radius:999px;background:var(--gx-plate)}
+.gx-header .gx-logo{display:flex;align-items:center;flex:none;padding:6px 0}
 .gx-header .gx-logo img{height:28px;width:auto;display:block}
 .gx-header .gx-nav{display:flex;align-items:center;gap:24px;font-size:15px;min-width:0;flex:1;color:var(--gx-ink)}
 .gx-header .gx-nav>a,.gx-header .gx-nav .rewards-nav>a{color:var(--gx-mute);padding:6px 0;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
@@ -148,7 +148,7 @@ html[data-theme] .contract-bar :is(.contract-copy,.contract-market,.contract-exp
 /* ---------- footer ---------- */
 .gx-footer{display:block;margin:0;border-top:1px solid var(--gx-rule);padding:80px 0 40px;background:var(--gx-bg);color:var(--gx-ink);font-family:var(--gx-sans);font-weight:600}
 .gx-footer-top{display:flex;justify-content:space-between;align-items:flex-end;gap:48px;flex-wrap:wrap}
-.gx-footer-logo{display:inline-flex;padding:14px 26px;margin-left:-26px;border-radius:999px;background:var(--gx-plate)}
+.gx-footer-logo{display:inline-flex;padding:14px 0}
 .gx-footer-logo img{height:clamp(56px,7vw,96px);width:auto;display:block}
 .gx-footer-cols{display:flex;gap:clamp(32px,5vw,70px);font-size:16px;flex-wrap:wrap}
 .gx-footer-cols div{display:flex;flex-direction:column;gap:9px;min-width:120px}
@@ -635,7 +635,8 @@ html[data-theme] .gx.gx-token .public-tape .is-sell .ledger-side{color:var(--gx-
 .gx.gx-token .swap-asset small{font:400 11px var(--gx-mono);color:var(--gx-mute)}
 .gx.gx-token .swap-direction{border:1.5px solid var(--gx-rule);background:var(--gx-card);color:var(--gx-ink);border-radius:50%}
 .gx.gx-token .swap-settings{border-bottom:1px dashed var(--gx-rule);padding:12px 0;font-size:15px}
-.gx.gx-token .token-swap .primary-action{width:100%;min-height:58px;border-radius:999px;background:var(--gx-btn);color:var(--gx-btnfg);font:600 19px var(--gx-sans);border:0;margin-top:16px}
+/* The swap's primary action keeps the site-wide orange (.primary-action); only shape and type are set here. */
+.gx.gx-token .token-swap .primary-action{width:100%;min-height:58px;border-radius:999px;font:600 19px var(--gx-sans);border:0;margin-top:16px}
 .gx.gx-token .token-swap .primary-action:disabled{background:var(--gx-soft2);color:var(--gx-mute);opacity:1}
 .gx.gx-token .swap-cost-limit,.gx.gx-token .token-swap .small{font:600 13px/1.45 var(--gx-sans)!important;color:var(--gx-mute)}
 /* elsewhere */
@@ -714,7 +715,7 @@ html[data-theme] .shell:not(.gx) .preview-panel a{color:var(--gx-ink)}
  html[data-theme] .gx.gx-create .workspace-bar .launch-mode-tabs [data-slot=tabs-trigger]{padding:8px 14px!important;min-height:38px;font-size:13px}
 }
 @media(max-width:640px){
- .gx-footer-logo{margin-left:-12px;padding:10px 14px}
+ .gx-footer-logo{padding:10px 0}
  .gx-footer-logo img{height:56px}
 }
 @media(max-width:700px){
@@ -722,3 +723,21 @@ html[data-theme] .shell:not(.gx) .preview-panel a{color:var(--gx-ink)}
  html[data-theme] .gx.gx-create .workspace-bar .launch-mode-tabs .launch-lab-tab{width:auto;justify-content:center;padding:8px 14px!important}
 }
 .gx.gx-create .gx-preview-id .token-mark::after{display:none}
+
+/* swap amount: underline focus, not a box */
+.gx.gx-token .swap-amount-row input:focus,.gx.gx-token .swap-amount-row input:focus-visible{outline:0;box-shadow:none;border:0}
+.gx.gx-token .swap-asset:focus-within{border-bottom-color:var(--grain-orange)}
+/* room composer is a native <dialog>, outside the shell */
+html[data-theme] dialog.room-composer-dialog{border:1px solid var(--gx-rule);border-radius:var(--gx-radius);background:var(--gx-card);color:var(--gx-ink);font-family:var(--gx-sans);font-weight:600}
+html[data-theme] dialog.room-composer-dialog::backdrop{background:rgba(16,16,16,.55);backdrop-filter:none}
+html[data-theme] :is(dialog.room-composer-dialog,.wallet-session-dialog,.trade-flow-dialog) .eyebrow{display:flex;align-items:center;gap:8px;color:var(--gx-ink);font:400 11px/1.5 var(--gx-mono);letter-spacing:.14em;text-transform:uppercase}
+html[data-theme] :is(dialog.room-composer-dialog,.wallet-session-dialog,.trade-flow-dialog) .eyebrow::before{content:"";width:7px;height:7px;flex:none;background:var(--grain-orange)}
+html[data-theme] dialog.room-composer-dialog :is(input[data-slot=input],textarea,.grain-select-trigger){border-radius:14px;border-color:var(--gx-rule);background:var(--gx-card);color:var(--gx-ink)}
+html[data-theme] dialog.room-composer-dialog button[data-slot=button]:not([data-variant=outline]){background:var(--grain-orange);color:#101010;border-radius:999px}
+/* Disabled orange controls never fade the brand orange with opacity (design/brand-system.md): they turn neutral. */
+html[data-theme] :is(.gx,dialog.room-composer-dialog,.trade-flow-dialog,.wallet-session-dialog,.launch-action-portal) button:disabled:is(.primary-action,[data-slot=button][aria-pressed=true],[data-slot=button]:not([data-variant=outline]):not([data-variant=ghost])){opacity:1;background:var(--gx-soft2)!important;color:var(--gx-mute)!important;box-shadow:none}
+
+/* Logo: the dark variant has white wordmark ink; no plate behind it (owner decision 2026-10-11). */
+.gx-logo-dark{display:none!important}
+html[data-theme="dark"] .gx-logo-light{display:none!important}
+html[data-theme="dark"] .gx-logo-dark{display:block!important}
