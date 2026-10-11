@@ -1,10 +1,10 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {ArrowUpRight,ArrowRight,Search,Copy,Check,ChevronLeft,ChevronRight,RefreshCw,Sprout,X} from 'lucide-react';
+import {ArrowUpRight,ArrowRight,Search,Copy,Check,ChevronLeft,ChevronRight,Plus,X} from 'lucide-react';
 import {Input} from './ui/input';
-import {Button} from './ui/button';
 import {GrainSelect} from './grain-select';
-import {TokenImage} from './token-image';
+import {TokenTile} from './token-tile';
+import {GradSquares,StatusChip,tokenStatus} from './grain-ui';
 import {BRAND_ASSETS} from '@/lib/brand-assets';
 import {grainImpersonation} from '@/lib/launch-identity.mjs';
 import {formatMarketCap,formatChange} from '@/lib/token-market';
@@ -13,43 +13,47 @@ import type {DiscoveryResult,DiscoveryToken,DiscoveryFilter,DiscoverySort} from 
 import {UserIdentity,type IdentityCard} from './user-identity';
 const QUOTE_OPTIONS=[{value:'all',label:'All quote markets'},{value:'SOL',label:'SOL'},{value:'wXMR',label:'wXMR'}];
 const SORT_OPTIONS=[{value:'newest',label:'Newest'},{value:'oldest',label:'Oldest'},{value:'market-cap',label:'Market cap'},{value:'volume',label:'24h volume'}];
-function age(date:string,now:number){const elapsed=Math.max(0,now-Date.parse(date)),minutes=Math.floor(elapsed/60000);return minutes<1?'Just now':minutes<60?`${minutes}m ago`:minutes<1440?`${Math.floor(minutes/60)}h ago`:`${Math.floor(minutes/1440)}d ago`;}
-/** `sparkline` is an integration point: #39 does not return a per-row price series yet, so cards draw a dashed baseline. */
+function age(date:string,now:number){const elapsed=Math.max(0,now-Date.parse(date)),minutes=Math.floor(elapsed/60000);return minutes<1?'just now':minutes<60?`${minutes}m ago`:minutes<1440?`${Math.floor(minutes/60)}h ago`:`${Math.floor(minutes/1440)}d ago`;}
+/** `sparkline` is an integration point: #39 does not return a per-row price series yet. */
 type CardToken=DiscoveryToken&{sparkline?:number[]|null;creatorIdentity?:IdentityCard|null};
-function Sparkline({points}:{points?:number[]|null}){
- const values=(points||[]).filter(v=>Number.isFinite(v));
- if(values.length<2)return <svg className="dc-spark is-empty" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="20" x2="100" y2="20"/></svg>;
- const min=Math.min(...values),max=Math.max(...values),range=max-min||1,step=100/(values.length-1);
- const line=values.map((v,i)=>`${(i*step).toFixed(2)},${(25-(v-min)/range*22).toFixed(2)}`).join(' ');
- return <svg className="dc-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"><polyline points={line} vectorEffect="non-scaling-stroke"/></svg>;
-}
 function DiscoveryCard({token,roomMode=false,observedAt}:{token:CardToken;roomMode?:boolean;observedAt:number}){
  const [copied,setCopied]=useState(false),[copyError,setCopyError]=useState(false);
- const lifecycle=token.lifecycle==='raydium_live'?'Graduated':token.lifecycle==='migration_pending'?'Migrating':token.lifecycle==='curve_complete'?'Curve complete':token.state==='curve'&&token.progress!==null&&token.progress>=80?'Near graduation':null;
+ const status=tokenStatus(token);
  const progress=token.state==='graduated'?100:token.progress;
- return <article className={`discovery-card dc is-${token.state} ${token.official?'is-grain':''}`}>
- <a className="dc-main" href={`/token/${token.mint}${roomMode?'/room':''}`} aria-label={`Open ${token.name} ${roomMode?'Room':'token market'}`}>
-  <div className="dc-top"><TokenImage src={token.official?BRAND_ASSETS.token:token.image} symbol={token.symbol} size={56}/><div className="dc-id"><h3 title={token.name}>{token.name}</h3><p>${token.symbol} · {token.quoteAsset||'SOL'}</p></div>{token.official?<span className="record-tape">Official</span>:lifecycle&&<span className="record-tape">{lifecycle}</span>}</div>
-  {grainImpersonation(token)?<p className="discovery-caution">Not the official GRAIN</p>:null}
-  <div className="dc-value"><span>{token.state==='curve'||token.state==='graduating'?'Curve MC':'MC'}{token.figuresSource==='geckoterminal'?' · GeckoTerminal':''}</span><strong>{formatMarketCap(token.marketCapUsd)}</strong>{token.change24h!==null&&<small className={token.change24h>=0?'is-up':'is-down'}>{formatChange(token.change24h)}</small>}</div>
-  {token.marketStale&&<p className="small muted" role="status">Last observed{token.marketUpdatedAt!==null&&<> · <time dateTime={new Date(token.marketUpdatedAt).toISOString()} title={new Date(token.marketUpdatedAt).toISOString()}>{age(new Date(token.marketUpdatedAt).toISOString(),observedAt)}</time></>} · updating</p>}
-  <Sparkline points={token.sparkline}/>
-  <div className="dc-progress">{progress!==null?<><div className="progress-track" role="progressbar" aria-label={`Graduation progress for ${token.symbol}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-valuetext={token.state==='graduated'?'Graduated to Raydium':`${progress}% raised toward graduation`}><i style={{transform:`scaleX(${progress/100})`}}/></div><span>{token.state==='graduated'?'On Raydium':`${Math.round(progress)}%`}</span></>:<span className="dc-unknown">Curve not read yet</span>}</div>
+ const impersonation=grainImpersonation(token);
+ return <article className={`gx-token-card is-${token.state}${token.official?' is-grain':''}`}>
+ <a className="gx-token-main" href={`/token/${token.mint}${roomMode?'/room':''}`} aria-label={`Open ${token.name} ${roomMode?'Room':'token market'}`}>
+  <TokenTile src={token.official?BRAND_ASSETS.token:token.image} symbol={token.symbol} seed={token.mint}>{token.official?<StatusChip kind="graduated" label="official"/>:status&&<StatusChip kind={status.kind} label={status.label}/>}</TokenTile>
+  <div className="gx-token-body">
+   <h3><span className="gx-token-name" title={token.name}>{token.name}</span><span className="gx-mono gx-mute">${token.symbol}</span></h3>
+   {impersonation?<p className="gx-token-caution">not the official GRAIN</p>:<p className="gx-token-pair gx-mono gx-mute">{token.quoteAsset||'SOL'} pair{token.figuresSource==='geckoterminal'?' · usd via geckoterminal':''}</p>}
+   <div className="gx-token-value"><strong className="gx-num" title={token.marketCapUsd===null?'Market cap not available yet':undefined}>{formatMarketCap(token.marketCapUsd)}</strong>{token.change24h!==null&&<small className={`gx-mono ${token.change24h>=0?'is-up':'is-down'}`}>{formatChange(token.change24h)} 24h</small>}</div>
+   <p className="gx-token-meta gx-mono gx-mute"><span>{token.state==='curve'||token.state==='graduating'?'curve mc':'mc'}{token.marketCapUsd===null?' · not indexed yet':''}</span><time dateTime={token.createdAt} title={new Date(token.createdAt).toISOString()}>{age(token.createdAt,observedAt)}</time></p>
+   {token.marketStale&&<p className="gx-token-delayed gx-mono" role="status">delayed{token.marketUpdatedAt!==null&&<> · last seen <time dateTime={new Date(token.marketUpdatedAt).toISOString()} title={new Date(token.marketUpdatedAt).toISOString()}>{age(new Date(token.marketUpdatedAt).toISOString(),observedAt)}</time></>}</p>}
+   <GradSquares progress={progress} label={`Graduation progress for ${token.symbol}`} graduated={token.state==='graduated'}/>
+   <p className="gx-token-progress gx-mono gx-mute">{progress===null?'curve not read yet':token.state==='graduated'?'graduated · on raydium':`${Math.round(progress)}% to graduate`}</p>
+  </div>
  </a>
- <div className="dc-foot">{token.creator?<UserIdentity compact wallet={token.creator} identity={token.creatorIdentity}/>:<span>creator —</span>}<button aria-label={`Copy ${token.symbol} contract address`} title={token.mint} onClick={async()=>{try{await navigator.clipboard.writeText(token.mint);setCopied(true);setCopyError(false);setTimeout(()=>setCopied(false),1800);}catch{setCopyError(true);}}}>{copied?<Check size={10}/>:<Copy size={10}/>}<span aria-live="polite">{copied?'Copied':`${token.mint.slice(0,4)}…${token.mint.slice(-4)}`}</span></button><time dateTime={token.createdAt} title={new Date(token.createdAt).toISOString()}>{age(token.createdAt,observedAt)}</time></div>
- {copyError&&<p className="discovery-copy-error" role="status">Copy unavailable. Open token details.</p>}
+ <div className="gx-token-foot">{token.creator?<UserIdentity compact wallet={token.creator} identity={token.creatorIdentity}/>:<span className="gx-mono gx-mute">creator —</span>}<button className="gx-mono" aria-label={`Copy ${token.symbol} contract address`} title={token.mint} onClick={async()=>{try{await navigator.clipboard.writeText(token.mint);setCopied(true);setCopyError(false);setTimeout(()=>setCopied(false),1800);}catch{setCopyError(true);}}}>{copied?<Check size={11}/>:<Copy size={11}/>}<span aria-live="polite">{copied?'copied':`${token.mint.slice(0,4)}…${token.mint.slice(-4)}`}</span></button></div>
+ {copyError&&<p className="gx-token-caution" role="status">copy unavailable. open the token page.</p>}
  </article>;
 }
-export function TokenDiscovery({initialQuote='all',roomMode=false,sectionNumber='02 /',initialData=null}:{initialData?:DiscoveryResult|null;sectionNumber?:string|null;initialQuote?:'all'|'SOL'|'wXMR';roomMode?:boolean}={}){
+function InviteCard(){
+ return <a className="gx-invite gx-onor" href="/launch"><span className="gx-label is-ink">your token here</span><span className="gx-invite-title">launch<br/>yours<span>.</span></span><span className="gx-invite-foot"><span className="gx-mono">name it, add an image, launch from your own wallet.</span><span className="gx-invite-plus" aria-hidden="true"><Plus size={26}/></span></span></a>;
+}
+/** `board`: the home "launching now." grid. `directory`: search, sort, quote market and pages. Both read /api/discovery only. */
+export function TokenDiscovery({initialQuote='all',roomMode=false,sectionNumber:_sectionNumber=null,initialData=null,variant='directory',title}:{initialData?:DiscoveryResult|null;sectionNumber?:string|null;initialQuote?:'all'|'SOL'|'wXMR';roomMode?:boolean;variant?:'board'|'directory';title?:string}={}){
+ void _sectionNumber;
+ const board=variant==='board';
  const [quote,setQuote]=useState(initialQuote);
  const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[filter,setFilter]=useState<DiscoveryFilter>('all'),[sort,setSort]=useState<DiscoverySort>('newest'),[page,setPage]=useState(1),[retry,setRetry]=useState(0);
  const [result,setResult]=useState<{key:string;data:DiscoveryResult}|null>(()=>initialData?{key:JSON.stringify(['','all','newest',1,initialQuote]),data:initialData}:null),[error,setError]=useState('');
  const section=useRef<HTMLElement>(null),listTop=useRef<HTMLDivElement>(null),[visible,setVisible]=useState(false);
  const key=JSON.stringify([search,filter,sort,page,quote]);
  const data=result?.key===key?result.data:null;
- const shelf=!!data&&data.featured.length>0&&!search&&filter==='all'&&page===1,shelved=new Set(shelf?data!.featured.map(t=>t.mint):[]);
+ const shelf=!board&&!!data&&data.featured.length>0&&!search&&filter==='all'&&page===1,shelved=new Set(shelf?data!.featured.map(t=>t.mint):[]);
  // A graduated token appears once: on the shelf when it is shown, otherwise in the grid.
- const listed=data?.tokens.filter(t=>!shelved.has(t.mint))||[];
+ const listed=(data?.tokens.filter(t=>!shelved.has(t.mint))||[]).slice(0,board?7:undefined);
  useEffect(()=>{const timer=setTimeout(()=>{setSearch(query);setPage(1)},250);return()=>clearTimeout(timer);},[query]);
  useEffect(()=>{const element=section.current;if(!element)return;const observer=new IntersectionObserver(([entry])=>setVisible(entry.isIntersecting),{rootMargin:'350px'});observer.observe(element);return()=>observer.disconnect();},[]);
  useEffect(()=>{
@@ -66,23 +70,40 @@ export function TokenDiscovery({initialQuote='all',roomMode=false,sectionNumber=
   },{intervalMs:60_000});
   return()=>{live=false;clearTimeout(timer);stop();};
  },[key,search,filter,sort,page,quote,retry,visible]);
- const filters:[DiscoveryFilter,string][]=[['all','All tokens'],['new','New'],['near','About to graduate'],['graduated','Graduated']];
+ const filters:[DiscoveryFilter,string][]=board?[['all','all'],['new','new'],['near','about to graduate'],['graduated','graduated']]:[['all','all'],['new','new'],['near','about to graduate'],['graduated','graduated']];
  function changeFilter(next:DiscoveryFilter){setFilter(next);setPage(1);setError('');}
  function navigate(next:number){setPage(next);setError('');listTop.current?.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
- return <section className="launch-index token-discovery" id="launches" ref={section} aria-labelledby="launch-index-heading">
- <div className="index-heading discovery-heading"><div><p className="overline">{sectionNumber&&<span className="section-number">{sectionNumber}</span>} ON THE RECORD</p><h2 id="launch-index-heading" className="display-title">{roomMode?'find your room':'every launch'}<span>.</span></h2></div><div className="discovery-network"><i/> SOLANA <span>{data?`${data.total.toLocaleString()} launches`:'LAUNCH DIRECTORY'}</span></div></div>
- <div className="discovery-searchbar"><div className="discovery-search"><Search size={18}/><Input aria-label="Search tokens by name, symbol or contract" placeholder="Search tokens, symbols or addresses" value={query} maxLength={128} onChange={e=>setQuery(e.target.value)}/>{query&&<button aria-label="Clear token search" onClick={()=>setQuery('')}><X size={15}/></button>}</div><a className="discovery-create" href="/launch"><span>Create token</span><ArrowUpRight size={17}/></a></div>
- {shelf&&<div className="graduated-shelf"><div className="graduated-heading"><div><p className="discovery-overline">THE NEXT CHAPTER</p><h3>Graduated <span>{data.counts.graduated}</span></h3><p>Curve filled. Now trading in a Raydium pool.</p></div><button onClick={()=>{changeFilter('graduated');listTop.current?.scrollIntoView({block:'start',behavior:'smooth'})}}>View all <ArrowRight size={16}/></button></div><div className="discovery-grid">{data.featured.map(token=><DiscoveryCard key={token.mint} token={token} roomMode={roomMode} observedAt={data!.updatedAt}/>)}</div></div>}
- <div className="discovery-explore" ref={listTop}><div className="discovery-explore-heading"><div><h3>Explore <span>{data?.filteredTotal.toLocaleString()??'—'}</span></h3><p>{search?`Results for “${search}”`:'Only launches confirmed on-chain through Grainpad.'}</p></div></div>
- <div className="discovery-controls"><GrainSelect label="Quote market" value={quote} onValueChange={value=>{setQuote(value as typeof quote);setPage(1);}} options={QUOTE_OPTIONS}/><GrainSelect label="Sort by" value={sort} onValueChange={value=>{setSort(value as DiscoverySort);setPage(1);setError('');}} options={SORT_OPTIONS} align="end" className="discovery-sort-select"/></div>
- <div className="discovery-filters" role="group" aria-label="Filter token launches">{filters.map(([value,label])=><button key={value} aria-pressed={filter===value} onClick={()=>changeFilter(value)}>{label}{data&&<span>{data.counts[value]}</span>}</button>)}</div>
- <div className="discovery-results" aria-busy={!data&&!error}>
- {!data&&!error?<div className="discovery-grid discovery-skeleton" aria-label="Loading tokens" role="status">{Array.from({length:5},(_,i)=><div key={i}><div/><span/><span/></div>)}</div>:!data&&error?<div className="discovery-empty" role="alert"><RefreshCw size={26}/><h4>The directory is unavailable.</h4><p>{error}</p><Button variant="outline" onClick={()=>{setError('');setRetry(n=>n+1)}}>Try again</Button></div>:data?.total===0&&!data.officialMint&&quote==='all'?<div className="discovery-prelaunch"><div className="discovery-first"><span className="discovery-first-mark"><Sprout size={34}/></span><p className="discovery-overline">ROOM FOR YOUR NEXT IDEA</p><h4>The first chapter<br/>starts here.</h4><p>Confirmed Grainpad launches will appear here. Yours could be the first.</p><a href="/launch">Explore the workspace <ArrowUpRight size={16}/></a></div><div className="discovery-grain-pending"><TokenImage src={BRAND_ASSETS.token} symbol="GRAIN" size={68}/><div><span className="discovery-overline">PLATFORM TOKEN</span><strong>GRAIN</strong><p>Awaiting launch</p></div><p>The official contract will be published here after launch. Verify the address, not the name.</p></div></div>:listed.length?<div className="discovery-grid">{listed.map(token=><DiscoveryCard key={token.mint} token={token} roomMode={roomMode} observedAt={data!.updatedAt}/>)}</div>:<div className="discovery-empty" role="status"><Search size={26}/><h4>{data?.total===0&&quote!=='all'?`No launches in the ${quote} market yet.`:search?'No matching tokens.':filter==='graduated'?'No confirmed graduations yet.':filter==='near'?'No tokens near graduation yet.':'No confirmed curve data yet.'}</h4><p>{search?'Try a name, symbol or complete contract address.':'New shows active curves; About to graduate starts at 80% of the target. Missing snapshots remain unknown.'}</p><Button variant="outline" onClick={()=>{setQuery('');setSearch('');setQuote('all');changeFilter('all');}}>View all tokens</Button></div>}
+ const invite=!roomMode;
+ const heading=title??(roomMode?'find your room':board?'launching now':'launches');
+ const zero=data?.total===0&&!data.officialMint&&quote==='all';
+ return <section className={`gx-launches launch-index token-discovery${board?' is-board':' is-directory'}`} id="launches" ref={section} aria-labelledby="launch-index-heading">
+ <div className="gx-launches-head">
+  <div><p className="gx-label">{board?'the launch board':roomMode?'rooms · crew boards':'solana · confirmed launches'}</p><h2 id="launch-index-heading" className={board?'gx-h2':'gx-display'}>{heading}<span className="gx-dot">.</span></h2></div>
+  <div className="gx-launches-tools">
+   <p className="gx-mono gx-mute gx-launches-count"><span className="gx-live-dot" aria-hidden="true"/>{data?`${data.total.toLocaleString()} launches`:'launch directory'}{data?.counts.unknown?` · ${data.counts.unknown} awaiting market data`:''}</p>
+   <div className="gx-seg" role="group" aria-label="Filter token launches">{filters.map(([value,label])=><button key={value} aria-pressed={filter===value} onClick={()=>changeFilter(value)}>{label}{data&&!board&&<span>{data.counts[value]}</span>}</button>)}</div>
+  </div>
  </div>
- {data?.coverage&&<p className="small muted" role="status">{data.coverage}</p>}
- {data&&data.pages>1&&<nav className="discovery-pagination" aria-label="Token pages"><Button variant="outline" aria-label="Previous token page" disabled={data.page<=1} onClick={()=>navigate(data.page-1)}><ChevronLeft size={16}/></Button>{Array.from(new Set([1,...[data.page-1,data.page,data.page+1].filter(n=>n>1&&n<data.pages),data.pages])).map((n,i,arr)=><span key={n}>{i>0&&n-arr[i-1]>1&&<em>…</em>}<button aria-label={`Token page ${n}`} aria-current={data.page===n?'page':undefined} onClick={()=>navigate(n)}>{n}</button></span>)}<Button variant="outline" aria-label="Next token page" disabled={data.page>=data.pages} onClick={()=>navigate(data.page+1)}><ChevronRight size={16}/></Button></nav>}
- {(error&&data||data?.stale)&&<p className="discovery-status" role="status">Showing the last available directory. Updates are temporarily delayed.</p>}
- <div className="discovery-footnote"><span>Only launches through Grainpad. Listings are not endorsements.</span><span>MC in USD · {data?.counts.unknown?`${data.counts.unknown} awaiting market data`:'Missing data appears as —'}</span></div>
- {data&&data.total>0&&<p className="discovery-coverage">Market figures and graduation filters use the last observed market snapshots. Delayed observations are marked with their age. Open a token to refresh its market. GRAIN stays first when its verified contract is published.</p>}
- </div></section>;
+ {!board&&<div className="gx-launches-bar">
+  <div className="gx-search"><Search size={17} aria-hidden="true"/><Input aria-label="Search tokens by name, symbol or contract" placeholder="name, ticker or address" value={query} maxLength={128} onChange={e=>setQuery(e.target.value)}/>{query&&<button aria-label="Clear token search" onClick={()=>setQuery('')}><X size={15}/></button>}</div>
+  <div className="gx-launches-selects"><GrainSelect label="Quote" value={quote} onValueChange={value=>{setQuote(value as typeof quote);setPage(1);}} options={QUOTE_OPTIONS}/><GrainSelect label="Sort" value={sort} onValueChange={value=>{setSort(value as DiscoverySort);setPage(1);setError('');}} options={SORT_OPTIONS} align="end" className="discovery-sort-select"/></div>
+ </div>}
+ {shelf&&<div className="gx-shelf"><div className="gx-shelf-head"><div><p className="gx-label">the next chapter</p><h3 className="gx-h3">graduated <span className="gx-mono gx-mute">{data.counts.graduated}</span></h3><p className="gx-mute">curve filled. now trading in a raydium pool.</p></div><button className="gx-ghost is-sm" onClick={()=>{changeFilter('graduated');listTop.current?.scrollIntoView({block:'start',behavior:'smooth'})}}>view all <ArrowRight size={15}/></button></div><div className="gx-grid">{data.featured.map(token=><DiscoveryCard key={token.mint} token={token} roomMode={roomMode} observedAt={data!.updatedAt}/>)}</div></div>}
+ <div className="gx-launches-results" ref={listTop} aria-busy={!data&&!error}>
+ {search&&<p className="gx-mono gx-mute gx-results-for">results for “{search}” · {data?.filteredTotal.toLocaleString()??'—'}</p>}
+ {!data&&!error?<div className="gx-grid gx-skeleton" aria-label="Loading tokens" role="status">{invite&&<InviteCard/>}{Array.from({length:board?3:7},(_,i)=><div key={i} className="gx-token-card is-loading"><div/><span/><span/><span/></div>)}</div>
+ :!data&&error?<div className="gx-state" role="alert"><p className="gx-label">directory · unavailable</p><h3 className="gx-h3">the board didn’t load<span className="gx-dot">.</span></h3><p className="gx-mute">{error} nothing on this page changed on-chain.</p><button className="gx-ghost" onClick={()=>{setError('');setRetry(n=>n+1)}}>try again</button></div>
+ :zero?<div className="gx-grid">{invite&&<InviteCard/>}<div className="gx-state gx-state-first"><p className="gx-label">no launches yet</p><h3 className="gx-h3">the first launch goes here<span className="gx-dot">.</span></h3><p className="gx-mute">confirmed grainpad launches appear on this board once they are seen on-chain. yours could be the first.</p><div className="gx-state-grain"><TokenTile src={BRAND_ASSETS.token} symbol="GRAIN" seed="grain" small/><p><strong>GRAIN</strong><span className="gx-mono gx-mute">platform token · awaiting launch. the official contract is published here after launch. verify the address, not the name.</span></p></div></div></div>
+ :listed.length?<div className="gx-grid">{invite&&!search&&filter==='all'&&page===1&&<InviteCard/>}{listed.map(token=><DiscoveryCard key={token.mint} token={token} roomMode={roomMode} observedAt={data!.updatedAt}/>)}</div>
+ :<div className="gx-state" role="status"><p className="gx-label">{search?'search':'filter'} · empty</p><h3 className="gx-h3">{data?.total===0&&quote!=='all'?`nothing in the ${quote} market yet`:search?'nothing here yet':filter==='graduated'?'no graduations yet':filter==='near'?'nobody near graduation yet':'no curve data yet'}<span className="gx-dot">.</span></h3><p className="gx-mute">{search?'try a name, ticker or the full contract address.':'new shows active curves; about to graduate starts at 80% of the target. missing snapshots stay unknown.'}</p><div className="gx-state-actions"><a className="gx-pill is-orange" href="/launch">be the first one <ArrowUpRight size={16}/></a><button className="gx-ghost" onClick={()=>{setQuery('');setSearch('');setQuote('all');changeFilter('all');}}>view all tokens</button></div></div>}
+ </div>
+ {board?<div className="gx-launches-foot"><p className="gx-mono gx-mute">{data?.total?`only launches confirmed on-chain through grainpad · listings are not endorsements · mc in usd, — when not indexed`:'only launches confirmed on-chain through grainpad'}</p><a className="gx-ghost is-sm" href="/launches">see all launches <ArrowRight size={15}/></a></div>
+ :<>
+ {data&&data.pages>1&&<nav className="gx-pager" aria-label="Token pages"><span className="gx-mono gx-mute">page {data.page} of {data.pages}</span><div><button className="gx-icon" aria-label="Previous token page" disabled={data.page<=1} onClick={()=>navigate(data.page-1)}><ChevronLeft size={16}/></button>{Array.from(new Set([1,...[data.page-1,data.page,data.page+1].filter(n=>n>1&&n<data.pages),data.pages])).map((n,i,arr)=><span key={n}>{i>0&&n-arr[i-1]>1&&<em>…</em>}<button className="gx-icon" aria-label={`Token page ${n}`} aria-current={data.page===n?'page':undefined} onClick={()=>navigate(n)}>{n}</button></span>)}<button className="gx-icon" aria-label="Next token page" disabled={data.page>=data.pages} onClick={()=>navigate(data.page+1)}><ChevronRight size={16}/></button></div></nav>}
+ <div className="gx-launches-foot is-notes"><p className="gx-mono gx-mute">only launches through grainpad. listings are not endorsements.</p><p className="gx-mono gx-mute">mc in usd · {data?.counts.unknown?`${data.counts.unknown} awaiting market data`:'missing data appears as —'}</p></div>
+ {data&&data.total>0&&<p className="gx-mono gx-mute gx-coverage">market figures and graduation filters use the last observed market snapshots. delayed observations are marked with their age. open a token to refresh its market. GRAIN stays first when its verified contract is published.</p>}
+ </>}
+ {data?.coverage&&<p className="gx-mono gx-mute gx-coverage" role="status">{data.coverage}</p>}
+ {(error&&data||data?.stale)&&<p className="gx-delayed-note gx-mono" role="status">showing the last available directory · updates are delayed</p>}
+ </section>;
 }

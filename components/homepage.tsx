@@ -1,49 +1,108 @@
 "use client";
-import "@/app/marketing-refinements.css";
-import {BRAND_CHAIN} from "@/lib/brand-presentation";
+import {useEffect,useRef,useState,type KeyboardEvent} from "react";
+import {ArrowDown,ArrowRight,ArrowUpRight,Pause,Play} from "lucide-react";
 import {HeroFeatures,SiteStats,useSiteOverview} from "@/components/site-overview";
 import {TokenDiscovery} from "@/components/token-discovery";
-import Image from "next/image";
-import {ArrowUpRight,ArrowDown,Plus,FlaskConical} from "lucide-react";
 import {SiteHeader} from "@/components/site-header";
-import {GenesisField} from "@/components/genesis-field";
-import {KineticText} from "@/components/kinetic-text";
-import {TokenTape} from "@/components/token-tape";
 import {LaunchDisclosure} from "@/components/launch-disclosure";
 import {SiteFooter} from "@/components/site-footer";
 import {useLaunchStatus} from "@/components/use-launch-status";
 import {LaunchDesk} from "@/components/launch-desk";
+import {GrainStage,grainWord,type GrainMode} from "./grain-stage";
+import {ReceiptRows,tokenStatus} from "./grain-ui";
+import {formatMarketCap} from "@/lib/token-market";
+import {BRAND_CHAIN} from "@/lib/brand-presentation";
 import {MONERO_NARRATIVE,moneroRecordSummary} from "@/lib/monero-record-status.mjs";
+import type {DiscoveryResult,DiscoveryToken} from "@/lib/token-discovery";
 
-export function Home({initialOverview,initialDiscovery}:{initialOverview:import("@/components/site-overview").SiteOverviewData|null;initialDiscovery:import("@/lib/token-discovery").DiscoveryResult|null}){
+const STAGES:[string,string][]=[["idea","everything starts with an idea. loose, restless, not yet anything."],["identity","give it a name. a ticker, an image, a story worth putting out there."],["on-chain","then it's out. a public receipt, a live tape and a market of its own."]];
+
+function ago(date:string,now:number){const minutes=Math.floor(Math.max(0,now-Date.parse(date))/60000);return minutes<1?"just now":minutes<60?`${minutes}m ago`:minutes<1440?`${Math.floor(minutes/60)}h ago`:`${Math.floor(minutes/1440)}d ago`;}
+
+/** Hero: the composer on the left, the grain stage on the right. Nothing on this page asks a wallet for anything. */
+function Hero({overview,status}:{overview:ReturnType<typeof useSiteOverview>;status:ReturnType<typeof useLaunchStatus>["status"]}){
+ const [name,setName]=useState(""),[word,setWord]=useState("grainpad"),[mode,setMode]=useState<GrainMode>(0),[auto,setAuto]=useState(true),[kick,setKick]=useState(0),[reduce,setReduce]=useState(false);
+ const hero=useRef<HTMLElement>(null),visible=useRef(true),tabs=useRef<(HTMLButtonElement|null)[]>([]);
+ // eslint-disable-next-line react-hooks/set-state-in-effect -- Mirror the reduced-motion preference after hydration.
+ useEffect(()=>{const media=matchMedia("(prefers-reduced-motion: reduce)");const sync=()=>{setReduce(media.matches);if(media.matches)setAuto(false);};sync();media.addEventListener("change",sync);return()=>media.removeEventListener("change",sync);},[]);
+ useEffect(()=>{const node=hero.current;if(!node)return;const io=new IntersectionObserver(([entry])=>{visible.current=entry.isIntersecting;});io.observe(node);return()=>io.disconnect();},[]);
+ // Autoplay only while the hero is on screen and the tab is visible; any tab click or keystroke stops it.
+ useEffect(()=>{if(!auto)return;const timer=setInterval(()=>{if(visible.current&&!document.hidden)setMode(m=>((m+1)%3) as GrainMode);},5200);return()=>clearInterval(timer);},[auto]);
+ useEffect(()=>{const timer=setTimeout(()=>setWord(grainWord(name)),160);return()=>clearTimeout(timer);},[name]);
+ function choose(next:GrainMode){setMode(next);setAuto(false);}
+ function onTabKey(e:KeyboardEvent<HTMLDivElement>){
+  const keys:Record<string,number>={ArrowRight:1,ArrowLeft:-1,Home:-9,End:9};if(!(e.key in keys))return;e.preventDefault();
+  const step=keys[e.key],next=(step===-9?0:step===9?2:(mode+step+3)%3) as GrainMode;choose(next);tabs.current[next]?.focus();
+ }
+ const typed=name.trim();
+ return <section className="gx-hero gx-wrap" id="main-content" ref={hero} aria-labelledby="hero-heading">
+  <div className="gx-hero-copy">
+   <p className="gx-label">{BRAND_CHAIN.label.toLowerCase()} · ideas into existence</p>
+   <h1 id="hero-heading" className="gx-h1">ideas into existence<span className="gx-dot">.</span></h1>
+   <p className="gx-hero-sub">launch a token in minutes. every launch gets a public receipt, a live tape and a room.</p>
+   <form className="gx-composer" action="/launch" method="get">
+    <label className="gx-composer-field"><span className="gx-mono gx-mute">name your idea</span><input name="name" value={name} maxLength={32} autoComplete="off" spellCheck={false} placeholder="grainpad" onChange={e=>{setName(e.target.value);setAuto(false);setMode(1);setKick(k=>k+1);}}/></label>
+    <button type="submit" className="gx-pill is-orange gx-composer-go">launch it <ArrowRight size={18}/></button>
+   </form>
+   <ol className="gx-hero-steps gx-mono gx-mute"><li><span>01</span> name it</li><li><span>02</span> add an image</li><li><span>03</span> launch from your own wallet</li></ol>
+   <div className="gx-hero-links"><a className="gx-ghost" href="#launches">browse launches <ArrowDown size={16}/></a><span className="gx-mono gx-mute">nothing is signed on this page</span></div>
+   <div className="gx-hero-status"><a className="gx-mono" href="/platform"><span className={`gx-status-dot${status.state==="open"?" is-on":""}`} aria-hidden="true"/>{status.label} <ArrowUpRight size={12}/></a><HeroFeatures data={overview}/></div>
+  </div>
+  <div className="gx-hero-stage">
+   <div className="gx-stage-top gx-mono gx-mute"><span className="gx-label">grainpad / in the making</span><span>interactive illustration · no transaction</span></div>
+   <div className="gx-stage-canvas"><GrainStage mode={mode} word={word} kick={kick}/><span className="gx-stage-corner is-tl" aria-hidden="true"/><span className="gx-stage-hint gx-mono gx-mute" aria-hidden="true">move anywhere to explore</span>
+    {!reduce&&<button type="button" className="gx-icon gx-stage-play" aria-label={auto?"Pause animation":"Play animation"} aria-pressed={!auto} onClick={()=>setAuto(a=>!a)}>{auto?<Pause size={14}/>:<Play size={14}/>}</button>}
+   </div>
+   <div className="gx-stage-tabs" role="tablist" aria-label="From idea to on-chain" onKeyDown={onTabKey}>{STAGES.map(([label],i)=><button key={label} ref={el=>{tabs.current[i]=el;}} type="button" role="tab" id={`hero-tab-${i}`} aria-selected={mode===i} aria-controls="hero-stage-panel" tabIndex={mode===i?0:-1} onClick={()=>choose(i as GrainMode)}><b>0{i+1}</b> {label}</button>)}</div>
+   <p className="gx-stage-says" id="hero-stage-panel" role="tabpanel" aria-labelledby={`hero-tab-${mode}`}>{STAGES[mode][1]}</p>
+   <p className="sr-only" aria-live="polite">{typed?`The illustration spells ${word}.`:""}</p>
+  </div>
+ </section>;
+}
+
+/** Orange marquee of the latest confirmed launches, from the server snapshot of the launch board. */
+function LaunchBand({data}:{data:DiscoveryResult|null}){
+ const [now,setNow]=useState(data?.updatedAt??0);
+ // eslint-disable-next-line react-hooks/set-state-in-effect -- Ages render from the snapshot on the server, then from the viewer clock.
+ useEffect(()=>{setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),60_000);return()=>clearInterval(timer);},[]);
+ const seen=new Set<string>(),tokens:DiscoveryToken[]=[];
+ for(const token of [...(data?.tokens??[]),...(data?.featured??[])])if(!seen.has(token.mint)&&tokens.length<14){seen.add(token.mint);tokens.push(token);}
+ if(!tokens.length)return <div className="gx-band gx-onor is-empty" role="status"><div className="gx-wrap gx-mono"><span><i/>{data?"no launches on the board yet · the first one could be yours":"the launch board is loading"}</span><a href="/launch">launch yours <ArrowRight size={13}/></a></div></div>;
+ const items=tokens.map(token=>{const status=tokenStatus(token);return <a key={token.mint} href={`/token/${token.mint}`}><i/>{token.official?"official":status?.label??"launch"} <b>${token.symbol}</b> {ago(token.createdAt,now)} · mc {formatMarketCap(token.marketCapUsd)}{token.marketStale?" · delayed":""}</a>;});
+ return <section className="gx-band gx-onor" aria-label="Latest Grainpad launches"><div className="gx-band-track"><div className="gx-band-set">{items}</div><div className="gx-band-set" aria-hidden="true" inert>{items}</div></div></section>;
+}
+
+export function Home({initialOverview,initialDiscovery}:{initialOverview:import("@/components/site-overview").SiteOverviewData|null;initialDiscovery:DiscoveryResult|null}){
  const overview=useSiteOverview(initialOverview);
  const {status}=useLaunchStatus();
- const launchesOpen=status.state==='open';
- return <main className="landing-shell grain-updates">
+ return <main className="gx gx-home">
   <a className="skip-content" href="#main-content">Skip to content</a><SiteHeader/>
-  <section className="brand-hero" id="main-content" aria-labelledby="hero-heading">
-   <div className="hero-copy"><p className="overline"><span className="hero-network"><span className="orange-square"/> {BRAND_CHAIN.label.toUpperCase()}</span> IDEAS INTO EXISTENCE</p>
-    <h1 id="hero-heading"><span className="hero-opening"><KineticText>Your idea.</KineticText></span><br/><span className="hero-soft">On-chain<span className="hero-dot">.</span></span></h1>
-    <p className="hero-description">Create your token. Shape what comes next.<br/>Clear launch conditions. Your wallet. Your call.</p>
-    <HeroFeatures data={overview}/>
-    <div className="hero-actions"><a href="/launch" className="action-button action-light">Create a token <ArrowUpRight size={20}/></a><a href="#launches" className="action-text">Explore launches <ArrowDown size={17}/></a></div>
-    <a className="hero-status" href="/platform"><span className={`status-indicator ${launchesOpen?"is-active":""}`}/><span>{status.label}</span><ArrowUpRight size={12}/></a>
-   </div><div className="hero-art"><GenesisField/></div>
-   <div className="hero-baseline"><span><i/> FROM FIRST IDEA TO FIRST BLOCK.</span><a href="#approach">Discover the approach <ArrowDown size={13}/></a></div>
+  <Hero overview={overview} status={status}/>
+  <LaunchBand data={initialDiscovery}/>
+  <div className="gx-wrap gx-section"><TokenDiscovery variant="board" initialData={initialDiscovery}/></div>
+  <section className="gx-why gx-onor" aria-labelledby="why-heading"><div className="gx-wrap">
+   <div className="gx-why-row">
+    <div><p className="gx-label is-ink">why launch here</p><h2 id="why-heading" className="gx-why-title">every launch gets a receipt<span>.</span></h2></div>
+    <div className="gx-receipt gx-why-receipt"><div className="gx-receipt-head"><span>launch receipt</span><span>what it records</span></div>
+     <ReceiptRows rows={[["creator buy","declared before launch"],["creator buys seen","indexed on-chain"],["mint & freeze authority","read from chain"],["metadata","hash on record"],["signed by","the creator’s wallet"]]}/>
+    </div>
+   </div>
+   <div className="gx-why-three">
+    <div><span className="gx-mono">01</span><h3>a receipt for every launch.</h3><p>the creator’s declared buy, what the chain shows, authorities and metadata. one public page per token.</p></div>
+    <div><span className="gx-mono">02</span><h3>the tape is ours.</h3><p>trades come from grainpad’s own index. outside sources are a second look, not the page.</p></div>
+    <div><span className="gx-mono">03</span><h3>a room for the crew.</h3><p>tasks, credits and payments, tied to the wallets that did the work.</p></div>
+   </div>
+  </div></section>
+  <section className="gx-wrap gx-section gx-record" aria-labelledby="launch-desk-title">
+   <LaunchDesk status={status}/>
+   <SiteStats data={overview}/>
   </section>
-  <LaunchDesk status={status}/>
-  <TokenTape hideEmpty={!overview?.launches}/>
-  <SiteStats data={overview}/>
-  <div className="technology-line"><span className="overline">THE FOUNDATION</span><span className="technology-name"><Image unoptimized className="solana-logo" src="/brand/solana-sol-icon.svg" alt="" width={24} height={19}/>{BRAND_CHAIN.label}</span><span className="technology-separator"/><span className="technology-name raydium-name"><Image unoptimized className="raydium-logo" src="/brand/raydium-logo.svg" alt="" width={22} height={26}/>Raydium <span>LaunchLab</span></span><span className="technology-separator"/><span className="technology-name monero-name"><Image unoptimized className="monero-logo" src="/brand/monero-symbol.svg" alt="" width={22} height={22}/>Monero <span>wXMR</span></span><span className="technology-note">New launches pair with wXMR on Raydium LaunchLab.<br/>Grainpad’s public record on top.</span></div>
-  <section className="approach-section" id="approach" aria-labelledby="approach-heading">
-   <div className="section-intro"><p className="overline"><span className="section-number">01 /</span> A BETTER START</p><h2 id="approach-heading">The next move<br/><span>is yours.</span></h2><p>Name it, check the exact conditions, sign in your own wallet. Nothing is sent until you approve it.</p><a href="/launch" className="underlined-link">Inside the workspace <ArrowUpRight size={17}/></a></div>
-   <div className="approach-steps"><article><span className="approach-number">01</span><div><h3>Give it an identity.</h3><p>A name, a symbol, a story. Compose your token and see its identity take shape before you connect.</p></div><span className="step-glyph"><Plus size={24}/></span></article><article><span className="approach-number">02</span><div><h3>See the whole picture.</h3><p>Review supply, launch conditions and estimated costs. Set a spending limit before signing.</p></div><span className="step-glyph"><span className="review-glyph"/></span></article><article><span className="approach-number">03</span><div><h3>Make the final call.</h3><p>Approve the transaction in your own wallet. A submitted launch becomes a listing only after verification.</p></div><span className="step-glyph"><ArrowUpRight size={24}/></span></article></div>
+  <section className="gx-wrap gx-section gx-lab" aria-labelledby="research-heading">
+   <div><p className="gx-label">monero lab</p><h2 id="research-heading" className="gx-h3">inside the lab<span className="gx-dot">.</span></h2></div>
+   <p className="gx-mute">{MONERO_NARRATIVE} {moneroRecordSummary()} The lab shows the record format beside the earlier regtest-only p/xmr research. No XMR backing, no bridge, and no affiliation with Monero or p/xmr.</p>
+   <a className="gx-ghost is-sm" href="/lab">open the monero lab <ArrowUpRight size={15}/></a>
   </section>
-  <TokenDiscovery initialData={initialDiscovery}/>
-  <section className="principles-section" aria-labelledby="principles-heading"><div className="principles-title"><p className="overline"><span className="section-number">03 /</span> CLEAR BY DESIGN</p><h2 id="principles-heading">The details<br/>are the difference<span>.</span></h2><a href="/docs" className="underlined-link">Read the Docs <ArrowUpRight size={17}/></a></div><div className="principles-list"><div><span>01</span><h3>Conditions you can inspect.</h3><p>Platform configuration, fee destinations and activation status are available to check.</p></div><div><span>02</span><h3>Your signature. Your decision.</h3><p>Preparing a launch is separate from signing it. Nothing launches without your approval.</p></div></div></section>
-  <section className="research-card" aria-labelledby="research-heading"><div><p className="overline"><FlaskConical size={15}/> MONERO LAB</p><h2 id="research-heading">Inside the lab.</h2><p>{MONERO_NARRATIVE} {moneroRecordSummary()} The lab shows the record format beside the earlier regtest-only p/xmr research. No XMR backing, no bridge, and no affiliation with Monero or p/xmr.</p></div><a className="underlined-link" href="/lab">Open the Monero lab</a></section>
-  <section className="home-disclosures" aria-label="Launch disclosures"><LaunchDisclosure/></section>
-  <section className="closing-cta" aria-labelledby="closing-heading"><div><p className="overline">YOUR NEXT BEGINNING</p><h2 id="closing-heading">One idea.<br/>Make it yours.</h2><p>Shape your token. Review the conditions. You make the call.</p></div><a href="/launch" className="action-button action-light">Create a token</a></section>
+  <section className="gx-wrap gx-disclosures home-disclosures" aria-label="Launch disclosures"><LaunchDisclosure/></section>
   <SiteFooter/>
  </main>;
 }

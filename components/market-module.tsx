@@ -4,6 +4,7 @@ import {useLiveMarket} from './use-live-market';
 import {LiveMarketChart} from './live-market-chart';
 import {CandlestickMarketChart,LiveCandlestickMarketChart} from './candlestick-market-chart';
 import {ChartPreferences,useChartPreferences} from './chart-preferences';
+import {GrainsChart,type ChartTrade} from './grains-chart';
 import {chartCandles,chartRequest} from '@/lib/chart-candles.mjs';
 import {rollingChartPoints} from '@/lib/live-chart.mjs';
 import {Area,AreaChart,CartesianGrid,ReferenceDot,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
@@ -58,16 +59,18 @@ export function GrainChart({points,interval,unit,label,live=false,now}:{points:S
 }
 function Stat({label,value,note}:{label:string;value:string;note?:string}){return <div className="market-stat"><dt>{label}</dt><dd>{value}{note&&<small>{note}</small>}</dd></div>;}
 const COVERAGE_LABEL:Record<string,string>={indexed:'indexed',partial:'partial index','not-indexed':'not indexed yet','no-trades':'no trades yet','external-fallback':'external fallback'};
-type Props={market:MarketView|null;mint:string;quoteSymbol?:string;error?:string;seconds:number;setSeconds:(n:number)=>void};
+type Props={market:MarketView|null;mint:string;quoteSymbol?:string;error?:string;seconds:number;setSeconds:(n:number)=>void;trades?:ChartTrade[]};
 /** One market module. Grainpad's native figures and indexed candles are the default; an external USD pool series is a
  * toggle only when a pool index has it (market.chart.available), and the index's own GeckoTerminal fallback is labeled. */
-export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:Props){
+export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds,trades=[]}:Props){
  const usdAvailable=!!market?.chart.available,[choice,setChoice]=useState<MarketSource>('grainpad'),[metric,setMetric]=useState<'price'|'market-cap'>('price');
  const {preferences,update}=useChartPreferences();
  const source:MarketSource=seconds!==0&&choice==='usd'&&usdAvailable?'usd':'grainpad';
  const feed=useLiveMarket(mint,market?.pool),liveView=seconds===0;
  const request=chartRequest(seconds,preferences.type),history=useHistory(market,mint,request.query,source==='usd');
  const [now,setNow]=useState(()=>Date.now());useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),1_000);return()=>clearInterval(id);},[]);
+ // Display only: the line view draws trades as grains by default; "line" is the plain series.
+ const [lineStyle,setLineStyle]=useState<'grains'|'line'>('grains');
  const q=market?.quote,unit=q?.symbol||quoteSymbol||'—',n=market?.native,graduated=market?.route==='cpmm';
  const rows=useMemo(()=>liveView&&isUsd(history.data)?[]:history.data?.rows||[],[liveView,history.data]),usdSeries=!liveView&&isUsd(history.data);
  const resolution=history.data?.window?.resolution??request.resolution;
@@ -110,7 +113,7 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
  const missingPriceNote=!market?(error?'Price temporarily unavailable':'Reading the pool…'):coverage?.status==='no-trades'||market.activity==='none'?'Price appears with the first trade':history.error?'Price history unavailable':'No verified price available';
  const seriesLabel=usdSeries?(source==='usd'?'USD · external pool index':'USD · GeckoTerminal fallback'):`on-chain · ${unit}`;
  return <section className="panel corner-panel market-module" aria-labelledby="market-heading" data-stale={stale||undefined}>
-  <div className="corner-head"><span className="corner-label">Market</span><span className="corner-label is-right">{seriesLabel}</span></div>
+  <div className="corner-head"><span className="corner-label">{usdSeries?'market · usd':`grainpad native · ${activeMetric==='market-cap'?'market cap':'price'} in ${unit}`}</span><span className="corner-label is-right">{seriesLabel}</span></div>
   <div className="market-headline">
    <div>
     <h2 id="market-heading" className="sr-only">Market</h2>
@@ -125,8 +128,8 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds}:
    </div>
   </div>
   <dl className="market-stats stale-value">{statItems.map(([label,value,note])=><Stat key={label} label={label} value={value} note={note}/>)}</dl>
-  <ChartPreferences preferences={preferences} update={update}/>
-  <div className="market-chart-frame">{preferences.type==='candles'?(points.length||candles.length?(liveView?<LiveCandlestickMarketChart candles={candles} colors={preferences} unit={seriesUnit} lastPrice={candleLast} label={`${metricLabel} in ${seriesUnit}`}/>:<CandlestickMarketChart candles={candles} colors={preferences} unit={seriesUnit} lastPrice={candleLast} now={now/1000} interval={request.window} resolution={resolution} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>):<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>):liveView?(liveEvents.length?<LiveMarketChart events={liveEvents} multiplier={display.multiplier??1} unit={seriesUnit}/>:<div className="market-empty" role="status"><strong>{live?'Waiting for the first trade':'Connecting to live trades…'}</strong><span>Prices move when confirmed pool trades arrive.</span></div>):points.length?<GrainChart points={points} now={now/1000} live={live} interval={seconds} unit={seriesUnit} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
+  <ChartPreferences preferences={preferences} update={update} lineStyle={lineStyle} setLineStyle={setLineStyle}/>
+  <div className="market-chart-frame">{preferences.type==='candles'?(points.length||candles.length?(liveView?<LiveCandlestickMarketChart candles={candles} colors={preferences} unit={seriesUnit} lastPrice={candleLast} label={`${metricLabel} in ${seriesUnit}`}/>:<CandlestickMarketChart candles={candles} colors={preferences} unit={seriesUnit} lastPrice={candleLast} now={now/1000} interval={request.window} resolution={resolution} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>):<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>):liveView?(liveEvents.length?<LiveMarketChart events={liveEvents} multiplier={display.multiplier??1} unit={seriesUnit}/>:<div className="market-empty" role="status"><strong>{live?'Waiting for the first trade':'Connecting to live trades…'}</strong><span>Prices move when confirmed pool trades arrive.</span></div>):points.length?lineStyle==='grains'&&!usdSeries?<GrainsChart points={points} now={now/1000} interval={seconds} unit={seriesUnit} resolution={resolution} trades={trades} volumes={rows.map(row=>({time:row.time,volume:Number((row as Candle).volume)||0}))} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<GrainChart points={points} now={now/1000} live={live} interval={seconds} unit={seriesUnit} label={`${metricLabel} in ${seriesUnit}${display.estimatedUsd?' · current USD conversion estimate':''}${activeMetric==='market-cap'?' · current supply':''}`}/>:<div className="market-empty" role="status"><strong>{emptyTitle}</strong><span>{emptyNote}</span></div>}</div>
   <div className="market-foot"><span>{preferences.type==='candles'&&<>Candles · {resolution}s bars · last price carries through empty periods · </>}{liveView?<span>Live confirmed executions · moving 2-minute window · fees included</span>:<>{activeMetric==='market-cap'&&<>Market cap · current supply{display.estimatedUsd?' · current USD conversion estimate':''} · </>}{usdSeries?(history.data?.source==='geckoterminal'&&source!=='usd'?'GeckoTerminal USD fallback · not the Grainpad record':'External USD series. Swaps quote from chain.'):activeMetric==='market-cap'?'Grainpad index · execution prices × current supply · fees included':`Grainpad index · ${unit} per token · execution prices include fees`}</>}{coverage&&coverage.status!=='indexed'&&points.length>0&&<> · <span className="coverage-note" title={coverage.notice}>{COVERAGE_LABEL[coverage.status]||coverage.status}</span></>}</span>{usdSeries&&market?<a href={market.links?.gecko||`https://www.geckoterminal.com/solana/pools/${market.pool}`} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>:null}</div>
   {market&&pct!==null&&<div className="lifecycle-progress">
    <div><span>{market.route==='cpmm'?'Graduated':market.route==='graduating'?'Curve complete':'Bonding curve'}</span>{market.route==='curve'&&pct>=80&&<span className="record-tape">Near graduation</span>}{market.route!=='curve'&&<span className="record-tape">{market.route==='cpmm'?'On Raydium':'Migrating'}</span>}<strong>{market.route==='cpmm'?'100%':formatPercent(pct)}</strong></div>

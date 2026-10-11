@@ -2,10 +2,22 @@ import {BUILD_COMMIT} from "@/lib/build-commit";
 import {BRAND_ASSETS} from "@/lib/brand-assets";
 /* eslint-disable @next/next/no-html-link-for-pages -- Preserve native site navigation. */
 import Image from "next/image";
-import {ArrowUpRight} from "lucide-react";
 import {BRAND_CHAIN} from "@/lib/brand-presentation";
 import {SITE} from "@/lib/site-config";
 
 export function SiteFooter({textOnly=false,showResearchDisclaimer=true}:{textOnly?:boolean;showResearchDisclaimer?:boolean}={}) {
- return <footer className="brand-footer"><div className="footer-top"><a href="/" className="site-brand">{!textOnly&&<Image unoptimized src={BRAND_ASSETS.mark} width={30} height={30} alt=""/>}<span>grainpad<span className="brand-period">.</span></span></a><span>Ideas into existence.</span><nav aria-label="Footer"><a href="/launch">Workspace</a><a href="/docs">Docs</a><a href="/docs#faq">Wallets &amp; FAQ</a><a href="/platform">Platform status</a><a href="/transparency">Transparency</a><a href="/authority">Who controls what</a><a href="/roadmap">Roadmap</a><a href="/rooms">Rooms</a><a href="/markets/wxmr">wXMR market</a><a href="/rewards">Holder rewards</a><a href="/fees">Creator Desk</a><a href="/lab">Research</a><a href={SITE.twitter} target="_blank" rel="noreferrer">X / Twitter</a></nav></div><div className="footer-wordmark" aria-hidden="true">grainpad<span>.</span></div><div className="footer-bottom"><span>Independent by design.{BUILD_COMMIT&&<><br/><a href={`https://github.com/graindotfun/grainpad/commit/${BUILD_COMMIT}`} target="_blank" rel="noreferrer" title={BUILD_COMMIT}>Source (access required) · {BUILD_COMMIT.slice(0,12)}</a></>}</span><p>{BRAND_CHAIN.label} launch tools. Separate Monero research.{showResearchDisclaimer&&<><br/>Not affiliated with the original p/xmr project.</>}</p><a href="#main-content">Back to top <ArrowUpRight size={14}/></a></div></footer>;
+ return <footer className="gx-footer"><div className="gx-wrap">
+  <div className="gx-footer-top">
+   <a href="/" className="gx-footer-logo" aria-label="Grainpad home"><Image unoptimized src={BRAND_ASSETS.logoWordmark} width={375} height={96} alt=""/></a>
+   <nav className="gx-footer-cols" aria-label="Footer">
+    <div><span className="gx-label">product</span><a href="/launches">explore</a><a href="/launch">create a token</a><a href="/markets">markets</a><a href="/rooms">rooms</a><a href="/fees">creator desk</a><a href="/rewards">holder rewards</a>{!textOnly&&<a href="/lab">research lab</a>}</div>
+    <div><span className="gx-label">proof</span><a href="/transparency">transparency</a><a href="/treasury">treasury</a><a href="/authority">who controls what</a><a href="/platform">platform status</a><a href="/roadmap">roadmap</a></div>
+    <div><span className="gx-label">elsewhere</span><a href={SITE.twitter} target="_blank" rel="noreferrer">x</a><a href={SITE.discord} target="_blank" rel="noreferrer">discord</a><a href="/docs">docs</a><a href="/docs#faq">wallets &amp; faq</a><a href="/markets/wxmr">wXMR market</a></div>
+   </nav>
+  </div>
+  <div className="gx-footer-bottom">
+   <span>independent by design · {BRAND_CHAIN.label.toLowerCase()} launch tools · separate monero research{showResearchDisclaimer&&<> · not affiliated with the original p/xmr project</>}</span>
+   <span>{BUILD_COMMIT&&<a href={`https://github.com/graindotfun/grainpad/commit/${BUILD_COMMIT}`} target="_blank" rel="noreferrer" title={BUILD_COMMIT}>source (access required) · {BUILD_COMMIT.slice(0,12)}</a>}{BUILD_COMMIT&&' · '}<a href="#main-content">back to top ↑</a></span>
+  </div>
+ </div></footer>;
 }

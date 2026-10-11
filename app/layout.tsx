@@ -20,6 +20,7 @@ import "./readability.css";
 import "./profile.css";
 import "./rewards-calculator.css";
 import "./price-tab.css";
+import "./grains.css";
 import {PriceTab} from "@/components/price-tab";
 import {ContractAddressBar} from "@/components/contract-address-bar";
 
@@ -44,7 +45,7 @@ export default function RootLayout({
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <link rel="preload" href="/fonts/albert-sans-latin-variable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" fetchPriority="high"/>
-        <meta name="theme-color" content="#0d1012"/>
+        <meta name="theme-color" content="#101010"/>
         {/* eslint-disable-next-line @next/next/no-sync-scripts -- Tiny same-origin theme initializer must run before paint to prevent theme flash. */}
         <script src="/theme-init.js"/>
         <script src="/kernel.js" defer/>

@@ -8,7 +8,7 @@ const themeEvent="grainpad:theme";
 function snapshot():Theme{return document.documentElement.dataset.theme==="light"?"light":"dark";}
 function apply(theme:Theme){
  document.documentElement.dataset.theme=theme;
- document.querySelector('meta[name="theme-color"]')?.setAttribute("content",theme==="light"?"#f4f6f7":"#0d1012");
+ document.querySelector('meta[name="theme-color"]')?.setAttribute("content",theme==="light"?"#ffffff":"#101010");
  window.dispatchEvent(new Event(themeEvent));
 }
 function subscribe(update:()=>void){
