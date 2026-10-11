@@ -16,8 +16,8 @@ export function MoneroLiveRecord() {
     <div><dt>Solana mint</dt><dd><a className="address-line" href={links.solana} target="_blank" rel="noreferrer">{live.mint}</a></dd></div>
     <div><dt>Metadata hash</dt><dd className="address-line">{live.metadataHash}</dd></div>
     <div><dt>Monero transaction</dt><dd><a className="address-line" href={links.monero} target="_blank" rel="noreferrer">{live.txHash}</a></dd></div>
-    <div><dt>Block height</dt><dd>{live.height.toLocaleString("en-US")}</dd></div>
-    <div><dt>Confirmations at verification</dt><dd>{live.confirmations}</dd></div>
+    <div><dt>Block height</dt><dd className="gx-num">{live.height.toLocaleString("en-US")}</dd></div>
+    <div><dt>Confirmations at verification</dt><dd className="gx-num">{live.confirmations}</dd></div>
     <div><dt>Public receipt</dt><dd><a href={links.receipt}>{live.symbol} receipt: both chains</a></dd></div>
   </dl>;
 }

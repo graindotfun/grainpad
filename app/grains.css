@@ -783,5 +783,18 @@ html[data-theme] body :is(.gx-label,.gx-mono,.gx-chip,.eyebrow,.overline,.contra
 html[data-theme] body :is(.eyebrow,.gx-label,.overline) .gx-word{font-weight:400}
 html[data-theme] body code{font-family:var(--gx-mono)}
 /* Amounts and sentences set in mono move to Albert Sans 600. */
-html[data-theme] body :is(.gx-band a,.gx-band span:not(.gx-label),.gx-seg button span,.gx-coverage,.gx-delayed-note,.gx-create-rules,.gx-state-grain p .gx-mono,.gx-launches-foot .gx-mono,.gx-invite-foot .gx-mono,.gx-footer-bottom>span:first-child,.docs-facts dd,.docs-status,.rewards-calc-unit,.rewards-calc-token .segmented button,.rewards-calc-answer-head .segmented button,.math-result,.ledger-amount,.gx-receipt-row>span:last-child,.tax-control-bounds span,.gc-tooltip,.price-tab-pill,.price-tab-row,.swap-asset small){font-family:var(--gx-sans)!important;font-weight:600!important;letter-spacing:-.005em;text-transform:none}
+html[data-theme] body :is(.gx-band a,.gx-band span:not(.gx-label),.gx-seg button span,.gx-coverage,.gx-delayed-note,.gx-create-rules,.gx-state-grain p .gx-mono,.gx-launches-foot .gx-mono,.gx-invite-foot .gx-mono,.gx-footer-bottom>span:first-child,.docs-status,.rewards-calc-unit,.rewards-calc-token .segmented button,.rewards-calc-answer-head .segmented button,.tax-control-bounds span,.price-tab-pill,.swap-asset small,.lifecycle-progress strong,.lifecycle-progress small){font-family:var(--gx-sans)!important;font-weight:600!important;letter-spacing:-.005em;text-transform:none}
 html[data-theme] body dd.address-line{font-weight:400!important}
+
+/* Brand-book exception to rule 3 (owner decision, 11 October 2026): amounts that sit in aligned columns or stack in a
+ * list use IBM Plex Mono 400, because Albert Sans has no tabular figures (no tnum feature) and its digits are
+ * proportional. Standalone amounts (large price, balance, headline figures) stay Albert Sans 600. */
+html[data-theme] body :is(
+ .gx-num,.ledger-amount,.gc-tooltip,.gc-tooltip *,.gc-tick,.price-tab-row,.price-tab-row *,.docs-facts dd,.gx-receipt-row>span:last-child,
+ .receipt-page #opening-record .product-table td:is(:nth-child(2),:nth-child(3)),
+ .crew-record .product-table td:nth-child(4),
+ .ledger-table td:nth-child(3),
+ .rewards-calc-table-wrap :is(td,tbody th),
+ .reality-check .product-table :is(td,tbody th),
+ .creator-desk .product-table td:is([data-label="Observed earned"],[data-label="Observed claimed"],[data-label="Available now"],[data-label="Claims"])
+){font-family:var(--gx-mono)!important;font-weight:400!important;font-variant-numeric:tabular-nums;letter-spacing:0;text-transform:none}
