@@ -44,10 +44,12 @@ export type SolCreatorBuyIntent={quote:'SOL';amountIn:string;minOut:string;taxBp
 export type PreparedLaunch={creatorBuy?:PublicCreatorBuy|null;setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;rewards?:{taxBps:number;collector:string};fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
 export type PreparedOperation=Pick<PreparedLaunch,"creatorBuy"|"rewards"|"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
 /** Pending is a normal state; uncertain attempts remain locked until resolved. */
-export async function inspectSubmitted(signature:string,receipt?:{target?:string;expiry?:number}){
- const connection=rpc('mainnet-beta',undefined,signature);await assertNetwork(connection,'mainnet-beta');
+// Receipt polling runs every second; the same-origin relay's genesis is verified once per tab, not per poll.
+let receiptNetworkVerified=false;
+export async function inspectSubmitted(signature:string,receipt?:{target?:string;expiry?:number;acceptConfirmed?:boolean}){
+ const connection=rpc('mainnet-beta',undefined,signature);if(!receiptNetworkVerified){await assertNetwork(connection,'mainnet-beta');receiptNetworkVerified=true;}
  const raw=localStorage.getItem(`grainpad-tx-expiry:${signature}`);
- return inspectTransactionStatus(connection,signature,{expiry:receipt?.expiry??(raw?Number(raw):NaN),target:receipt?.target??localStorage.getItem(`grainpad-tx-target:${signature}`),publicKey:(value:string)=>new PublicKey(value)});
+ return inspectTransactionStatus(connection,signature,{expiry:receipt?.expiry??(raw?Number(raw):NaN),target:receipt?.target??localStorage.getItem(`grainpad-tx-target:${signature}`),publicKey:(value:string)=>new PublicKey(value),acceptConfirmed:receipt?.acceptConfirmed===true});
 }
 export async function resolveSubmitted(signature:string){
  const result=await inspectSubmitted(signature);

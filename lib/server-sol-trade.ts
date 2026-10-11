@@ -8,6 +8,7 @@ import {forwardRpc} from './server-rpc';import {createSimulationConnection} from
 import {prepareGuardedSolTrade,solRouterFetcher} from './sol-trade-prepare.mjs';import {preflightSolTrade} from './sol-trade-preflight.mjs';import {verifySolTradeSubmission} from './sol-trade-relay.mjs';
 import {grainpadPlatformId} from './platform-policy';import {NETWORKS} from './site-config';
 import {resolveSolRouteScope,assertSolRouteScopeUnchanged} from './sol-route-scope.mjs';
+import {priorityPolicy} from './priority-fee.mjs';
 // Operational review of the guarded route shape (reviewed on the GRAINU pilot); not Jupiter build certification.
 const SOL_ROUTE_ABI_REVIEWED=true,SOL_ROUTE_NET_MINIMUM_REVIEWED=true;
 export function assertSolTradeEnabled(){if(!SOL_ROUTE_ABI_REVIEWED||!SOL_ROUTE_NET_MINIMUM_REVIEWED||!LIGHTHOUSE_NET_GUARD_DEPLOYMENT_VERIFIED)throw Error('SOL routing remains disabled pending ABI and execution-net review.');if((env as unknown as {SOL_TRADING_ENABLED?:string}).SOL_TRADING_ENABLED!=='true')throw Error('SOL route preparation is under review. Direct wXMR trades remain available.');}
@@ -27,7 +28,7 @@ export async function prepareServerSolTrade(input:{owner:string;mint:string;side
  const actual=bucket();
  // Persist the server-verified marker in the immutable review, not a browser flag.
  const storage=input.creatorBuy===true?{get:actual.get.bind(actual),put:async(key:string,body:string,options:unknown)=>actual.put(key,JSON.stringify({...JSON.parse(body),officialCreatorBuy:true}),options as Parameters<typeof actual.put>[2])}:actual;
- const review=await prepareGuardedSolTrade({...input,fetcher:routerFetcher(),connection:connection(),storage,expectedGenesis:NETWORKS['mainnet-beta'].genesis,platformId:String(grainpadPlatformId()),findLaunch});
+ const review=await prepareGuardedSolTrade({...input,fetcher:routerFetcher(),connection:connection(),storage,priorityBounds:priorityPolicy(env as unknown as Record<string,string>),expectedGenesis:NETWORKS['mainnet-beta'].genesis,platformId:String(grainpadPlatformId()),findLaunch});
  return input.creatorBuy===true?reserveOfficialCreatorBuy(database(),{...review,officialCreatorBuy:true}):review;
 }
 /** Exact stored bytes only; returns a classified simulation result before any wallet request. */

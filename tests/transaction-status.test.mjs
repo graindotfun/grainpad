@@ -7,3 +7,8 @@ test('no signature without expiry cannot unlock a second trade',async()=>{for(co
 test('absence before expiry is pending; finalized height after expiry requires a second absence',async()=>{assert.equal((await inspectTransactionStatus(rpc([null],99),'sig',{expiry:100})).status,'pending');assert.equal((await inspectTransactionStatus(rpc([null,null]),'sig',{expiry:100})).status,'expired');assert.equal((await inspectTransactionStatus(rpc([null,{confirmationStatus:'confirmed'}]),'sig',{expiry:100})).status,'pending');});
 test('transaction appearing during expiry check is not falsely expired',async()=>{assert.equal((await inspectTransactionStatus(rpc([null,{confirmationStatus:'finalized',err:null}]),'sig',{expiry:100})).status,'finalized');});
 test('existing creation target prevents expiry release',async()=>{const connection=rpc([null]);connection.getAccountInfo=async()=>({});assert.equal((await inspectTransactionStatus(connection,'sig',{expiry:100,target:'target',publicKey:x=>x})).status,'unknown');});
+test('opt-in confirmed settlement resolves at confirmation but never at processed',async()=>{
+ assert.deepEqual(await inspectTransactionStatus(rpc([{confirmationStatus:'confirmed',err:null}]),'sig',{expiry:100,acceptConfirmed:true}),{status:'confirmed'});
+ assert.deepEqual(await inspectTransactionStatus(rpc([{confirmationStatus:'confirmed',err:{InstructionError:[0,'error']}}]),'sig',{expiry:100,acceptConfirmed:true}),{status:'failed'});
+ assert.deepEqual(await inspectTransactionStatus(rpc([{confirmationStatus:'processed',err:null}]),'sig',{expiry:100,acceptConfirmed:true}),{status:'pending'});
+});

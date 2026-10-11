@@ -59,3 +59,9 @@ test('a changed lookup mapping before approval asks for a fresh review and never
  await assert.rejects(signSolTrade({review:{...review,addressFingerprint:'[{"changed":true}]'},confirmReviewed:true,connection:{},preflight:async()=>{checks++;return {ok:true,slot:1};},wallet:{publicKey:payer.publicKey,signTransaction:async()=>{prompts++;}}}),/lookup tables changed after review\. Prepare a fresh review\. Nothing was signed\./);
  assert.equal(prompts,0);assert.equal(checks,0);
 });
+test('signed SOL submissions leave rebroadcasting to the RPC provider until expiry',async()=>{
+ const {payer,review}=fixture(),oldFetch=globalThis.fetch;let config;
+ globalThis.fetch=async(url,init)=>{if(String(url)==='/api/rpc-session')return Response.json({ok:true});const body=JSON.parse(init.body);config=body.params[1];return Response.json({jsonrpc:'2.0',result:bs58.encode(VersionedTransaction.deserialize(Buffer.from(body.params[0],'base64')).signatures[0])});};
+ try{await signSolTrade({review,confirmReviewed:true,connection:{},preflight:async r=>({id:r.id,ok:true,slot:1}),wallet:{publicKey:payer.publicKey,signTransaction:async t=>{t.sign([payer]);return t;}}});}finally{globalThis.fetch=oldFetch;}
+ assert.equal('maxRetries' in config,false);assert.equal(config.skipPreflight,false);assert.equal(config.preflightCommitment,'confirmed');
+});
