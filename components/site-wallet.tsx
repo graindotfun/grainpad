@@ -42,7 +42,7 @@ export function SiteWallet(){
  /** Leaves the wallet prompt to the wallet; a late approval still connects through the session listener. */
  function back(){current.current++;setAttempt(null);setBusy(false);}
  async function copy(address:string){try{await navigator.clipboard.writeText(address);setCopied(true);}catch{setNotice('Copy failed. Select the address to copy it.');}}
- async function disconnect(){try{await disconnectWalletSession();setOpen(false);}catch{setNotice('Wallet disconnected from Grainpad.');}}
+ async function disconnect(){try{await disconnectWalletSession();setOpen(false);}catch{setNotice('Wallet disconnected from grainpad.');}}
  const account=session&&!attempt&&!switching;
  const {rows,more,install,lastUsed:lastRow}=groupWalletProviders(choices,lastUsed);
 
@@ -87,7 +87,7 @@ export function SiteWallet(){
 
  return <><Button className="header-cta site-wallet-trigger" onClick={show} aria-label={session?`Connected wallet ${session.owner}`:'Connect wallet'}>{session?<><Avatar address={session.owner} size={16}/>{shortAddress(session.owner)}</>:'Connect wallet'}</Button>
  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="wallet-session-dialog">
-  <DialogHeader className="wallet-dialog-header"><span className="wallet-dialog-mark" aria-hidden="true"><Image unoptimized src={BRAND_ASSETS.mark} alt="" width={28} height={28}/></span><DialogTitle>{account?'Your wallet':switching?'Switch wallet':'Connect to Grainpad'}</DialogTitle><DialogDescription>{account?'One connection across Grainpad.':'Choose a wallet to continue.'}</DialogDescription></DialogHeader>
+  <DialogHeader className="wallet-dialog-header"><span className="wallet-dialog-mark" aria-hidden="true"><Image unoptimized src={BRAND_ASSETS.mark} alt="" width={28} height={28}/></span><DialogTitle>{account?'Your wallet':switching?'Switch wallet':'Connect to grainpad'}</DialogTitle><DialogDescription>{account?'One connection across grainpad.':'Choose a wallet to continue.'}</DialogDescription></DialogHeader>
   {body}
   {notice&&<p className="wallet-notice" role="alert">{notice}</p>}
   {!account&&<p className="wallet-safety"><Lock size={13} aria-hidden="true"/>Connecting shares only your public address. It never approves a transaction.</p>}

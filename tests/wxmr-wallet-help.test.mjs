@@ -45,8 +45,8 @@ const render=props=>renderToStaticMarkup(createElement(WalletsFaq,{platform,toke
 test('FAQ uses live rates and current 70/15/15 policy, and keeps activation separate from pilot receipts',()=>{
  const html=render({});
  assert.equal((html.match(/<summary>/g)||[]).length,14);
- assert.match(html,/1.25%: 0.25% Raydium, 0.75% Grainpad and 0.25% creator/);
- assert.match(html,/70% to eligible holders/);assert.match(html,/15% to the GRAIN/);assert.match(html,/15% to Grainpad/);
+ assert.match(html,/1.25%: 0.25% Raydium, 0.75% grainpad and 0.25% creator/);
+ assert.match(html,/70% to eligible holders/);assert.match(html,/15% to the GRAIN/);assert.match(html,/15% to grainpad/);
  assert.match(html,/Public distribution is not active/);assert.match(html,/Not yet: public SOL/);
  assert.match(html,/No official GRAIN mint is registered yet/);assert.doesNotMatch(html,/Copy official GRAIN mint/);
 });

@@ -10,8 +10,8 @@ import { SITE } from "@/lib/site-config";
 import "./transparency.css";
 
 export const metadata: Metadata = {
-  title: "Transparency — Grainpad",
-  description: "Grainpad's commitment to Monero open-source and public donation receipts.",
+  title: "Transparency — grainpad",
+  description: "grainpad's commitment to Monero open-source and public donation receipts.",
   alternates: { canonical: `${SITE.origin}/transparency` },
 };
 
@@ -19,7 +19,7 @@ export default function TransparencyPage() {
   const donations = readDonations(donationData);
   return <main className="shell record-shell grain-updates">
     <a className="skip-content" href="#main-content">Skip to transparency</a><SiteHeader/>
-    <header className="page-heading record-heading" id="main-content"><div><p className="eyebrow">GRAINPAD / PUBLIC RECORD</p><h1>Transparency<span>.</span></h1></div><a href="/roadmap" className="record-link">View roadmap</a></header>
+    <header className="page-heading record-heading" id="main-content"><div><p className="eyebrow"><span className="gx-word">grainpad</span> / PUBLIC RECORD</p><h1>Transparency<span>.</span></h1></div><a href="/roadmap" className="record-link">View roadmap</a></header>
     <section className="record-commitment" aria-labelledby="commitment-heading">
       <h2 id="commitment-heading">Commitment</h2>
       <div><h3>{MONERO_ROADMAP[0].title}</h3><p>{MONERO_ROADMAP[0].description}</p><nav className="record-funds" aria-label="Community funds">{Object.values(FUNDS).map(fund => <a key={fund.name} href={fund.url} target="_blank" rel="noreferrer">{fund.name}</a>)}</nav></div>

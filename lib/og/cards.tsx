@@ -8,15 +8,20 @@ import type {ShareToken} from '@/lib/share-data';
 const C={bg:'#ffffff',ink:'#101010',mute:'rgba(16,16,16,.6)',rule:'rgba(16,16,16,.14)',soft:'rgba(16,16,16,.085)',grey:'#3d3d3d',orange:GRAIN_ORANGE};
 const NOT_INDEXED='not indexed yet';
 export type CardAssets={logo:string};
+/** Logo 213×42 at bottom right (padding 60/48) in a field that starts at x=820, plus clear space of half the logo height. */
+const LOGO_W=213,LOGO_H=42,LOGO_X=1200-60-LOGO_W-820,LOGO_Y=630-48-LOGO_H,LOGO_CLEAR={x0:LOGO_X-LOGO_H/2,x1:LOGO_X+LOGO_W+LOGO_H/2,y0:LOGO_Y-LOGO_H/2,y1:LOGO_Y+LOGO_H+LOGO_H/2};
 const short=(s:string)=>`${s.slice(0,4)}…${s.slice(-4)}`;
 
 /** The decorative grain field: small rotated squares seeded by the mint, so a token's card always draws the same field. */
 function seeded(seed:string){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return ()=>{h=Math.imul(h^h>>>15,2246822507);h=Math.imul(h^h>>>13,3266489909);h^=h>>>16;return (h>>>0)/4294967296;};}
-export function grainField(seed:string,{width=380,height=630,count=820}={}){
+/** keepClear: a rectangle in field coordinates where no grain is drawn (the logo and its clear space). */
+export function grainField(seed:string,{width=380,height=630,count=820,keepClear=null as null|{x0:number;x1:number;y0:number;y1:number}}={}){
  const rand=seeded(seed),cx=width*.62,cy=height*.5,r=Math.min(width,height)*.46,rects:string[]=[];
  for(let i=0;i<count;i++){
   // Denser toward the centre, loose toward the edge, like the stage's swarm at rest.
   const a=rand()*Math.PI*2,d=Math.pow(rand(),.62)*r,x=cx+Math.cos(a)*d,y=cy+Math.sin(a)*d*.96,s=3+rand()*4.2,rot=Math.floor(rand()*6)*15;
+  // Brand book: the logo keeps clear space of half its height; no grain enters it.
+  if(keepClear&&x>keepClear.x0&&x<keepClear.x1&&y>keepClear.y0&&y<keepClear.y1)continue;
   const pick=rand(),fill=pick<.11?C.orange:pick<.78?C.ink:C.grey;
   rects.push(`<rect x="${(x-s/2).toFixed(1)}" y="${(y-s/2).toFixed(1)}" width="${s.toFixed(1)}" height="${s.toFixed(1)}" fill="${fill}" transform="rotate(${rot} ${x.toFixed(1)} ${y.toFixed(1)})"/>`);
  }
@@ -24,7 +29,9 @@ export function grainField(seed:string,{width=380,height=630,count=820}={}){
  return `data:image/svg+xml;base64,${typeof btoa==='function'?btoa(svg):Buffer.from(svg).toString('base64')}`;
 }
 
-const Mono=({children,color=C.ink,size=17}:{children:ReactNode;color?:string;size?:number})=><div style={{display:'flex',alignItems:'center',fontFamily:'Plex',fontSize:size,letterSpacing:size*.14,color,textTransform:'uppercase'}}>{children}</div>;
+const Mono=({children,color=C.ink,size=17,upper=true}:{children:ReactNode;color?:string;size?:number;upper?:boolean})=><div style={{display:'flex',alignItems:'center',fontFamily:'Plex',fontSize:size,letterSpacing:size*.14,color,textTransform:upper?'uppercase':'none'}}>{children}</div>;
+/** Brand book: "grainpad" stays lowercase, also inside an uppercase label. */
+function Corner({text}:{text:string}){const [brand,...rest]=text.split(' / ');return <div style={{display:'flex',alignItems:'center'}}><span style={{textTransform:'none'}}>{brand}</span><span>{rest.length?`\u00a0/ ${rest.join(' / ')}`:''}</span></div>;}
 const Square=({size=11,color=C.orange}:{size?:number;color?:string})=><div style={{display:'flex',width:size,height:size,background:color,borderRadius:2,marginRight:12,flex:'none'}}/>;
 /** Card-safe numbers: the fonts have no subscript digits, so subscript-zero notation is drawn as small lowered digits. */
 function Figure({text,size,color=C.ink}:{text:string;size:number;color?:string}){
@@ -41,12 +48,12 @@ function Chip({status}:{status:CardStatus}){
 function Frame({seed,corner,status,path,assets,children}:{seed:string;corner:string;status?:CardStatus;path:string;assets:CardAssets;children:ReactNode}){
  return <div style={{width:1200,height:630,display:'flex',flexDirection:'column',background:C.bg,color:C.ink,fontFamily:'Albert',fontWeight:600,padding:'52px 60px 48px',position:'relative',overflow:'hidden'}}>
   {/* eslint-disable-next-line @next/next/no-img-element -- Satori renders plain img elements. */}
-  <img src={grainField(seed)} width={380} height={630} style={{position:'absolute',right:0,top:0}} alt=""/>
-  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%'}}><Mono><Square/>{corner}</Mono>{status?<Chip status={status}/>:<div style={{display:'flex'}}/>}</div>
+  <img src={grainField(seed,{keepClear:LOGO_CLEAR})} width={380} height={630} style={{position:'absolute',right:0,top:0}} alt=""/>
+  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%'}}><Mono><Square/><Corner text={corner}/></Mono>{status?<Chip status={status}/>:<div style={{display:'flex'}}/>}</div>
   <div style={{display:'flex',flexDirection:'column',flex:1,justifyContent:'center',maxWidth:740}}>{children}</div>
-  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}><Mono size={17} color={C.mute}>{path}</Mono>
+  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}><Mono size={17} color={C.mute} upper={false}>{path}</Mono>
    {/* eslint-disable-next-line @next/next/no-img-element -- Satori renders plain img elements. */}
-   <img src={assets.logo} width={213} height={42} alt=""/></div>
+   <img src={assets.logo} width={LOGO_W} height={LOGO_H} alt=""/></div>
  </div>;
 }
 function Identity({symbol,name,image,byline}:{symbol:string;name:string;image:string|null;byline?:string}){
@@ -60,11 +67,11 @@ function Identity({symbol,name,image,byline}:{symbol:string;name:string;image:st
  </div>;
 }
 /** Every stat keeps its slot. A missing value is an em dash with the reason underneath. */
-export type CardStat={label:string;value:string|null;reason?:string};
+export type CardStat={label:string;value:string|null;reason?:string;mono?:boolean};
 function Stats({items,note}:{items:CardStat[];note?:string}){
- return <div style={{display:'flex',flexDirection:'column',marginTop:44}}><div style={{display:'flex'}}>{items.map(({label,value,reason},i)=><div key={label} style={{display:'flex',flexDirection:'column',paddingRight:32,marginRight:32,borderRight:i<items.length-1?`1px solid ${C.rule}`:'0'}}>
+ return <div style={{display:'flex',flexDirection:'column',marginTop:44}}><div style={{display:'flex'}}>{items.map(({label,value,reason,mono},i)=><div key={label} style={{display:'flex',flexDirection:'column',paddingRight:32,marginRight:32,borderRight:i<items.length-1?`1px solid ${C.rule}`:'0'}}>
   <Mono size={15} color={C.mute}>{label}</Mono>
-  <div style={{display:'flex',marginTop:12}}><Figure text={value??'—'} size={42} color={value==null?C.mute:C.ink}/></div>
+  <div style={{display:'flex',marginTop:12}}>{mono&&value!=null?<div style={{display:'flex',fontFamily:'Plex',fontSize:34,lineHeight:1.2,color:C.ink}}>{value}</div>:<Figure text={value??'—'} size={42} color={value==null?C.mute:C.ink}/>}</div>
   {value==null&&<Mono size={13} color={C.mute}>{reason??NOT_INDEXED}</Mono>}
  </div>)}</div>{note&&<div style={{display:'flex',marginTop:14}}><Mono size={13} color={C.mute}>{note}</Mono></div>}</div>;
 }
@@ -90,7 +97,7 @@ export function tokenCard(t:ShareToken,kind:'token'|'receipt'|'room',image:strin
  const status=shareStatus(t),graduated=status.kind==='graduated',path=`grainpad.fun/token/${short(t.record.mint)}`,seed=t.record.mint;
  if(kind==='receipt')return <Frame seed={seed} assets={assets} corner="grainpad / launch receipt" status={status} path={`${path}/receipt`}>
   <Identity symbol={t.record.symbol} name={t.record.name} image={image}/>
-  <Stats items={[{label:'launched',value:t.record.createdAt.slice(0,10)},{label:'trades',value:t.trades===null?null:String(t.trades)},{label:'creator',value:short(t.record.creator)}]}/>
+  <Stats items={[{label:'launched',value:t.record.createdAt.slice(0,10)},{label:'trades',value:t.trades===null?null:String(t.trades)},{label:'creator',value:short(t.record.creator),mono:true}]}/>
   <Line>On-chain facts, creator declarations and observed buys, kept apart on one public record.</Line>
  </Frame>;
  if(kind==='room')return <Frame seed={seed} assets={assets} corner="grainpad / room · crew" status={status} path={`${path}/room`}>

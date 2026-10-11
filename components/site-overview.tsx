@@ -39,10 +39,10 @@ export function useSiteOverview(initialData:SiteOverviewData|null=null) {
 }
 
 export function SiteStats({data}:{data:SiteOverviewData|null}) {
- return <section className="site-stats" aria-label="Grainpad activity">
+ return <section className="site-stats" aria-label="grainpad activity">
   <div className="stats-heading"><span className="overline">ON THE RECORD</span><span>{data?.stale?'Last known data':data?.checkedAt?'Verified records':'Data pending'}</span></div>
   <dl>
-   <div><dt>Launches</dt><dd>{data?.launches?.toLocaleString('en-US') ?? '—'}</dd><small>Confirmed Grainpad launches</small></div>
+   <div><dt>Launches</dt><dd>{data?.launches?.toLocaleString('en-US') ?? '—'}</dd><small>Confirmed grainpad launches</small></div>
    <div><dt>Trading volume · 24h</dt><dd title={data?.volume == null ? undefined : new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2}).format(data.volume)}>{data?.volume == null ? "Indexing" : compactReportedVolume(data.volume)}</dd><small>{data?.volume == null ? "Verified volume data is not available yet" : `Reported volume · ${data.volumeTokens ?? 0} tracked tokens${data.volumeCoverage==='partial'?' · partial coverage':''}`}</small></div>
    <div><dt>GRAIN burned</dt><dd title={data?.burned == null ? undefined : displayRecordedBurns(data.burned)} aria-label={data?.burned == null ? undefined : `${displayRecordedBurns(data.burned)} GRAIN burned`}>{data?.burned == null ? '—' : compactRecordedBurns(data.burned)}</dd><a href="/rewards#holder-receipts-title">Verified burn receipts</a></div>
   </dl>

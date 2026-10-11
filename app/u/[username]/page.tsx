@@ -18,7 +18,7 @@ const dateLabel=(value:number|string)=>new Date(value).toLocaleDateString('en-US
 export const dynamic='force-dynamic';
 export async function generateMetadata({params}:{params:Promise<{username:string}>}){
  const name=lookupUsername((await params).username);
- return {title:name?`@${name} · Grainpad`:'Profile · Grainpad',robots:name?undefined:{index:false,follow:false}};
+ return {title:name?`@${name} · grainpad`:'Profile · grainpad',robots:name?undefined:{index:false,follow:false}};
 }
 export default async function ProfilePage({params}:{params:Promise<{username:string}>}){
  const username=(await params).username;

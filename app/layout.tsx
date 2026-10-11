@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   title: "grainpad. ideas into existence.",
   description: `A considered start for your next token. Explore clear ${BRAND_CHAIN.label} launch conditions and create from your own wallet.`,
   metadataBase: new URL(SITE.origin),
-  openGraph: {title:"grainpad. ideas into existence.", description:`Create your token on ${BRAND_CHAIN.label}. Review the conditions. Your wallet. Your call.`, type:"website", url:SITE.origin, images:[{url:"/brand/grainpad-social-minute-two-20261010.jpeg",width:1500,height:500,alt:"Grainpad wordmark and built for minute two tagline on textured warm paper."}]},
+  openGraph: {title:"grainpad. ideas into existence.", description:`Create your token on ${BRAND_CHAIN.label}. Review the conditions. Your wallet. Your call.`, type:"website", url:SITE.origin, images:[{url:"/brand/grainpad-social-minute-two-20261010.jpeg",width:1500,height:500,alt:"grainpad wordmark and built for minute two tagline on textured warm paper."}]},
   twitter: {card:"summary_large_image", site:"@GrainXMR", title:"grainpad. ideas into existence.", description:`A considered start for your next token on ${BRAND_CHAIN.label}.`, images:["/brand/grainpad-social-minute-two-20261010.jpeg"]},
   icons: {
     icon: BRAND_ASSETS.favicon,
@@ -43,10 +43,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="dark" data-rewards-tracker={trackerReleased()?"v1":undefined} suppressHydrationWarning>
+    <html lang="en" data-theme="light" data-rewards-tracker={trackerReleased()?"v1":undefined} suppressHydrationWarning>
       <head>
         <link rel="preload" href="/fonts/albert-sans-latin-variable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" fetchPriority="high"/>
-        <meta name="theme-color" content="#101010"/>
+        <meta name="theme-color" content="#ffffff"/>
         {/* eslint-disable-next-line @next/next/no-sync-scripts -- Tiny same-origin theme initializer must run before paint to prevent theme flash. */}
         <script src="/theme-init.js"/>
         <script src="/kernel.js" defer/>

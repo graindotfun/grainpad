@@ -45,7 +45,7 @@ export function TokenLaunchPost({mint}:{mint:string}){
    {!owner?<Button variant="outline" onClick={openWalletPicker}>Connect creator wallet</Button>:<Button variant="outline" disabled={busy||(!url.trim()&&!current.url)} onClick={()=>void save()}>{busy?'Waiting for signature…':!url.trim()&&current.url?'Sign to remove link':'Sign launch post update'}</Button>}
    {saved&&<p role="status" className="small">Launch post updated.</p>}
   </details>}
-  {current?.url&&<p className="token-launch-post-note">Linked by the token creator. Post content is not verified by Grainpad.</p>}
+  {current?.url&&<p className="token-launch-post-note">Linked by the token creator. Post content is not verified by grainpad.</p>}
   {error&&<p className="small muted" role="status">{error}</p>}
  </section>;
 }

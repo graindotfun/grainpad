@@ -49,7 +49,7 @@ function Hero({overview,status}:{overview:ReturnType<typeof useSiteOverview>;sta
    <div className="gx-hero-status"><a className="gx-mono" href="/platform"><span className={`gx-status-dot${status.state==="open"?" is-on":""}`} aria-hidden="true"/>{status.label} <ArrowUpRight size={12}/></a><HeroFeatures data={overview}/></div>
   </div>
   <div className="gx-hero-stage">
-   <div className="gx-stage-top gx-mono gx-mute"><span className="gx-label">grainpad / in the making</span><span>interactive illustration · no transaction</span></div>
+   <div className="gx-stage-top gx-mono gx-mute"><span className="gx-label"><span className="gx-word">grainpad</span> / in the making</span><span>interactive illustration · no transaction</span></div>
    <div className="gx-stage-canvas"><GrainStage mode={mode} word={word} kick={kick}/><span className="gx-stage-corner is-tl" aria-hidden="true"/><span className="gx-stage-hint gx-mono gx-mute" aria-hidden="true">move anywhere to explore</span>
     {!reduce&&<button type="button" className="gx-icon gx-stage-play" aria-label={auto?"Pause animation":"Play animation"} aria-pressed={!auto} onClick={()=>setAuto(a=>!a)}>{auto?<Pause size={14}/>:<Play size={14}/>}</button>}
    </div>
@@ -76,7 +76,7 @@ function LaunchBand({data:initial}:{data:DiscoveryResult|null}){
  for(const token of [...(data?.tokens??[]),...(data?.featured??[])])if(!seen.has(token.mint)&&tokens.length<14){seen.add(token.mint);tokens.push(token);}
  if(!tokens.length)return <div className="gx-band gx-onor is-empty" role="status"><div className="gx-wrap gx-mono"><span><i/>{data?"no launches on the board yet · the first one could be yours":failed?"the launch board is unavailable right now":"the launch board is loading"}</span><a href="/launch">launch yours <ArrowRight size={13}/></a></div></div>;
  const items=tokens.map(token=>{const status=tokenStatus(token);return <a key={token.mint} href={`/token/${token.mint}`}><i/>{token.official?"official":status?.label??"launch"} <b>${token.symbol}</b> {ago(token.createdAt,now||data!.updatedAt)} · mc {formatMarketCap(token.marketCapUsd)}{token.marketStale?" · delayed":""}</a>;});
- return <section className="gx-band gx-onor" aria-label="Latest Grainpad launches">{delayed&&<span className="gx-band-delayed gx-mono" role="status">delayed · {ago(new Date(data!.updatedAt).toISOString(),now)}</span>}<div className="gx-band-track"><div className="gx-band-set">{items}</div><div className="gx-band-set" aria-hidden="true" inert>{items}</div></div></section>;
+ return <section className="gx-band gx-onor" aria-label="Latest grainpad launches">{delayed&&<span className="gx-band-delayed gx-mono" role="status">delayed · {ago(new Date(data!.updatedAt).toISOString(),now)}</span>}<div className="gx-band-track"><div className="gx-band-set">{items}</div><div className="gx-band-set" aria-hidden="true" inert>{items}</div></div></section>;
 }
 
 export function Home({initialOverview,initialDiscovery}:{initialOverview:import("@/components/site-overview").SiteOverviewData|null;initialDiscovery:DiscoveryResult|null}){

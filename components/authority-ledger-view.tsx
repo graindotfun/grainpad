@@ -16,7 +16,7 @@ const STATUS:Record<Item['status'],string>={
  differs:'Read on chain · DIFFERS from published setting',
  observed:'Read on chain',
  unavailable:'Not read',
- declared:'Grainpad statement · not read on chain',
+ declared:'grainpad statement · not read on chain',
 };
 const short=(a:string)=>`${a.slice(0,4)}…${a.slice(-4)}`;
 const show=(v:unknown)=>v===null?'none (revoked)':v===undefined?'—':typeof v==='string'&&v.length>=32?short(v):String(v);

@@ -9,8 +9,8 @@ import {GRAINPAD_SOL_LOOKUP_TABLE} from "@/lib/sol-route-lookup-policy.mjs";
 export const dynamic="force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Docs — Grainpad",
-  description: `Grainpad launch mechanics, fees, graduation, treasury policy and addresses to verify on ${BRAND_CHAIN.label}.`,
+  title: "Docs — grainpad",
+  description: `grainpad launch mechanics, fees, graduation, treasury policy and addresses to verify on ${BRAND_CHAIN.label}.`,
   alternates: { canonical: `${SITE.origin}/docs` },
 };
 
