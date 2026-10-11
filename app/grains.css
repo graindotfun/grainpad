@@ -103,6 +103,8 @@ html[data-theme="dark"] .gx-chip.is-graduated{border-color:rgba(255,255,255,.5)}
 .gx-header .gx-nav>a,.gx-header .gx-nav .rewards-nav>a{color:var(--gx-mute);padding:6px 0;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
 .gx-header .gx-nav a:hover{color:var(--gx-ink)}
 .gx-header .gx-nav a[aria-current=page]{color:var(--gx-ink);border-bottom-color:var(--grain-orange)}
+/* The old brand.css underline (::after, tight under the text on hover and on the current page) is replaced by the bottom border above. */
+html[data-theme] .gx-header .gx-nav a::after{content:none;display:none}
 .gx-header .rewards-nav-menu{border-radius:16px;border:1px solid var(--gx-rule);background:var(--gx-card);padding:8px;box-shadow:0 18px 40px rgba(0,0,0,.12)}
 .gx-header .rewards-nav-menu a{display:block;padding:9px 12px;border-radius:10px;color:var(--gx-ink);font-size:14px;border:0}
 .gx-header .rewards-nav-menu a:hover{background:var(--gx-soft)}
@@ -236,7 +238,7 @@ html[data-theme] .price-tab-dot{background:var(--grain-orange)}
 .gx-token-card{position:relative;background:var(--gx-card);border:1px solid var(--gx-rule);border-radius:22px;padding:12px;display:flex;flex-direction:column;min-width:0;transition:transform .18s,border-color .18s}
 .gx-token-card:hover{transform:translateY(-3px);border-color:var(--gx-ink)}
 .gx-token-main{display:flex;flex-direction:column;color:var(--gx-ink);min-width:0}
-.gx-tile{position:relative;aspect-ratio:1.18;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:clamp(56px,5.2vw,78px);letter-spacing:-.05em;line-height:1}
+.gx-tile{position:relative;aspect-ratio:1;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:clamp(56px,5.2vw,78px);letter-spacing:-.05em;line-height:1}
 .gx-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .gx-tile.is-o{background:var(--grain-orange);color:#101010}
 .gx-tile.is-k{background:#101010;color:#fff}
@@ -786,7 +788,7 @@ html[data-theme] body :is(.gx-label,.gx-mono,.gx-chip,.eyebrow,.overline,.contra
 html[data-theme] body :is(.eyebrow,.gx-label,.overline) .gx-word{font-weight:400}
 html[data-theme] body code{font-family:var(--gx-mono)}
 /* Amounts and sentences set in mono move to Albert Sans 600. */
-html[data-theme] body :is(.gx-band a,.gx-band span:not(.gx-label),.gx-seg button span,.gx-coverage,.gx-delayed-note,.gx-create-rules,.gx-state-grain p .gx-mono,.gx-launches-foot .gx-mono,.gx-invite-foot .gx-mono,.gx-footer-bottom>span:first-child,.docs-status,.rewards-calc-unit,.rewards-calc-token .segmented button,.rewards-calc-answer-head .segmented button,.tax-control-bounds span,.price-tab-pill,.swap-asset small,.lifecycle-progress strong,.lifecycle-progress small){font-family:var(--gx-sans)!important;font-weight:600!important;letter-spacing:-.005em;text-transform:none}
+html[data-theme] body :is(.gx-band a,.gx-band span:not(.gx-label),.gx-seg button span,.gx-coverage,.gx-delayed-note,.gx-create-rules,.gx-state-grain p .gx-mono,.gx-launches-foot .gx-mono,.gx-invite-foot .gx-mono,.gx-footer-bottom>span:first-child,.docs-status,.rewards-calc-unit,.rewards-calc-token .segmented button,.rewards-calc-answer-head .segmented button,.tax-control-bounds span,.price-tab-pill,.swap-asset small,.lifecycle-progress strong,.lifecycle-progress small,.gx-token-progress,.crew-budget){font-family:var(--gx-sans)!important;font-weight:600!important;letter-spacing:-.005em;text-transform:none}
 html[data-theme] body dd.address-line{font-weight:400!important}
 
 /* Brand-book exception to rule 3 (owner decision, 11 October 2026): amounts that sit in aligned columns or stack in a
@@ -877,3 +879,19 @@ html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog) [data-slot=dialo
 html[data-theme] dialog.room-composer-dialog{border-radius:24px 0 0 24px;box-shadow:-24px 0 70px -30px rgba(16,16,16,.35)}
 html[data-theme] dialog.room-composer-dialog :is(h2,h3,legend){font:600 clamp(22px,2.6vw,28px)/1.1 var(--gx-sans);letter-spacing:-.04em;text-transform:none}
 @media(max-width:640px){html[data-theme] dialog.room-composer-dialog{border-radius:24px 24px 0 0}}
+
+/* ---------- logo hover: only the symbol turns; the wordmark stays still ----------
+ * Both layers are the original horizontal logo file, only scaled. The symbol spans 0.8–19.2% of the file's width
+ * (centre 10.0%, 50%); the wordmark starts at 21.0%, so the layers are split at 20.1%. */
+html[data-theme] .gx-header .gx-logo img{transform:none}
+.gx-header .gx-logo-lockup{position:relative;display:block;line-height:0}
+.gx-header .gx-logo-lockup .gx-logo-word{clip-path:inset(0 0 0 20.1%)}
+.gx-header .gx-logo .gx-logo-lockup .gx-logo-mark{position:absolute;inset:0;width:100%;height:100%;clip-path:inset(0 79.9% 0 0);transform-origin:10.02% 50%;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+html[data-theme] .gx-header .gx-logo:is(:hover,:focus-visible) .gx-logo-lockup .gx-logo-mark{transform:rotate(-8deg)}
+html[data-theme="dark"] .gx-header .gx-logo-lockup.gx-logo-light{display:none!important}
+html:not([data-theme="dark"]) .gx-header .gx-logo-lockup.gx-logo-dark{display:none!important}
+html[data-theme="dark"] .gx-header .gx-logo-lockup.gx-logo-dark{display:block!important}
+@media(prefers-reduced-motion:reduce){.gx-header .gx-logo .gx-logo-lockup .gx-logo-mark{transition:none}}
+/* The crew budget label ("promised") stays a quiet label next to the standalone amount. */
+html[data-theme] .crew-budget small{font:400 11px/1.4 var(--gx-mono)!important;color:var(--gx-mute)}
+html[data-theme] .rewards-calc-empty{font:600 1em/1 var(--gx-sans);color:var(--gx-mute)}
