@@ -12,7 +12,7 @@ await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.te
   '@/lib/server-owner':'export const database=()=>({prepare:()=>({bind:()=>({first:async()=>null})})});',
   '@/lib/server-cache':'export const sharedMarketCache=async(db,key,load,options)=>{globalThis.marketHistoryTest.refresh=options.refresh;if(!options.refresh)throw Error("No visible viewer");return {data:await load(),updatedAt:123,stale:false};};',
   '@/lib/shared-market-cache.mjs':'export const takeBudget=async()=>globalThis.marketHistoryTest.budget!==false;',
-  '@/lib/native-history.mjs':'export const readNativeHistory=async(db,mint,options)=>{globalThis.marketHistoryTest.historyOptions=options;return globalThis.marketHistoryTest.native;};export const lifetimeWindow=async(db,mint,options)=>{globalThis.marketHistoryTest.lifetimeOptions=options;return {seconds:1800,range:3*86400+1800,first:1};};export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
+  '@/lib/native-history.mjs':'export const readNativeHistory=async(db,mint,options)=>{globalThis.marketHistoryTest.historyOptions=options;return globalThis.marketHistoryTest.native;};export const readBars=async(db,mint,options)=>{globalThis.marketHistoryTest.barsOptions=options;if(![1,60,300,900,3600,14400,86400].includes(options.seconds)||options.limit>500)throw Error("Unsupported chart range.");return {rows:[{time:900,open:1,high:2,low:1,close:2,volume:1,trades:1}],first:900,start:0,end:1800,anchor:null,coverage:{status:"indexed"}};};export const lifetimeWindow=async(db,mint,options)=>{globalThis.marketHistoryTest.lifetimeOptions=options;return {seconds:1800,range:3*86400+1800,first:1};};export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
   '@/lib/realtime-ingest.mjs':'export const confirmedCatchup=async()=>[];export const mergeIndexedAndConfirmed=(indexed=[])=>indexed;',
   '@/lib/server-rpc':'export const chain=async()=>[];export const chartHistoryRead=chain;',
   '@/lib/platform-policy':'export const POLICY={cpConfig:"config"};export const grainpadPlatformId=()=>({toBase58:()=>"platform"});'
@@ -54,6 +54,14 @@ test('All requests the lifetime window the server picks; other lifetime shapes a
  const options=globalThis.marketHistoryTest.historyOptions;assert.equal(options.lifetime,true);assert.equal(options.seconds,1800);assert.equal(options.rangeSeconds,3*86400+1800);
  assert.deepEqual((await response.json()).window,{seconds:3*86400+1800,resolution:1800});
  for(const query of ['interval=5m&range=all','interval=1h&range=all&bars=5','interval=1h&range=all&bars=999','kind=trades&interval=1h&range=all']){assert.equal((await call(query,false)).status,400,query);}
+});
+
+test('paged bars pass the bar size, page size and before through; anything else is refused',async()=>{
+ let response=await call('kind=candles&bar=900&limit=200&before=1700000000',false);assert.equal(response.status,200);
+ const options=globalThis.marketHistoryTest.barsOptions;assert.equal(options.seconds,900);assert.equal(options.limit,200);assert.equal(options.end,1700000000);
+ const body=await response.json();assert.equal(body.first,900);assert.deepEqual(body.window,{start:0,end:1800,resolution:900});assert.equal(body.source,'grainpad');
+ response=await call('kind=candles&bar=60',false);assert.equal(response.status,200);assert.equal(globalThis.marketHistoryTest.barsOptions.end,null);
+ for(const query of ['kind=candles&bar=120','kind=candles&bar=60&limit=9999','kind=candles&bar=60&before=abc','kind=trades&bar=60']){assert.equal((await call(query,false)).status,400,query);}
 });
 
 test('minute and five-minute buttons request the actual durations at intraminute resolution',async()=>{

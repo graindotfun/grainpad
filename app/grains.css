@@ -934,3 +934,37 @@ html[data-theme] .gx-token-header .token-launch-post-note{flex:0 0 100%;margin:0
 /* The official profile name keeps its dot on the same line wherever a container styles spans as blocks. */
 html[data-theme] .official-profile-name{display:inline-flex!important;align-items:baseline;margin:0!important;white-space:nowrap}
 html[data-theme] .official-profile-name .official-profile-dot{display:inline-block!important;margin:0!important}
+/* Pan-and-zoom chart (Line and Candles): TradingView's engine in the grains language. Toolbar on top (bar size, metric,
+   currency, tools), canvas with the OHLC legend, footer with ranges, the viewer's clock and the scale modes. */
+.pro-chart{position:relative;display:flex;flex-direction:column;gap:8px;margin-top:10px;background:var(--gx-bg)}
+.pro-chart[data-full]{padding:16px;height:100vh}
+.pro-toolbar,.pro-foot{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.pro-foot{justify-content:space-between}
+.pro-group{display:inline-flex;align-items:center;gap:2px;padding:2px;border:1.5px solid var(--gx-rule);border-radius:999px}
+.pro-group button{min-height:28px;padding:0 10px;border:0;border-radius:999px;background:none;color:var(--gx-mute);font:400 12px var(--gx-mono);cursor:pointer;white-space:nowrap}
+.pro-group button:hover{color:var(--gx-ink)}
+.pro-group button[aria-pressed=true]{background:var(--gx-btn);color:var(--gx-btnfg)}
+.pro-group button:disabled{opacity:.4;cursor:not-allowed}
+.pro-tools{display:inline-flex;gap:2px;margin-left:auto}
+.pro-icon{display:inline-grid;place-items:center;width:32px;height:32px;border:0;border-radius:999px;background:none;color:var(--gx-mute);cursor:pointer}
+.pro-icon:hover{background:var(--gx-soft,rgba(127,127,127,.12));color:var(--gx-ink)}
+.pro-group button:focus-visible,.pro-icon:focus-visible{outline:2px solid var(--grain-orange);outline-offset:1px}
+.pro-stage{position:relative;height:360px;border-top:1px solid var(--gx-rule);border-bottom:1px solid var(--gx-rule)}
+.pro-chart[data-full] .pro-stage{flex:1;height:auto}
+.pro-canvas{position:absolute;inset:0;touch-action:pan-y}
+.pro-legend{position:absolute;left:8px;right:78px;top:6px;z-index:2;pointer-events:none;display:grid;gap:2px;font:400 11.5px var(--gx-mono);color:var(--gx-mute)}
+.pro-legend p{display:flex;flex-wrap:wrap;gap:4px 10px;margin:0}
+.pro-legend strong{font:600 13px var(--gx-sans);color:var(--gx-ink)}
+.pro-legend b{font-weight:400;color:var(--gx-ink)}
+.pro-legend .is-up{color:var(--grain-orange)}
+.pro-legend .is-down{color:var(--gx-mute)}
+.pro-empty{position:absolute;inset:0;display:grid;place-content:center;gap:4px;text-align:center;font:400 12px var(--gx-mono);color:var(--gx-mute);pointer-events:none}
+.pro-empty strong{font:600 16px var(--gx-sans);color:var(--gx-ink)}
+.pro-clock{font:400 11.5px var(--gx-mono);color:var(--gx-mute);font-variant-numeric:tabular-nums}
+@media(max-width:640px){
+ .pro-stage{height:300px}
+ .pro-tools{margin-left:0}
+ .pro-group button{padding:0 8px;font-size:11.5px}
+ .pro-legend{font-size:10.5px}
+ .pro-clock{order:3;width:100%}
+}

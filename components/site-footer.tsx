@@ -16,7 +16,7 @@ export function SiteFooter({textOnly=false,showResearchDisclaimer=true}:{textOnl
    </nav>
   </div>
   <div className="gx-footer-bottom">
-   <span>independent by design · {BRAND_CHAIN.label.toLowerCase()} launch tools · separate monero research{showResearchDisclaimer&&<> · not affiliated with the original p/xmr project</>}</span>
+   <span>independent by design · {BRAND_CHAIN.label.toLowerCase()} launch tools · separate monero research{showResearchDisclaimer&&<> · not affiliated with the original p/xmr project</>} · charts by <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">TradingView</a></span>
    <span>{BUILD_COMMIT&&<a href={`https://github.com/graindotfun/grainpad/commit/${BUILD_COMMIT}`} target="_blank" rel="noreferrer" title={BUILD_COMMIT}>source (access required) · {BUILD_COMMIT.slice(0,12)}</a>}{BUILD_COMMIT&&' · '}<a href="#main-content">back to top ↑</a></span>
   </div>
  </div></footer>;

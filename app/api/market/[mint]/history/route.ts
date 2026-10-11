@@ -3,7 +3,7 @@ import {database} from '@/lib/server-owner';
 import {sharedMarketCache} from '@/lib/server-cache';
 import {takeBudget} from '@/lib/shared-market-cache.mjs';
 import {parseCandles,parseTrades} from '@/lib/market-display';
-import {geckoFallbackAllowed,lifetimeWindow,readNativeHistory} from '@/lib/native-history.mjs';
+import {geckoFallbackAllowed,lifetimeWindow,readBars,readNativeHistory} from '@/lib/native-history.mjs';
 import {confirmedCatchup,mergeIndexedAndConfirmed} from '@/lib/realtime-ingest.mjs';
 import {buildCandles,mergeCandleHistory,recentTradeRows} from '@/lib/native-market.mjs';
 import {decodeChartTrades} from '@/lib/chart-trade-decoder.mjs';
@@ -13,12 +13,15 @@ import {chain,chartHistoryRead} from '@/lib/server-rpc';
 import {grainpadPlatformId} from '@/lib/platform-policy';
 const intervals:Record<string,number>={'1m':60,'5m':300,'1h':3600,'1d':86400};
 const chartWindows:Record<string,{interval:string;seconds:number;range:number}>={'live':{interval:'1m',seconds:1,range:120},'1m':{interval:'1m',seconds:1,range:60},'5m':{interval:'5m',seconds:5,range:300},'1h':{interval:'1h',seconds:60,range:3600},'1d':{interval:'5m',seconds:300,range:86400}};
+const barGecko:Record<number,{timeframe:string;aggregate:number}>={60:{timeframe:'minute',aggregate:1},300:{timeframe:'minute',aggregate:5},900:{timeframe:'minute',aggregate:15},3600:{timeframe:'hour',aggregate:1},14400:{timeframe:'hour',aggregate:4},86400:{timeframe:'day',aggregate:1}};
 const geckoIntervals:Record<string,{timeframe:string;aggregate:number}>={'1m':{timeframe:'minute',aggregate:1},'5m':{timeframe:'minute',aggregate:5},'1h':{timeframe:'hour',aggregate:1},'1d':{timeframe:'day',aggregate:1}};
 export const dynamic='force-dynamic';
 export async function GET(request:Request,{params}:{params:Promise<{mint:string}>}){
  const headers={'Cache-Control':'no-store'};
  try{
   const {mint}=await params,url=new URL(request.url),kind=url.searchParams.get('kind')||'candles',interval=url.searchParams.get('interval')||'5m';
+  // Paged bars for the pan-and-zoom chart: ?bar=<seconds>&limit=<n>[&before=<unix>]. Read-only, like every mode here.
+  if(url.searchParams.has('bar'))return pagedBars(mint,url,request,headers);
   if(!['candles','trades'].includes(kind)||!intervals[interval])return Response.json({error:'Unsupported history request.'},{status:400,headers});
   const range=url.searchParams.get('range'),lifetime=range==='all',bars=Number(url.searchParams.get('bars')||240);
   if(lifetime&&(kind!=='candles'||interval!=='1h'||!Number.isInteger(bars)||bars<30||bars>240))return Response.json({error:'Unsupported chart range.'},{status:400,headers});
@@ -83,4 +86,31 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
   }
   return Response.json({rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source,unit,quote:market.quote.symbol,coverage,recovery,anchor:native.anchor,window:window?{seconds:window.range,resolution,start:native.start}:undefined},{headers});
  }catch{return Response.json({error:'Market history is temporarily unavailable. Please try again shortly.'},{status:503,headers});}
+}
+
+async function pagedBars(mint:string,url:URL,request:Request,headers:Record<string,string>){
+ const seconds=Number(url.searchParams.get('bar')),limit=Number(url.searchParams.get('limit')||300),beforeParam=url.searchParams.get('before'),before=beforeParam===null?null:Number(beforeParam);
+ const now=Math.floor(Date.now()/1000);
+ if(url.searchParams.get('kind')&&url.searchParams.get('kind')!=='candles'||!Number.isInteger(seconds)||!Number.isInteger(limit)||before!==null&&(!Number.isInteger(before)||before<1))return Response.json({error:'Unsupported chart range.'},{status:400,headers});
+ const viewer=request.headers.get('X-Grainpad-Viewer')==='visible';
+ const market=await serverMarket(mint,{viewer});
+ const db=database();
+ let page;
+ try{page=await readBars(db,mint,{seconds,limit,end:before===null?null:Math.min(before,now),activity:market.activity,now});}
+ catch{return Response.json({error:'Unsupported chart range.'},{status:400,headers});}
+ const period=barGecko[seconds];
+ if(before===null&&!page.rows.length&&period){
+  let createdAt:string|undefined;
+  try{const indexed=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();createdAt=indexed?JSON.parse(indexed.record).createdAt:undefined;}catch{createdAt=undefined;}
+  if(geckoFallbackAllowed(createdAt,page.coverage,0))try{
+   const result=await sharedMarketCache(db,`history:bars:v1:${market.pool}:${mint}:${seconds}:${limit}`,async()=>{
+    if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Market provider is busy. Please retry shortly.');
+    const response=await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${market.pool}/ohlcv/${period.timeframe}?aggregate=${period.aggregate}&limit=${Math.min(1000,limit)}&currency=usd&token=base`,{signal:AbortSignal.timeout(7000)});
+    if(!response.ok)throw Error('Market history is temporarily unavailable.');
+    return parseCandles(await response.json());
+   },{ttl:60_000,maxStale:300_000,refresh:viewer});
+   if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',first:result.data[0].time,window:{start:result.data[0].time,end:now,resolution:seconds},coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
+  }catch{/* A failed external fallback is not indexed history, and it is not zero trades. */}
+ }
+ return Response.json({rows:page.rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source:'grainpad',unit:'quote',quote:market.quote.symbol,coverage:page.coverage,anchor:page.anchor,first:page.first,window:{start:page.start,end:page.end,resolution:seconds}},{headers});
 }
