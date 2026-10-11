@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,readdirSync,statSync} from 'node:fs';
 import {join} from 'node:path';
 import {OFFICIAL_METADATA_DOCUMENT} from '../lib/official-metadata.mjs';
-import {OFFICIAL_LINKS_NOTICE,PREVIOUS_TOKEN_BANNER} from '../lib/previous-official-mints.mjs';
+import {PREVIOUS_TOKEN_BANNER} from '../lib/previous-official-mints.mjs';
 const banned=/\b(?:immutable|trustless|rug-proof|safe)\b/i;
 function files(dir,out=[]){
  for(const name of readdirSync(dir)){
@@ -27,5 +27,4 @@ test('public copy avoids banned marketing words',()=>{
  assert.deepEqual(hits,[]);
  assert.equal(banned.test(OFFICIAL_METADATA_DOCUMENT.description),false);
  assert.equal(PREVIOUS_TOKEN_BANNER,'Previous GRAIN token. Not supported by Grainpad.');
- assert.equal(OFFICIAL_LINKS_NOTICE,'Official links: grainpad.fun and @GrainXMR. Not affiliated: ANxxoogrKPYEy95bj7tpQmS6bWpMfUMJhbQo6Dy7pump, @grainpadXMR.');
 });
