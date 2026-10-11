@@ -11,18 +11,19 @@ export function LaunchActionBar({label,children}:{label:string;children:ReactNod
  const setBar=useCallback((node:HTMLDivElement|null)=>{if(bar.current)observer.current?.unobserve(bar.current);bar.current=node;if(node)observer.current?.observe(node);},[]);
  useEffect(()=>{const start=mark.current;if(!start)return;const flow=start.closest('.launch-flow');if(!flow)return;let frame=0;
  const measure=()=>{frame=0;const node=bar.current;if(!node)return;const box=flow.getBoundingClientRect(),header=document.querySelector('.site-header')?.getBoundingClientRect();const mobile=window.matchMedia('(max-width:700px)').matches;
- const bottom=header&&header.top>window.innerHeight/2?Math.max(0,window.innerHeight-header.top)+12:mobile?12:68;
- const top=header&&header.top<window.innerHeight/2&&header.bottom>0?header.bottom+12:12;
+ const visibleTop=window.visualViewport?.offsetTop||0,visibleBottom=visibleTop+(window.visualViewport?.height||window.innerHeight);
+ const bottom=header&&header.top>visibleTop+(visibleBottom-visibleTop)/2&&header.top<visibleBottom?Math.max(0,window.innerHeight-header.top)+12:Math.max(0,window.innerHeight-visibleBottom)+(mobile?12:68);
+ const top=header&&header.top<visibleTop+(visibleBottom-visibleTop)/2&&header.bottom>visibleTop?Math.max(visibleTop,header.bottom)+12:visibleTop+12;
  const height=node.offsetHeight,target=window.innerHeight-bottom-height;
  const anchor=[...flow.querySelectorAll(FIELD)].find(field=>field.getClientRects().length)||flow.querySelector('.launch-steps');
  const anchorBottom=anchor?.getBoundingClientRect().bottom??box.top;
- const available=box.bottom>top&&box.top<window.innerHeight-bottom&&target>=top&&anchorBottom<target;
+ const available=box.bottom>visibleTop&&box.top<visibleBottom&&target>=top&&anchorBottom<target;
  const next=available?{left:box.left+(mobile?0:16),width:box.width-(mobile?0:32),bottom,height}:null;
  setDock(current=>current?.left===next?.left&&current?.width===next?.width&&current?.bottom===next?.bottom&&current?.height===next?.height?current:next);
  };
  const schedule=()=>{if(!frame)frame=requestAnimationFrame(measure);};const resize=new ResizeObserver(schedule);observer.current=resize;resize.observe(flow);if(bar.current)resize.observe(bar.current);const header=document.querySelector('.site-header');if(header)resize.observe(header);
- measure();window.addEventListener('scroll',schedule,{passive:true});window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);
- return()=>{if(frame)cancelAnimationFrame(frame);resize.disconnect();observer.current=null;window.removeEventListener('scroll',schedule);window.removeEventListener('resize',schedule);window.visualViewport?.removeEventListener('resize',schedule);};},[]);
+ measure();window.addEventListener('scroll',schedule,{passive:true});window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);window.visualViewport?.addEventListener('scroll',schedule);
+ return()=>{if(frame)cancelAnimationFrame(frame);resize.disconnect();observer.current=null;window.removeEventListener('scroll',schedule);window.removeEventListener('resize',schedule);window.visualViewport?.removeEventListener('resize',schedule);window.visualViewport?.removeEventListener('scroll',schedule);};},[]);
  const content=<div ref={setBar} className="launch-step-actions" data-dock={dock?'floating':'inline'} role="group" aria-label={label}>{children}</div>;
  return <><span ref={mark} className="launch-step-actions-mark" style={dock?{height:dock.height+28}:undefined} aria-hidden="true"/>{dock?createPortal(<div className="launch-flow launch-action-portal" style={{position:'fixed',left:dock.left,width:dock.width,bottom:dock.bottom,zIndex:40}}>{content}</div>,document.body):content}</>;
 }
