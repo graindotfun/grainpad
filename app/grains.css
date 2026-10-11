@@ -741,3 +741,29 @@ html[data-theme] :is(.gx,dialog.room-composer-dialog,.trade-flow-dialog,.wallet-
 .gx-logo-dark{display:none!important}
 html[data-theme="dark"] .gx-logo-light{display:none!important}
 html[data-theme="dark"] .gx-logo-dark{display:block!important}
+
+/* ---------- public receipt (/token/[mint]/receipt): presentation only ---------- */
+html[data-theme] .receipt-page .product-breadcrumb{display:flex;flex-wrap:wrap;gap:6px 16px;font:400 11px/1.5 var(--gx-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gx-mute);padding-top:22px}
+html[data-theme] .receipt-page .product-breadcrumb a{color:var(--gx-ink);text-decoration:none;border-bottom:1.5px solid var(--grain-orange)}
+html[data-theme] .receipt-page .product-title{border-bottom:0;padding-bottom:22px}
+html[data-theme] .receipt-page .product-title h1{font-size:clamp(46px,7.4vw,92px);line-height:.95;letter-spacing:-.06em;margin:14px 0 18px}
+html[data-theme] .receipt-page .product-title .token-avatar{border-radius:18px;border:0;overflow:hidden}
+html[data-theme] .receipt-page .product-title .token-avatar:not(:has(img)){background:var(--grain-orange);color:#101010;font:600 26px/1 var(--gx-sans);letter-spacing:-.04em}
+html[data-theme] .receipt-page.shell .panel.receipt-minute{border:1.5px solid var(--gx-ink);border-radius:22px;background:var(--gx-card)}
+html[data-theme] .receipt-page .receipt-minute>p>a{color:var(--gx-ink);text-decoration-color:var(--grain-orange);text-decoration-thickness:2px;text-underline-offset:5px}
+html[data-theme] .receipt-page .receipt-stage{margin-top:16px;padding:14px 0 4px;border-top:1px dashed var(--gx-rule);font:400 12px/2 var(--gx-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--gx-ink)}
+html[data-theme] .receipt-page .receipt-band{border-radius:22px;background:var(--grain-orange);color:#101010;padding:22px 26px;align-items:center;gap:18px}
+html[data-theme] .receipt-page .receipt-band strong{font-weight:600;font-size:20px;letter-spacing:-.02em}
+html[data-theme] .receipt-page .receipt-band p{color:#101010;opacity:1}
+html[data-theme] .receipt-page .receipt-band a{display:inline-flex;align-items:center;min-height:44px;padding:10px 20px;border-radius:999px;background:#101010;color:#fff;text-decoration:none;font:600 15px/1.1 var(--gx-sans);white-space:nowrap}
+html[data-theme] .receipt-page.shell{--record-paper:var(--gx-card);--record-ink:var(--gx-ink);--record-line:var(--gx-rule)}
+html[data-theme] .receipt-page .product-table th{font:400 11px/1.5 var(--gx-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gx-mute)}
+html[data-theme] .receipt-page .product-table td{border-color:var(--gx-rule)}
+html[data-theme] .receipt-page :is(.product-table,.product-details,.creator-desk) a{color:var(--gx-ink);text-decoration:underline;text-decoration-color:var(--gx-rule);text-underline-offset:4px}
+html[data-theme] .receipt-page :is(.product-table,.product-details) a:hover{text-decoration-color:var(--grain-orange)}
+html[data-theme] .receipt-page .product-tag{display:inline-flex;margin-top:6px;padding:4px 9px;border:1px solid var(--gx-ink);border-radius:999px;background:transparent;font:400 10px/1 var(--gx-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gx-ink)}
+html[data-theme] .receipt-page .product-facts>div{border-bottom:1px dashed var(--gx-rule)}
+html[data-theme] .receipt-page .product-facts dt{font:400 11px/1.5 var(--gx-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gx-mute)}
+html[data-theme] .receipt-page .receipt-disclosure>summary{font-weight:600;letter-spacing:-.02em}
+html[data-theme] .receipt-page .receipt-disclosure>summary span{font:400 11px/1.5 var(--gx-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gx-mute);margin-left:10px}
+@media (max-width:760px){html[data-theme] .receipt-page .receipt-band{flex-direction:column;align-items:flex-start}html[data-theme] .receipt-page .receipt-minute{border-radius:18px}}
