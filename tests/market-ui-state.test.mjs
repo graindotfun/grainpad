@@ -43,6 +43,6 @@ test('actual market outage render keeps verified wXMR pair and does not invent z
  const {MarketModule}=await import('../.test-output/market-outage-review.mjs');
  const props={market:null,mint:'fixture-mint',quoteSymbol:'wXMR',error:'Market temporarily unavailable',seconds:300,setSeconds:()=>{}};
  const html=renderToStaticMarkup(createElement(MarketModule,props));
- assert.match(html,/on-chain · wXMR/);assert.match(html,/<dt>Pair<\/dt><dd>wXMR<\/dd>/);assert.match(html,/Price temporarily unavailable/);assert.doesNotMatch(html,/Price appears with the first trade|on-chain · SOL|<dd>SOL<\/dd>/);
+ assert.match(html,/on-chain · (?:<span class="gx-word">)?wXMR/);assert.match(html,/<dt>Pair<\/dt><dd>wXMR<\/dd>/);assert.match(html,/Price temporarily unavailable/);assert.doesNotMatch(html,/Price appears with the first trade|on-chain · SOL|<dd>SOL<\/dd>/);
  const unknown=renderToStaticMarkup(createElement(MarketModule,{...props,quoteSymbol:undefined}));assert.match(unknown,/<dt>Pair<\/dt><dd>—<\/dd>/);assert.doesNotMatch(unknown,/on-chain · SOL/);
 });

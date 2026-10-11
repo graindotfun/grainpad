@@ -14,6 +14,7 @@ import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import {formatNumber,formatPercent,formatPrice,formatUnits,formatUsd,relativeTime} from '@/lib/price-format';
 import type {MarketView} from '@/lib/server-market';
 import type {Candle} from '@/lib/market-display';
+import {KeepCase} from './keep-case';
 export type MarketSource='grainpad'|'usd';
 export type SeriesPoint={time:number;value:number|null};
 export const INTERVALS:[string,number][]=[['Live',0],['1m',60],['5m',300],['1h',3600],['1d',86400]];
@@ -113,7 +114,7 @@ export function MarketModule({market,mint,quoteSymbol,error,seconds,setSeconds,t
  const missingPriceNote=!market?(error?'Price temporarily unavailable':'Reading the pool…'):coverage?.status==='no-trades'||market.activity==='none'?'Price appears with the first trade':history.error?'Price history unavailable':'No verified price available';
  const seriesLabel=usdSeries?(source==='usd'?'USD · external pool index':'USD · GeckoTerminal fallback'):`on-chain · ${unit}`;
  return <section className="panel corner-panel market-module" aria-labelledby="market-heading" data-stale={stale||undefined}>
-  <div className="corner-head"><span className="corner-label">{usdSeries?'market · usd':`grainpad native · ${activeMetric==='market-cap'?'market cap':'price'} in ${unit}`}</span><span className="corner-label is-right">{seriesLabel}</span></div>
+  <div className="corner-head"><span className="corner-label"><KeepCase>{usdSeries?'market · usd':`grainpad native · ${activeMetric==='market-cap'?'market cap':'price'} in ${unit}`}</KeepCase></span><span className="corner-label is-right"><KeepCase>{seriesLabel}</KeepCase></span></div>
   <div className="market-headline">
    <div>
     <h2 id="market-heading" className="sr-only">Market</h2>

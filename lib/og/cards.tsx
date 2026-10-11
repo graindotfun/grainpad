@@ -31,7 +31,9 @@ export function grainField(seed:string,{width=380,height=630,count=820,keepClear
 
 const Mono=({children,color=C.ink,size=17,upper=true}:{children:ReactNode;color?:string;size?:number;upper?:boolean})=><div style={{display:'flex',alignItems:'center',fontFamily:'Plex',fontSize:size,letterSpacing:size*.14,color,textTransform:upper?'uppercase':'none'}}>{children}</div>;
 /** Brand book: "grainpad" stays lowercase, also inside an uppercase label. */
-function Corner({text}:{text:string}){const [brand,...rest]=text.split(' / ');return <div style={{display:'flex',alignItems:'center'}}><span style={{textTransform:'none'}}>{brand}</span><span>{rest.length?`\u00a0/ ${rest.join(' / ')}`:''}</span></div>;}
+/** Brand book: "grainpad" and the wXMR ticker keep their case inside uppercase labels. Satori trims edge spaces, so they become no-break spaces. */
+function keep(text:string){return text.split(/(grainpad|wXMR)/).filter(Boolean).map((part,i)=><span key={i} style={/^(grainpad|wXMR)$/.test(part)?{textTransform:'none'}:{}}>{part.replace(/^ | $/g,'\u00a0')}</span>);}
+function Corner({text}:{text:string}){return <div style={{display:'flex',alignItems:'center'}}>{keep(text)}</div>;}
 const Square=({size=11,color=C.orange}:{size?:number;color?:string})=><div style={{display:'flex',width:size,height:size,background:color,borderRadius:2,marginRight:12,flex:'none'}}/>;
 /** Card-safe numbers: the fonts have no subscript digits, so subscript-zero notation is drawn as small lowered digits. */
 function Figure({text,size,color=C.ink}:{text:string;size:number;color?:string}){
@@ -79,7 +81,7 @@ function Stats({items,note}:{items:CardStat[];note?:string}){
 function Squares({pct,label,graduated=false}:{pct:number|null;label:string;graduated?:boolean}){
  const filled=pct===null?0:graduated?24:Math.round(Math.max(0,Math.min(100,pct))/100*24);
  return <div style={{display:'flex',flexDirection:'column',marginTop:34,width:600}}>
-  <div style={{display:'flex',justifyContent:'space-between'}}><Mono size={15} color={C.mute}>{label}</Mono><Mono size={15}>{pct===null?'—':graduated||pct>=100?'complete':`${pct.toFixed(1)}%`}</Mono></div>
+  <div style={{display:'flex',justifyContent:'space-between'}}><Mono size={15} color={C.mute}>{keep(label)}</Mono><Mono size={15}>{pct===null?'—':graduated||pct>=100?'complete':`${pct.toFixed(1)}%`}</Mono></div>
   <div style={{display:'flex',marginTop:12}}>{Array.from({length:24},(_,i)=><div key={i} style={{display:'flex',width:21,height:12,borderRadius:2,marginRight:i<23?3.9:0,background:pct===null?C.bg:i<filled?C.orange:C.soft,border:pct===null?`1px solid ${C.rule}`:'0'}}/>)}</div>
  </div>;
 }
