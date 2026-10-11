@@ -60,6 +60,6 @@ test('FAQ never turns failed or stale reads into zero fees, active rewards or a 
 test('FAQ can show a registered official mint and enabled preparation without promising executable liquidity',()=>{
  const html=render({token:{mint:'verified-record-mint'},solTradingEnabled:true,platform:{...platform,rewards:{policyApproved:true,operational:true}}});
  assert.match(html,/verified-record-mint/);assert.match(html,/Copy official GRAIN mint/);
- assert.match(html,/SOL route preparation is enabled/);assert.match(html,/subject to live pool/);assert.match(html,/Public distribution is active/);
+ assert.match(html,/SOL route preparation is enabled/);assert.match(html,/subject to live pool/);assert.match(html,/Holder payment status comes from finalized payments/);assert.doesNotMatch(html,/Public distribution is active/);
  assert.match(render({solTradingEnabled:true,solLookupConfigured:false}),/Not yet/);
 });

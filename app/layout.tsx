@@ -23,6 +23,7 @@ import "./price-tab.css";
 import "./grains.css";
 import {PriceTab} from "@/components/price-tab";
 import {ContractAddressBar} from "@/components/contract-address-bar";
+import {trackerReleased} from "@/lib/utility-rewards-tracker/server";
 
 export const metadata: Metadata = {
   title: "grainpad. ideas into existence.",
@@ -42,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
+    <html lang="en" data-theme="dark" data-rewards-tracker={trackerReleased()?"v1":undefined} suppressHydrationWarning>
       <head>
         <link rel="preload" href="/fonts/albert-sans-latin-variable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" fetchPriority="high"/>
         <meta name="theme-color" content="#101010"/>
