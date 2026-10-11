@@ -75,7 +75,7 @@ export function CanonicalIdentityDesk({owner,launches}:{owner:string;launches:La
  const original=record?.document;
  const current=record?.presentation;
  const bannerUri=current?.header?.uri&&current.header.sha256&&current.header.uri.endsWith('/'+current.header.sha256)?current.header.uri:'';
- return <section className="canonical-identity-desk" aria-label="Canonical token identity"><div className="product-section-heading"><h2>CANONICAL TOKEN IDENTITY</h2></div>
+ return <section className="canonical-identity-desk" aria-label="Canonical token identity"><div className="product-section-heading"><h2>canonical token identity</h2></div>
  <p>Changes here create a signed canonical identity revision. Your original launch identity remains preserved.</p>
  <p className="small">{IDENTITY_UPDATE_SENTENCE}</p>
  {!owner?<p className="small muted">Connect your wallet to add or replace a canonical banner, X account, or X Community.</p>:<>

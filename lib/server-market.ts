@@ -22,11 +22,11 @@ export async function serverMarket(address:string,{viewer=false}:{viewer?:boolea
  let indexed:{record:string}|null;
  try{indexed=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',platform,mint).first<{record:string}>();}
  catch{throw new MarketReadError('unavailable','Market data is temporarily unavailable.',null);}
- if(!indexed)throw new MarketReadError('not_registered','This mint is not a registered Grainpad launch.',null);
+ if(!indexed)throw new MarketReadError('not_registered','This mint is not a registered grainpad launch.',null);
  let record:{mint:string;platformId:string;verification:string;quoteAsset?:string;name:string;symbol:string;image:string;creator?:string;createdAt?:string}|null=null;
  try{record=JSON.parse(indexed.record);}catch{record=null;}
  const identity:MarketIdentity|null=record?{mint,name:record.name,symbol:record.symbol,image:record.image,creator:record.creator||null,createdAt:record.createdAt||null,quoteSymbol:record.quoteAsset||'SOL'}:null;
- if(!record||record.mint!==mint||record.verification!=='confirmed-on-chain'||!isOwnPlatform(record.platformId,platform))throw new MarketReadError(record?'unavailable':'not_registered',record?'Launch identity could not be read.':'This mint is not a registered Grainpad launch.',record?identity:null);
+ if(!record||record.mint!==mint||record.verification!=='confirmed-on-chain'||!isOwnPlatform(record.platformId,platform))throw new MarketReadError(record?'unavailable':'not_registered',record?'Launch identity could not be read.':'This mint is not a registered grainpad launch.',record?identity:null);
  let cached;
  try{cached=await sharedMarketCache(db,`market:v3:${platform}:${mint}`,async(previous:MarketView|null)=>{
   const network=await sharedMarketCache(db,'mainnet-genesis',()=>chain('mainnet-beta','getGenesisHash'),{ttl:86_400_000,maxStale:86_400_000});

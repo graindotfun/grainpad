@@ -16,9 +16,9 @@ export const metadata: Metadata = {
 export default function AuthorityPage() {
   return <main className="shell record-shell grain-updates">
     <a className="skip-content" href="#main-content">Skip to authorities</a><SiteHeader/>
-    <header className="page-heading record-heading" id="main-content"><div><p className="eyebrow"><span className="gx-word">grainpad</span> / PUBLIC RECORD</p><h1>Who controls what<span>.</span></h1></div><a href="/transparency" className="record-link">Transparency</a></header>
+    <header className="page-heading record-heading" id="main-content"><div><p className="eyebrow"><span className="gx-word">grainpad</span> / PUBLIC RECORD</p><h1>who controls what<span>.</span></h1></div><a href="/transparency" className="record-link">Transparency</a></header>
     <section className="record-commitment" aria-labelledby="authority-intro">
-      <h2 id="authority-intro">How to read this page</h2>
+      <h2 id="authority-intro">how to read this page</h2>
       <div>
         <p>Each entry names one power over grainpad tokens, funds or launches, who holds it today, and whether it can move or redirect money. Values marked as read on chain come from a finalized Solana read and link to two explorers. Values marked as grainpad statements describe off-chain control that no chain read can show; treat them as claims.</p>
         <p>Nothing here is decentralized yet. grainpad still holds single-key control over the legacy platform and over tax withdrawal. This page exists so you can see exactly where.</p>
@@ -26,7 +26,7 @@ export default function AuthorityPage() {
     </section>
     <AuthorityLedgerView/>
     <section className="record-commitment" aria-labelledby="verify-heading">
-      <h2 id="verify-heading">Check it yourself</h2>
+      <h2 id="verify-heading">check it yourself</h2>
       <div>
         <p>Do not rely on this page. With your own RPC endpoint and a checkout of the published source, run the read-only watcher. It discovers every launch on the platform directly from chain and never signs or sends.</p>
         <pre className="ledger-code"><code>{"SOLANA_RPC_URL=https://your-rpc node scripts/watch-authorities.mjs\nSOLANA_RPC_URL=https://your-rpc node scripts/review-fee-freeze.mjs --grain"}</code></pre>

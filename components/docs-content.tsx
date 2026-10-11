@@ -15,12 +15,12 @@ import {WalletsFaq,type FaqPlatform} from "@/components/wallets-faq";
 import {WxmrUnwrapLink} from "@/components/wxmr-wallet-note";
 
 const sections = [
-  ["overview", "Overview"], ["launch-flow", "Launch flow"],
-  ["launch-parameters", "Launch parameters"], ["fees", "Fees"],
-  ["graduation", "Graduation"], ["grain-and-treasury", "$GRAIN and Treasury"],
-  ["trust-model", "How grainpad is managed"], ["verification", "Verification"],
-  ["monero-records", "Monero launch records"], ["pxmr-research", "Early p/xmr research"],
-  ["official-links", "Official links"], ["faq", "Wallets & FAQ"],
+  ["overview", "overview"], ["launch-flow", "launch flow"],
+  ["launch-parameters", "launch parameters"], ["fees", "fees"],
+  ["graduation", "graduation"], ["grain-and-treasury", "$GRAIN and treasury"],
+  ["trust-model", "How grainpad is managed"], ["verification", "verification"],
+  ["monero-records", "Monero launch records"], ["pxmr-research", "early p/xmr research"],
+  ["official-links", "official links"], ["faq", "wallets & FAQ"],
 ] as const;
 type ReadState = "loading" | "ready" | "unavailable";
 type TokenRecord = { mint: string };
@@ -79,7 +79,7 @@ export function DocsContent({ platformId, rates, solTradingEnabled, solLookupCon
   return <main className="shell docs-shell grain-updates">
     <a className="skip-content" href="#main-content">Skip to documentation</a><SiteHeader/>
     <header className="page-heading docs-heading" id="main-content">
-      <div><p className="eyebrow"><span className="gx-word">grainpad</span> / DOCUMENTATION</p><h1><KineticText>Docs.</KineticText></h1><p className="docs-intro">Launch mechanics. Current policy. Verifiable records.</p></div>
+      <div><p className="eyebrow"><span className="gx-word">grainpad</span> / DOCUMENTATION</p><h1><KineticText>docs.</KineticText></h1><p className="docs-intro">Launch mechanics. Current policy. Verifiable records.</p></div>
       <div className="docs-edition"><span>Last updated</span><time dateTime={DOCS.lastUpdated}>{docsDate(DOCS.lastUpdated)}</time><span>{BRAND_CHAIN.networkLabel} / v1</span></div>
     </header>
     <div className="docs-layout">

@@ -26,5 +26,5 @@ test('public copy avoids banned marketing words',()=>{
  }
  assert.deepEqual(hits,[]);
  assert.equal(banned.test(OFFICIAL_METADATA_DOCUMENT.description),false);
- assert.equal(PREVIOUS_TOKEN_BANNER,'Previous GRAIN token. Not supported by Grainpad.');
+ assert.equal(PREVIOUS_TOKEN_BANNER,'Previous GRAIN token. Not supported by grainpad.');
 });

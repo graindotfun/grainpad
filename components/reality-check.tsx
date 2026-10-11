@@ -25,5 +25,5 @@ function RealityCheckView({mint,symbol,balance,onUse,compact=false}:Props){
  {!result&&<p className="small muted">No wallet connection required. Pool fees are included; network costs are reviewed separately before a trade.</p>}</>;
  // Inside the swap module the check is a disclosure, not a separate top-level destination.
  if(compact)return <details className="swap-reality" id="reality-check"><summary><span>Reality Check</span><small>What would an exit return?</small></summary><div className="reality-check is-compact">{body}</div></details>;
- return <section className="panel product-panel reality-check" id="reality-check" aria-labelledby="reality-heading"><div className="product-section-heading"><div><p className="eyebrow">POSITION / EXIT</p><h2 id="reality-heading">Reality Check</h2><p>Compare the proceeds from selling a quarter, half or all of your token amount.</p></div><span className="product-tag">Read only</span></div>{body}</section>;
+ return <section className="panel product-panel reality-check" id="reality-check" aria-labelledby="reality-heading"><div className="product-section-heading"><div><p className="eyebrow">POSITION / EXIT</p><h2 id="reality-heading">reality check</h2><p>Compare the proceeds from selling a quarter, half or all of your token amount.</p></div><span className="product-tag">Read only</span></div>{body}</section>;
 }

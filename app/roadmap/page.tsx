@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function RoadmapPage() {
   return <main className="shell record-shell grain-updates">
     <a className="skip-content" href="#main-content">Skip to roadmap</a><SiteHeader/>
-    <header className="page-heading record-heading" id="main-content"><div><p className="eyebrow"><span className="gx-word">grainpad</span> / ROADMAP</p><h1>Roadmap<span>.</span></h1></div><a href="/transparency" className="record-link">View transparency</a></header>
+    <header className="page-heading record-heading" id="main-content"><div><p className="eyebrow"><span className="gx-word">grainpad</span> / ROADMAP</p><h1>roadmap<span>.</span></h1></div><a href="/transparency" className="record-link">View transparency</a></header>
     <ol className="roadmap-items" aria-label="Monero roadmap">
       {MONERO_ROADMAP.map(item => <li key={item.title}><article><p className={`roadmap-status${item.status === "Planned" ? " is-planned" : ""}`}>[{item.status}]</p><div><h2>{item.title}</h2><p>{item.description}</p></div></article></li>)}
     </ol>
