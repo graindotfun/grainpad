@@ -2,10 +2,14 @@
 import {useEffect,useId,useRef,useState} from 'react';
 import {Area,CartesianGrid,ComposedChart,ReferenceLine,ResponsiveContainer,Tooltip,XAxis,YAxis,usePlotArea,useXAxisScale,useYAxisScale} from 'recharts';
 import {formatNumber,formatPrice} from '@/lib/price-format';
-import {candleSeconds} from '@/lib/chart-candles.mjs';
+import {candleSeconds,DEFAULT_CHART_PREFERENCES} from '@/lib/chart-candles.mjs';
 import type {Candle} from '@/lib/market-display';
 type ExecutionCandle=Pick<Candle,'time'|'open'|'high'|'low'|'close'>&{carried?:boolean;openFromPrevious?:boolean};
 type Colors={up:string;down:string};
+/** Default colours draw grains candles: an up candle is a solid orange grain, a down candle a hollow ink grain (like a
+ * sell on the tape). Colours the viewer picked keep the filled style they chose. */
+const grainsStyle=(colors:Colors)=>colors.up.toLowerCase()===DEFAULT_CHART_PREFERENCES.up.toLowerCase()&&colors.down.toLowerCase()===DEFAULT_CHART_PREFERENCES.down.toLowerCase();
+const INK='var(--gx-ink, var(--foreground))';
 type Props={candles:ExecutionCandle[];colors:Colors;unit:string;now:number;interval:number;resolution?:number;lastPrice:number|null;label:string};
 function bounds(candles:ExecutionCandle[],lastPrice:number|null){
  const prices=candles.flatMap(row=>[row.low,row.high]).concat(lastPrice!=null?[lastPrice]:[]).filter(value=>Number.isFinite(value)&&value>0);
@@ -18,11 +22,11 @@ function CandleReadout({candle,unit}:{candle:ExecutionCandle;unit:string}){
 export function CandleBodies({candles,colors,interval,resolution}:{candles:ExecutionCandle[];colors:Colors;interval:number;resolution:number}){
  const plot=usePlotArea(),x=useXAxisScale(),y=useYAxisScale(),id=useId();
  if(!plot||!x||!y)return null;
- const width=Math.max(.65,Math.min(10,plot.width*resolution/interval*.65));
- return <g className="candle-bodies" pointerEvents="none"><defs><clipPath id={id}><rect x={plot.x} y={plot.y} width={plot.width} height={plot.height}/></clipPath></defs><g clipPath={`url(#${id})`}>{candles.map(candle=>{
+ const width=Math.max(.65,Math.min(10,plot.width*resolution/interval*.65)),grains=grainsStyle(colors);
+ return <g className={`candle-bodies${grains?' is-grains':''}`} pointerEvents="none"><defs><clipPath id={id}><rect x={plot.x} y={plot.y} width={plot.width} height={plot.height}/></clipPath></defs><g clipPath={`url(#${id})`}>{candles.map(candle=>{
   const mapped=x(candle.time),open=y(candle.open),close=y(candle.close),high=y(candle.high),low=y(candle.low);if([mapped,open,close,high,low].some(value=>value===undefined||!Number.isFinite(value)))return null;
-  const center=Math.max(plot.x+width/2,Math.min(plot.x+plot.width-width/2,mapped!)),color=candle.carried?'var(--chart-tick)':candle.close>=candle.open?colors.up:colors.down,height=Math.abs(open!-close!);
-  return <g key={candle.time} data-direction={candle.close>=candle.open?'up':'down'}><line x1={center} x2={center} y1={high} y2={low} stroke={color} strokeWidth={Math.min(1.25,width)} strokeLinecap="round"/>{height<1?<line x1={center-width/2} x2={center+width/2} y1={close} y2={close} stroke={color} strokeWidth={Math.min(2,Math.max(.8,width))} strokeLinecap="round"/>:<rect x={center-width/2} y={Math.min(open!,close!)} width={width} height={height} rx={Math.min(1.5,width/3,height/2)} fill={color}/>}</g>;
+  const center=Math.max(plot.x+width/2,Math.min(plot.x+plot.width-width/2,mapped!)),up=candle.close>=candle.open,color=candle.carried?'var(--chart-tick)':up?colors.up:grains?INK:colors.down,hollow=grains&&!up&&!candle.carried,height=Math.abs(open!-close!);
+  return <g key={candle.time} data-direction={candle.close>=candle.open?'up':'down'}><line x1={center} x2={center} y1={high} y2={low} stroke={color} strokeWidth={Math.min(1.25,width)} strokeLinecap="round"/>{height<1?<line x1={center-width/2} x2={center+width/2} y1={close} y2={close} stroke={color} strokeWidth={Math.min(2,Math.max(.8,width))} strokeLinecap="round"/>:hollow?<rect x={center-width/2+.6} y={Math.min(open!,close!)+.6} width={Math.max(.4,width-1.2)} height={Math.max(.4,height-1.2)} rx={Math.min(1,width/4,height/2)} fill="var(--gx-card, transparent)" stroke={color} strokeWidth={1.2}/>:<rect x={center-width/2} y={Math.min(open!,close!)} width={width} height={height} rx={grains?Math.min(1,width/4,height/2):Math.min(1.5,width/3,height/2)} fill={color}/>}</g>;
  })}</g></g>;
 }
 export function CandlestickMarketChart({candles,colors,unit,now,interval,resolution=candleSeconds(interval),lastPrice,label}:Props){
@@ -35,7 +39,7 @@ export function CandlestickMarketChart({candles,colors,unit,now,interval,resolut
   <YAxis type="number" dataKey="close" orientation="right" domain={domain} allowDataOverflow tickCount={5} tickFormatter={tick} width={84} tickMargin={6} axisLine={false} tickLine={false} tick={{fill:'var(--chart-tick)',fontSize:10.5,fontFamily:'var(--font-code)'}}/>
   <Area dataKey="close" stroke="none" fill="none" isAnimationActive={false} dot={false} activeDot={false}/>
   <CandleBodies candles={candles} colors={colors} interval={span} resolution={resolution}/>
-  {lastPrice!=null&&<ReferenceLine y={lastPrice} stroke="var(--chart-tick)" strokeOpacity={.55} strokeDasharray="3 5"/>}
+  {lastPrice!=null&&(grainsStyle(colors)?<ReferenceLine y={lastPrice} stroke="var(--grain-orange)" strokeWidth={1} strokeDasharray="2 4"/>:<ReferenceLine y={lastPrice} stroke="var(--chart-tick)" strokeOpacity={.55} strokeDasharray="3 5"/>)}
   <Tooltip cursor={{stroke:'var(--chart-tick)',strokeDasharray:'2 3'}} isAnimationActive={false} content={({active,payload})=>{const candle=payload?.[0]?.payload as ExecutionCandle|undefined;return active&&candle?<div className="grain-tooltip"><CandleReadout candle={candle} unit={unit}/></div>:null;}}/>
  </ComposedChart></ResponsiveContainer>{!candles.length&&<span className="candle-quiet-note">No candles in this window · last known execution</span>}</div>;
 }
@@ -55,8 +59,9 @@ export function LiveCandlestickMarketChart({candles,colors,unit,lastPrice,label}
     ctx.font='10px "IBM Plex Mono",monospace';ctx.fillStyle=tick;ctx.strokeStyle=grid;ctx.lineWidth=1;ctx.setLineDash([2,4]);
     for(let i=0;i<5;i++){const yy=top+(bottom-top)*i/4;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(right,yy);ctx.stroke();ctx.fillText(formatNumber(high-(high-low)*i/4,{sig:4,prefix:unit==='usd'?'$':''}),right+10,yy+3);}
     ctx.setLineDash([]);ctx.save();ctx.beginPath();ctx.rect(left,top,right-left,bottom-top);ctx.clip();ctx.lineCap='round';
-    for(const candle of visible){const center=Math.max(left+width/2,Math.min(right-width/2,x(candle.time))),open=y(candle.open),close=y(candle.close),height=Math.abs(open-close),color=candle.carried?tick:candle.close>=candle.open?colors.up:colors.down;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.min(1.25,width);ctx.beginPath();ctx.moveTo(center,y(candle.high));ctx.lineTo(center,y(candle.low));ctx.stroke();ctx.beginPath();if(height<1){ctx.lineWidth=Math.min(2,Math.max(.8,width));ctx.moveTo(center-width/2,close);ctx.lineTo(center+width/2,close);ctx.stroke();}else{ctx.roundRect(center-width/2,Math.min(open,close),width,height,Math.min(1.5,width/3,height/2));ctx.fill();}}
-    if(lastPrice!=null){ctx.setLineDash([3,5]);ctx.strokeStyle=tick;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,y(lastPrice));ctx.lineTo(right,y(lastPrice));ctx.stroke();}
+    const grains=grainsStyle(colors),ink=style.getPropertyValue('--gx-ink').trim()||style.color,card=style.getPropertyValue('--gx-card').trim()||'transparent',orange=style.getPropertyValue('--grain-orange').trim()||colors.up;
+    for(const candle of visible){const center=Math.max(left+width/2,Math.min(right-width/2,x(candle.time))),open=y(candle.open),close=y(candle.close),height=Math.abs(open-close),up=candle.close>=candle.open,color=candle.carried?tick:up?colors.up:grains?ink:colors.down,hollow=grains&&!up&&!candle.carried;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.min(1.25,width);ctx.beginPath();ctx.moveTo(center,y(candle.high));ctx.lineTo(center,y(candle.low));ctx.stroke();ctx.beginPath();if(height<1){ctx.lineWidth=Math.min(2,Math.max(.8,width));ctx.moveTo(center-width/2,close);ctx.lineTo(center+width/2,close);ctx.stroke();}else if(hollow){ctx.lineWidth=1.2;ctx.fillStyle=card;ctx.roundRect(center-width/2+.6,Math.min(open,close)+.6,Math.max(.4,width-1.2),Math.max(.4,height-1.2),Math.min(1,width/4,height/2));ctx.fill();ctx.stroke();}else{ctx.roundRect(center-width/2,Math.min(open,close),width,height,grains?Math.min(1,width/4,height/2):Math.min(1.5,width/3,height/2));ctx.fill();}}
+    if(lastPrice!=null){ctx.setLineDash(grains?[2,4]:[3,5]);ctx.strokeStyle=grains?orange:tick;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,y(lastPrice));ctx.lineTo(right,y(lastPrice));ctx.stroke();}
     ctx.restore();ctx.fillStyle=tick;for(let i=0;i<4;i++){const time=now-120+120*i/3,text=new Date(time*1000).toLocaleTimeString('en-US',{hour12:false,minute:'2-digit',second:'2-digit'});ctx.fillText(text,left+(right-left)*i/3-(i===3?30:0),h-6);}
    }
    frame=requestAnimationFrame(draw);

@@ -545,6 +545,9 @@ html[data-theme] .gx.gx-token,html[data-theme] .gx-token .record-surface,html[da
 .gx-token-more>details{margin:0}
 .gx.gx-token .token-details>summary{padding:4px 0;font-size:15px;cursor:pointer}
 .gx.gx-token .market-chart-frame{height:auto;min-height:0}
+/* recharts candles and the live canvases size to their frame, so the frame keeps a fixed height for them. */
+.gx.gx-token .market-chart-frame:has(.grain-chart,.grain-live-candles,.grain-live-chart){height:300px}
+@media(max-width:640px){.gx.gx-token .market-chart-frame:has(.grain-chart,.grain-live-candles,.grain-live-chart){height:230px}}
 /* header */
 .gx-token-header{padding-top:34px}
 .gx-token-header .token-header-identity{display:flex;gap:26px;align-items:center}
@@ -790,7 +793,7 @@ html[data-theme] body dd.address-line{font-weight:400!important}
  * list use IBM Plex Mono 400, because Albert Sans has no tabular figures (no tnum feature) and its digits are
  * proportional. Standalone amounts (large price, balance, headline figures) stay Albert Sans 600. */
 html[data-theme] body :is(
- .gx-num,.ledger-amount,.gc-tooltip,.gc-tooltip *,.gc-tick,.price-tab-row,.price-tab-row *,.docs-facts dd,.gx-receipt-row>span:last-child,
+ .gx-num,.ledger-amount,.gc-tooltip,.gc-tooltip *,.gc-tick,.candle-readout dd,.recharts-cartesian-axis-ticks text,.recharts-cartesian-axis-ticks tspan,.recharts-cartesian-axis-tick-labels text,.recharts-cartesian-axis-tick-labels tspan,.price-tab-row,.price-tab-row *,.docs-facts dd,.gx-receipt-row>span:last-child,
  .receipt-page #opening-record .product-table td:is(:nth-child(2),:nth-child(3)),
  .crew-record .product-table td:nth-child(4),
  .ledger-table td:nth-child(3),
@@ -798,3 +801,34 @@ html[data-theme] body :is(
  .reality-check .product-table :is(td,tbody th),
  .creator-desk .product-table td:is([data-label="Observed earned"],[data-label="Observed claimed"],[data-label="Available now"],[data-label="Claims"])
 ){font-family:var(--gx-mono)!important;font-weight:400!important;font-variant-numeric:tabular-nums;letter-spacing:0;text-transform:none}
+
+/* ---------- candles (grains style: solid orange up grain, hollow ink down grain) ---------- */
+html[data-theme] .gx.gx-token .grain-tooltip{border:1px solid var(--gx-rule);border-radius:12px;background:var(--gx-card);box-shadow:0 10px 30px rgba(16,16,16,.12);padding:10px 12px;color:var(--gx-ink);font:400 11px/1.45 var(--gx-mono)}
+html[data-theme] .gx.gx-token .grain-tooltip>strong{font:600 13px/1.3 var(--gx-sans);color:var(--gx-ink)}
+html[data-theme] .gx.gx-token .grain-tooltip>span{color:var(--gx-mute)}
+html[data-theme] .gx.gx-token .candle-readout{gap:4px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--gx-rule)}
+html[data-theme] .gx.gx-token .candle-readout dt{text-transform:none;color:var(--gx-mute);font:400 11px/1.4 var(--gx-mono);letter-spacing:.06em}
+html[data-theme] .gx.gx-token .candle-readout dd{margin:0;color:var(--gx-ink);text-align:right}
+html[data-theme] .gx.gx-token .candle-quiet-note{font:400 11px/1.4 var(--gx-mono);color:var(--gx-mute)}
+html[data-theme] .gx.gx-token .candle-bodies.is-grains line{stroke-linecap:square}
+html[data-theme] .candle-color-preview i.is-hollow{background:transparent;box-shadow:inset 0 0 0 1.5px var(--gx-ink)}
+
+/* ---------- launch proof (/token/[mint]/proof): presentation only ---------- */
+html[data-theme] .proof-page .product-breadcrumb{display:flex;flex-wrap:wrap;gap:6px 16px;font:400 11px/1.5 var(--gx-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gx-mute);padding-top:22px}
+html[data-theme] .proof-page .product-breadcrumb a{color:var(--gx-ink);text-decoration:none;border-bottom:1.5px solid var(--grain-orange)}
+html[data-theme] .proof-page .page-heading{border-bottom:0;padding-bottom:18px}
+html[data-theme] .proof-page .page-heading h1{font-size:clamp(46px,7.4vw,92px);line-height:.95;letter-spacing:-.06em}
+html[data-theme] .proof-page.shell .panel.proof-card{border:1.5px solid var(--gx-ink);border-radius:22px;background:var(--gx-card);padding:clamp(20px,3vw,34px)}
+html[data-theme] .proof-page .proof-verdict{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:14px 0 6px}
+html[data-theme] .proof-page .proof-verdict h2,html[data-theme] .proof-page .proof-card>h2{font-size:clamp(26px,3.2vw,38px);letter-spacing:-.04em;margin:0}
+html[data-theme] .proof-page .proof-card>h2{margin:28px 0 12px}
+html[data-theme] .proof-page .proof-meta{font:400 12px/1.6 var(--gx-mono);color:var(--gx-mute);letter-spacing:.04em}
+html[data-theme] .proof-page .proof-checks{display:grid;margin:18px 0}
+html[data-theme] .proof-page .proof-checks>div{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px dashed var(--gx-rule)}
+html[data-theme] .proof-page .proof-checks dt{font:400 12px/1.45 var(--gx-mono);letter-spacing:.04em;color:var(--gx-ink);min-width:0;overflow-wrap:anywhere}
+html[data-theme] .proof-page .proof-checks dd{margin:0;flex:none}
+html[data-theme] .proof-page .proof-accounts{display:grid;gap:8px}
+html[data-theme] .proof-page .proof-address{display:grid;gap:4px;padding:12px 14px;border:1px solid var(--gx-rule);border-radius:14px;text-decoration:none;color:var(--gx-ink)}
+html[data-theme] .proof-page .proof-address:hover{border-color:var(--gx-ink)}
+html[data-theme] .proof-page .proof-address span{font:600 14px/1.3 var(--gx-sans)}
+html[data-theme] .proof-page .proof-address code{font:400 12px/1.4 var(--gx-mono);color:var(--gx-mute);overflow-wrap:anywhere}
