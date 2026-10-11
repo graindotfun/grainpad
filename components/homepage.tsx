@@ -50,7 +50,7 @@ function Hero({overview,status}:{overview:ReturnType<typeof useSiteOverview>;sta
   </div>
   <div className="gx-hero-stage">
    <div className="gx-stage-top gx-mono gx-mute"><span className="gx-label"><span className="gx-word">grainpad</span> / in the making</span><span>interactive illustration · no transaction</span></div>
-   <div className="gx-stage-canvas"><GrainStage mode={mode} word={word} kick={kick}/><span className="gx-stage-corner is-tl" aria-hidden="true"/><span className="gx-stage-hint gx-mono gx-mute" aria-hidden="true">move anywhere to explore</span>
+   <div className="gx-stage-canvas"><GrainStage mode={mode} word={word} kick={kick}/><span className="gx-stage-corner is-tl" aria-hidden="true"/>
     {!reduce&&<button type="button" className="gx-icon gx-stage-play" aria-label={auto?"Pause animation":"Play animation"} aria-pressed={!auto} onClick={()=>setAuto(a=>!a)}>{auto?<Pause size={14}/>:<Play size={14}/>}</button>}
    </div>
    <div className="gx-stage-tabs" role="tablist" aria-label="From idea to on-chain" onKeyDown={onTabKey}>{STAGES.map(([label],i)=><button key={label} ref={el=>{tabs.current[i]=el;}} type="button" role="tab" id={`hero-tab-${i}`} aria-selected={mode===i} aria-controls="hero-stage-panel" tabIndex={mode===i?0:-1} onClick={()=>choose(i as GrainMode)}><b>0{i+1}</b> {label}</button>)}</div>

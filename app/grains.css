@@ -201,8 +201,7 @@ html[data-theme] .price-tab-dot{background:var(--grain-orange)}
 .gx-stage-top{display:flex;justify-content:space-between;gap:16px;padding:34px var(--gx-pad) 0 0;font-size:11px}
 .gx-stage-canvas{position:relative;flex:1;min-height:520px}
 .gx-stage-corner{position:absolute;left:0;top:18px;width:14px;height:14px;border-left:1px solid var(--gx-rule);border-top:1px solid var(--gx-rule)}
-.gx-stage-hint{position:absolute;left:0;bottom:70px;font-size:11px}
-.gx-stage-play{position:absolute;right:var(--gx-pad);bottom:64px;width:34px;height:34px;background:var(--gx-bg)}
+.gx-stage-play{position:absolute;right:var(--gx-pad);top:18px;z-index:2;width:44px;height:44px;background:var(--gx-bg)}
 .gx-stage-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--gx-rule);margin-right:var(--gx-pad)}
 .gx-stage-tabs button{text-align:left;padding:16px 4px 14px;font:600 16px var(--gx-sans);display:flex;gap:10px;align-items:baseline;border:0;border-top:2.5px solid transparent;margin-top:-1.5px;color:var(--gx-mute);background:none;cursor:pointer}
 .gx-stage-tabs button b{font:400 11px var(--gx-mono);letter-spacing:.1em}
@@ -246,7 +245,7 @@ html[data-theme="dark"] .gx-tile.is-k{background:#fff;color:#101010}
 .gx-tile.is-g{background:var(--gx-neutral);color:#fff}
 .gx-tile.is-w{background:#fff;color:#101010;box-shadow:inset 0 0 0 1px var(--gx-rule)}
 .gx-tile.is-small{width:72px;height:72px;aspect-ratio:1;flex:none;font-size:34px;border-radius:12px}
-.gx-tile-chip{position:absolute;left:10px;top:10px}
+.gx-tile-chip{position:absolute;left:10px;top:10px;display:flex;align-items:flex-start;line-height:1;max-width:calc(100% - 20px)}
 .gx-tile.is-o .gx-chip.is-new{background:#101010;border-color:#101010;color:#fff}
 .gx-token-body{padding:14px 6px 0;display:flex;flex-direction:column;min-width:0}
 .gx-token-body h3{font-size:22px;letter-spacing:-.035em;line-height:1.1;display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
@@ -423,8 +422,8 @@ html[data-theme="dark"] .gx-tile.is-k{background:#fff;color:#101010}
 /* The connect button is a plain ink pill: no orbiting rim, no glow. */
 html body .site-header.gx-header .site-wallet-trigger,html body .site-header.gx-header .site-wallet-trigger:is(:hover,:focus-visible,:active){display:inline-flex!important;background:var(--gx-btn)!important;color:var(--gx-btnfg)!important;border:0;box-shadow:none;border-radius:999px;font:600 14px/1 var(--gx-sans)!important;height:42px;min-height:42px;padding:0 20px}
 html body .site-header.gx-header .site-wallet-trigger::before{display:none}
-html body .site-header.gx-header .site-wallet-trigger:is(:hover,:focus-visible){transform:translateY(-1px)}
-@media(max-width:640px){html body .site-header.gx-header .site-wallet-trigger{height:38px;min-height:38px;padding:0 14px;font-size:13px!important}}
+html body .site-header.gx-header .site-wallet-trigger:is(:hover,:focus-visible,:active){transform:none}
+@media(max-width:640px){html body .site-header.gx-header .site-wallet-trigger{height:38px;min-height:38px;padding:0 14px;font-size:13px!important}html body .site-header.gx-header .site-wallet-trigger:is(:hover,:focus-visible,:active){height:38px;min-height:38px;padding:0 14px;font-size:13px!important}}
 
 /* ---------- create (/launch) ---------- */
 .gx.gx-create{min-height:100vh}
@@ -880,18 +879,18 @@ html[data-theme] dialog.room-composer-dialog{border-radius:24px 0 0 24px;box-sha
 html[data-theme] dialog.room-composer-dialog :is(h2,h3,legend){font:600 clamp(22px,2.6vw,28px)/1.1 var(--gx-sans);letter-spacing:-.04em;text-transform:none}
 @media(max-width:640px){html[data-theme] dialog.room-composer-dialog{border-radius:24px 24px 0 0}}
 
-/* ---------- logo hover: only the symbol turns; the wordmark stays still ----------
- * Both layers are the original horizontal logo file, only scaled. The symbol spans 0.8–19.2% of the file's width
- * (centre 10.0%, 50%); the wordmark starts at 21.0%, so the layers are split at 20.1%. */
+/* ---------- header logo: spaced original assets; only the symbol turns ---------- */
 html[data-theme] .gx-header .gx-logo img{transform:none}
-.gx-header .gx-logo-lockup{position:relative;display:block;line-height:0}
-.gx-header .gx-logo-lockup .gx-logo-word{clip-path:inset(0 0 0 20.1%)}
-.gx-header .gx-logo .gx-logo-lockup .gx-logo-mark{position:absolute;inset:0;width:100%;height:100%;clip-path:inset(0 79.9% 0 0);transform-origin:10.02% 50%;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.gx-header .gx-logo-lockup{display:flex;align-items:center;gap:10px;line-height:0}
+.gx-header .gx-logo-lockup .gx-logo-word{order:1;width:114px;height:auto}
+.gx-header .gx-logo .gx-logo-lockup .gx-logo-mark{order:0;width:28px;height:28px;transform-origin:center;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
 html[data-theme] .gx-header .gx-logo:is(:hover,:focus-visible) .gx-logo-lockup .gx-logo-mark{transform:rotate(-8deg)}
 html[data-theme="dark"] .gx-header .gx-logo-lockup.gx-logo-light{display:none!important}
 html:not([data-theme="dark"]) .gx-header .gx-logo-lockup.gx-logo-dark{display:none!important}
-html[data-theme="dark"] .gx-header .gx-logo-lockup.gx-logo-dark{display:block!important}
+html[data-theme="dark"] .gx-header .gx-logo-lockup.gx-logo-dark{display:flex!important}
 @media(prefers-reduced-motion:reduce){.gx-header .gx-logo .gx-logo-lockup .gx-logo-mark{transition:none}}
 /* The crew budget label ("promised") stays a quiet label next to the standalone amount. */
 html[data-theme] .crew-budget small{font:400 11px/1.4 var(--gx-mono)!important;color:var(--gx-mute)}
 html[data-theme] .rewards-calc-empty{font:600 1em/1 var(--gx-sans);color:var(--gx-mute)}
+
+@media(max-width:640px){.gx-header .gx-logo-lockup{gap:9px}.gx-header .gx-logo-lockup .gx-logo-word{width:97px}.gx-header .gx-logo .gx-logo-lockup .gx-logo-mark{width:24px;height:24px}}
