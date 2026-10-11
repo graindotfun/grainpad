@@ -1,3 +1,6 @@
+import {createClassicSolReviewGuard} from './classic-sol-review.mjs';
+import {CLASSIC_SOL_MODE,readClassicSolIssuanceState} from './classic-sol-policy.mjs';
+import {buildLaunchInstruction} from './launch-instructions.mjs';
 import {authorizePlannedLaunch} from './monero-prelaunch-browser.mjs';
 import {inspectTransactionStatus} from './transaction-status.mjs';
 import {simulationCostProof} from './simulation-cost.mjs';
@@ -25,7 +28,7 @@ import {decodeReviewedTransaction,inspectWalletTransaction,sameSimulatedAccount}
 import {signWalletFirst} from './wallet-signing.mjs';
 import {assertBlockhashWindow} from './blockhash-window.mjs';
 import {createSigningAttempt,assertReviewFresh,safeStore,type SigningAttempt} from './signing-attempt.mjs';
-const launchMintSigners=new WeakMap<object,Keypair>();
+const launchMintSigners=new WeakMap<object,Keypair>();const classicSolReviews=createClassicSolReviewGuard();
 
 import bs58 from 'bs58';
 import type {Wallet} from "./wallet";
@@ -41,8 +44,8 @@ export function solToLamports(value:string):bigint{
 }
 export type PublicCreatorBuy={quote:string;amountIn:string;minOut:string;taxBps:number;slippageBps:number;expectedNetOutputRaw:string;simulatedNetOutputRaw:string;transferFeeRaw:string;totalCurveFeeRaw:string;curveFeesRaw:Record<string,string>;curvePrincipalRaw:string;quoteDecimals:number;tokenDecimals:number;balanceBeforeRaw:string;quoteExpiresAt?:number;wxmrQuotedRaw?:string;launchDebitLamports?:string;wxmrBeforeRaw?:string|null;wsolBeforeRaw?:string|null;wxmrExists?:boolean;wsolExists?:boolean;tickArrays?:number};
 export type SolCreatorBuyIntent={quote:'SOL';amountIn:string;minOut:string;taxBps:number;slippageBps:number;quoteExpiresAt:number};
-export type PreparedLaunch={creatorBuy?:PublicCreatorBuy|null;setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;rewards?:{taxBps:number;collector:string};fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
-export type PreparedOperation=Pick<PreparedLaunch,"creatorBuy"|"rewards"|"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
+export type PreparedLaunch={launchMode?:"classic-sol-v1";creatorBuy?:PublicCreatorBuy|null;setupCostCapLamports?:number;setupStep?:"1a"|"1b";setupSlot?:number;setupTotalLamports?:number;remainingSetupLamports?:number;transactionBytes?:number;simulationUnits?:number;transaction:VersionedTransaction;network:Network;owner:string;mint:string;pool:string;metadataHash:string;name:string;symbol:string;platformName:string;quoteAsset:string;quoteMint:string;quoteDecimals:number;estimatedLamports:number;maxLamports:bigint;createdAt:number;lastValidBlockHeight:number;blockhash:string;rewards?:{taxBps:number;collector:string};fees:{protocol:string;platform:string;creator:string};simulationLogs:string[];targetAccount?:string;operationKind?:"platform"|"launch";minimumBalanceLamports?:number;measuredDebitLamports?:number;networkFeeLamports?:number;balanceBeforeLamports?:number};
+export type PreparedOperation=Pick<PreparedLaunch,"launchMode"|"creatorBuy"|"rewards"|"setupCostCapLamports"|"transaction"|"network"|"owner"|"estimatedLamports"|"maxLamports"|"createdAt"|"lastValidBlockHeight"|"blockhash"|"targetAccount"|"operationKind"|"minimumBalanceLamports"|"measuredDebitLamports"|"networkFeeLamports"|"balanceBeforeLamports"|"setupStep"|"setupSlot"|"setupTotalLamports"|"remainingSetupLamports"|"transactionBytes"|"simulationUnits"> & {simulationLogs?:string[];priorityFee?:{microLamports:number;floor:number;cap:number;lamports:number;source:string}};
 /** Pending is a normal state; uncertain attempts remain locked until resolved. */
 // Receipt polling runs every second; the same-origin relay's genesis is verified once per tab, not per poll.
 let receiptNetworkVerified=false;
@@ -87,8 +90,23 @@ async function prepareSolCreatorBuy(connection:Connection,input:{owner:PublicKey
  const built=buildPublicRewardsLaunch({owner:input.owner,mint:input.mint,platform:input.platformId,name:input.name,symbol:input.symbol,uri:input.uri,taxBps:input.taxBps,quoteMint:quoteAsset('wXMR').mint,creatorBuy:intent,solRoute:{ticks:quote.ticks,wsolExists:funding.wsolExists,wxmrExists:funding.wxmrExists}});
  return {intent,quote,funding,built};
 }
+export async function verifyClassicSolAvailability(network:Network){if(network!=='mainnet-beta')throw Error('Classic SOL launch is mainnet-only.');const connection=rpc(network);await assertNetwork(connection,network);return readClassicSolIssuanceState(connection);}
+async function prepareClassicSol(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;creatorBuyAmount?:string;solCreatorBuyIntent?:SolCreatorBuyIntent|null;taxBps?:number}):Promise<PreparedLaunch>{
+ if(!/^[a-f0-9]{64}$/.test(input.metadataHash)||!input.name.trim()||Buffer.byteLength(input.name)>32||!/^[$A-Za-z0-9]{1,10}$/.test(input.symbol)||Buffer.byteLength(input.uri)>200||! /^(https:\/\/|ipfs:\/\/)/.test(input.uri))throw Error('Canonical classic SOL metadata required.');
+ if(input.network!=='mainnet-beta'||input.taxBps!==0||solToLamports(input.creatorBuyAmount||'0')!==0n||input.solCreatorBuyIntent)throw Error('Classic SOL launches have no transfer tax or conversion buy.');
+ const connection=rpc(input.network),owner=new PublicKey(input.owner),mint=input.mintKeypair,maxLamports=solToLamports(input.maxCost);await assertNetwork(connection,input.network);
+ const state=await readClassicSolIssuanceState(connection);
+ if(maxLamports<=0n||mint.publicKey.equals(owner)||await connection.getAccountInfo(mint.publicKey))throw Error('Fresh mint and positive cost limit required.');
+ const built=buildLaunchInstruction({owner,mint:mint.publicKey,platform:state.platformId,symbol:'SOL',name:input.name,tokenSymbol:input.symbol,uri:input.uri});
+ const latest=await connection.getLatestBlockhash('confirmed');
+ const transaction=new VersionedTransaction(new TransactionMessage({payerKey:owner,recentBlockhash:latest.blockhash,instructions:[ComputeBudgetProgram.setComputeUnitLimit({units:600000}),ComputeBudgetProgram.setComputeUnitPrice({microLamports:10000}),built.instruction]}).compileToV0Message());
+ const addressContext=await resolveTransactionAddresses(connection,transaction,{minContextSlot:state.slot}),cost=await simulationCostProof(connection,transaction,owner,{sigVerify:false,addresses:[input.owner],minContextSlot:state.slot,addressContext});
+ if(BigInt(cost.debit)>maxLamports||cost.after<5000000)throw Error('Simulated SOL cost exceeds the limit or required0.005SOL reserve. Nothing was sent.');
+ const prepared:PreparedLaunch={launchMode:CLASSIC_SOL_MODE,transaction,network:input.network,owner:input.owner,mint:String(mint.publicKey),pool:String(built.pool),metadataHash:input.metadataHash,name:input.name,symbol:input.symbol,platformName:'Grainpad',quoteAsset:'SOL',quoteMint:state.quote.mint,quoteDecimals:9,estimatedLamports:cost.debit,maxLamports,createdAt:Date.now(),...latest,targetAccount:String(mint.publicKey),operationKind:'launch',minimumBalanceLamports:5000000,measuredDebitLamports:cost.debit,networkFeeLamports:cost.fee,balanceBeforeLamports:cost.before,simulationUnits:cost.units,fees:{protocol:state.config.tradeFeeRate.toString(),platform:state.platform.feeRate.toString(),creator:state.platform.creatorFeeRate.toString()},simulationLogs:cost.sim.value.logs||[],creatorBuy:null};
+ classicSolReviews.capture(prepared);launchMintSigners.set(prepared,mint);return prepared;
+}
 export async function prepareLaunch(input:{network:Network;owner:string;name:string;symbol:string;uri:string;metadataHash:string;maxCost:string;mintKeypair:Keypair;quoteAsset?:string;taxBps?:number;creatorBuyAmount?:string;creatorBuyCurrency?:'wXMR'|'SOL';solCreatorBuyIntent?:SolCreatorBuyIntent|null;walletFormat?:"compact"|"static"}):Promise<PreparedLaunch>{
- assertTokenCreationEnabled();
+ assertTokenCreationEnabled(input.quoteAsset==='SOL'?CLASSIC_SOL_MODE:'rewards');
  if(!input.mintKeypair)throw Error("Generate a grn mint address before preparing this launch.");
  assertMintSuffix(input.mintKeypair.publicKey.toBase58());
  (globalThis as unknown as {Buffer:typeof Buffer}).Buffer??=Buffer;
@@ -97,6 +115,7 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  const owner=new PublicKey(input.owner),maxLamports=solToLamports(input.maxCost);
  if(maxLamports<=BigInt("0"))throw Error("Set a maximum launch cost before preparing the transaction.");
  const quote=quoteAsset(input.quoteAsset);
+ if(quote.symbol==='SOL')return prepareClassicSol(input);
  if(quote.symbol!=='wXMR')throw Error('Holder reward launches must be paired with wXMR.');
  if(!isLaunchTaxBps(input.taxBps))throw Error('Choose a transfer tax from 1.0% to 3.0% in 0.1% steps.');
  if(isPreviousOfficialMint(input.mintKeypair.publicKey.toBase58()))throw Error('The official GRAIN purchase route needs a separate reviewed configuration.');
@@ -127,10 +146,10 @@ export async function prepareLaunch(input:{network:Network;owner:string;name:str
  launchMintSigners.set(prepared,mint);return prepared;
 }
 async function preflightOperation(reviewed:PreparedOperation,connection:Connection,attempt:ReturnType<typeof createSigningAttempt>){
- let p=reviewed;
+ classicSolReviews.check(reviewed);let p=reviewed;
  const refreshable=p.operationKind==='platform'||p.operationKind==='launch';
  let setupBefore:(import('@solana/web3.js').AccountInfo<Buffer>|null)[]|undefined;
- if(p.operationKind==='launch')assertTokenCreationEnabled();
+ if(p.operationKind==='launch')assertTokenCreationEnabled(p.launchMode||'rewards');
  if(p.operationKind==='platform'){
   const {assertSetupSigningEnabled,assertSetupMessage,readSetup}=await import('./platform-setup.mjs');
   assertSetupSigningEnabled(p.setupStep);assertSetupMessage(p);
@@ -143,8 +162,9 @@ async function preflightOperation(reviewed:PreparedOperation,connection:Connecti
  if(!refreshable)assertBlockhashWindow(p.lastValidBlockHeight,await connection.getBlockHeight("confirmed"));
  if(p.targetAccount&&await connection.getAccountInfo(new PublicKey(p.targetAccount),'confirmed'))throw Error('Target already exists: creation skipped. Verify the existing account; do not create twice.');
  if(p.operationKind==='launch'){
-  const state=await readRewardsIssuanceState(connection);
-  if(!p.rewards||p.rewards.collector!==String(state.collector)||!isLaunchTaxBps(p.rewards.taxBps))throw Error('Rewards configuration changed. Prepare a new launch review.');
+  if(p.launchMode===CLASSIC_SOL_MODE){const state=await readClassicSolIssuanceState(connection);if((p as PreparedLaunch).quoteMint!==state.quote.mint||p.rewards||p.creatorBuy)throw Error('Classic SOL review configuration changed.');}
+  else {const state=await readRewardsIssuanceState(connection);
+  if(!p.rewards||p.rewards.collector!==String(state.collector)||!isLaunchTaxBps(p.rewards.taxBps))throw Error('Rewards configuration changed. Prepare a new launch review.');}
  }
 
  // Always simulate the exact message again immediately before the user wallet prompt.
@@ -188,13 +208,14 @@ export async function refreshPreparedReview<T extends PreparedOperation>(reviewe
  const attempt=createSigningAttempt(reviewed),connection=rpc(reviewed.network);
  const {p}=await preflightOperation(reviewed,connection,attempt);
  const next={...reviewed,...p} as T,mint=launchMintSigners.get(reviewed);
- if(mint)launchMintSigners.set(next,mint);
+ if(mint)launchMintSigners.set(next,mint);classicSolReviews.carry(reviewed,next);
  return next;
 }
 export async function signAndSend(reviewed:PreparedOperation,wallet:Wallet,onSignature:(s:string)=>void,onProgress?:(attempt:SigningAttempt)=>void):Promise<string>{
  const attempt=createSigningAttempt(reviewed,onProgress);
  try{
- if(reviewed.operationKind==='launch')assertTokenCreationEnabled();
+ classicSolReviews.check(reviewed);
+ if(reviewed.operationKind==='launch')assertTokenCreationEnabled(reviewed.launchMode||'rewards');
  if(reviewed.operationKind==='platform')(await import('./platform-setup.mjs')).assertSetupSigningEnabled(reviewed.setupStep);
  if(wallet.publicKey?.toBase58()!==reviewed.owner)throw Error('Wallet changed. Prepare again.');
  if(reviewed.operationKind==='launch'){const mint=launchMintSigners.get(reviewed);if(!mint)throw Error('Fresh mint signer required.');await authorizePlannedLaunch({...reviewed,...(reviewed as PreparedLaunch),platformId:grainpadPlatformId().toBase58()},wallet,mint);}

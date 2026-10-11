@@ -15,7 +15,7 @@ const statement=(sql,args=[])=>({
  bind:(...next)=>statement(sql,next),
  first:async()=>{
   if(sql.includes('FROM launch_index'))return ledger.prepare(sql).get(...args);
-  if(sql.includes('FROM market_cache'))return args[0]===`platform:rules:v7:${platformId}`?{value:JSON.stringify(platform),updated_at:Date.now()-1000,expires_at:Date.now()+29_000}:null;
+  if(sql.includes('FROM market_cache'))return args[0]===`platform:rules:v8:${platformId}`?{value:JSON.stringify(platform),updated_at:Date.now()-1000,expires_at:Date.now()+29_000}:null;
   if(sql.includes('FROM official_token'))return official;
   return null;
  },

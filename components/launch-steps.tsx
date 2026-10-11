@@ -1,47 +1,29 @@
 "use client";
-import {useEffect,useRef,useState,type ReactNode} from "react";
+import {useEffect,useRef,useState,useCallback,type ReactNode} from "react";
+import {createPortal} from 'react-dom';
 import {Check} from "lucide-react";
-
-/** Shared, display-only step indicator for every launch mode. It never gates an action. */
-export function LaunchSteps({steps,current,label="Launch steps"}:{steps:string[];current:number;label?:string}){
- return <ol className="launch-steps" aria-label={label}>{steps.map((step,index)=>{const n=index+1,state=n<current?"done":n===current?"current":"upcoming";return <li key={step} data-state={state} aria-current={state==="current"?"step":undefined}><span className="launch-steps-mark" aria-hidden="true">{state==="done"?<Check size={13}/>:String(n).padStart(2,"0")}</span><span className="launch-steps-label">{step}</span></li>;})}</ol>;
-}
-
-const FIELD="input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),select,textarea";
-
-/**
- * Layout-only wrapper for a launch step's one primary action and its hint. The action, its handler
- * and its disabled state are passed in unchanged as children.
- *
- * Children are the hint paragraph (a .launch-hint-full span, plus an optional aria-hidden
- * .launch-hint-short span shown instead on narrow screens) and the primary button.
- *
- * The bar stays in its place at the end of the form and only docks to the bottom of the viewport
- * once the first field has scrolled clear of it, so it never covers the step indicator or the first
- * field on load. While docked it sits `--launch-dock-gap` above the viewport bottom; on wide screens
- * that gap clears the site-wide price pill, so the two never overlap. Docking uses position:sticky,
- * which keeps the bar's space in the flow: the last field and its validation text are never hidden.
- */
+export function LaunchSteps({steps,current,label="Launch steps"}:{steps:string[];current:number;label?:string}){return <ol className="launch-steps" aria-label={label}>{steps.map((step,index)=>{const n=index+1,state=n<current?"done":n===current?"current":"upcoming";return <li key={step} data-state={state} aria-current={state==="current"?"step":undefined}><span className="launch-steps-mark" aria-hidden="true">{state==="done"?<Check size={13}/>:String(n).padStart(2,"0")}</span><span className="launch-steps-label">{step}</span></li>;})}</ol>;}
+const FIELD='input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),select,textarea';
+type Dock={left:number;width:number;bottom:number;height:number};
+/** Display-only docking. Portaling keeps the primary action outside clipped/transformed form ancestors. */
 export function LaunchActionBar({label,children}:{label:string;children:ReactNode}){
- const bar=useRef<HTMLDivElement>(null),mark=useRef<HTMLSpanElement>(null),[docked,setDocked]=useState(false);
- useEffect(()=>{
-  const node=bar.current,start=mark.current;if(!node||!start)return;let frame=0;
-  const measure=()=>{
-   frame=0;const style=getComputedStyle(node),declared=parseFloat(style.getPropertyValue("--launch-dock-gap")),gap=Number.isFinite(declared)?declared:window.matchMedia("(max-width:700px)").matches?0:68;
-   const stuckTop=window.innerHeight-gap-node.offsetHeight,natural=start.getBoundingClientRect().bottom+(parseFloat(style.marginTop)||0);
-   // In place and clear of the bottom band: nothing to do.
-   if(natural<=stuckTop){setDocked(false);return;}
-   const flow=node.closest(".launch-flow"),anchor=[...(flow?.querySelectorAll(FIELD)??[])].find(field=>field.getClientRects().length)??flow?.querySelector(".launch-steps");
-   const anchorBottom=anchor?anchor.getBoundingClientRect().bottom:-Infinity;
-   // Dock once the first field is clear of the docked bar; also whenever the bar would otherwise sit in the bottom band.
-   setDocked(anchorBottom<=stuckTop||natural<window.innerHeight);
-  };
-  const schedule=()=>{if(!frame)frame=requestAnimationFrame(measure);};
-  const resize=new ResizeObserver(schedule);resize.observe(node);const flow=node.closest(".launch-flow");if(flow)resize.observe(flow);
-  measure();window.addEventListener("scroll",schedule,{passive:true});window.addEventListener("resize",schedule);
-  return()=>{if(frame)cancelAnimationFrame(frame);resize.disconnect();window.removeEventListener("scroll",schedule);window.removeEventListener("resize",schedule);};
- },[]);
- return <><span ref={mark} className="launch-step-actions-mark" aria-hidden="true"/><div ref={bar} className="launch-step-actions" data-dock={docked?"floating":"inline"} role="group" aria-label={label}>
-  {children}
- </div></>;
+ const observer=useRef<ResizeObserver|null>(null);const bar=useRef<HTMLDivElement>(null),mark=useRef<HTMLSpanElement>(null),[dock,setDock]=useState<Dock|null>(null);
+ const setBar=useCallback((node:HTMLDivElement|null)=>{if(bar.current)observer.current?.unobserve(bar.current);bar.current=node;if(node)observer.current?.observe(node);},[]);
+ useEffect(()=>{const start=mark.current;if(!start)return;const flow=start.closest('.launch-flow');if(!flow)return;let frame=0;
+ const measure=()=>{frame=0;const node=bar.current;if(!node)return;const box=flow.getBoundingClientRect(),header=document.querySelector('.site-header')?.getBoundingClientRect();const mobile=window.matchMedia('(max-width:700px)').matches;
+ const visibleTop=window.visualViewport?.offsetTop||0,visibleBottom=visibleTop+(window.visualViewport?.height||window.innerHeight);
+ const bottom=header&&header.top>visibleTop+(visibleBottom-visibleTop)/2&&header.top<visibleBottom?Math.max(0,window.innerHeight-header.top)+12:Math.max(0,window.innerHeight-visibleBottom)+(mobile?12:68);
+ const top=header&&header.top<visibleTop+(visibleBottom-visibleTop)/2&&header.bottom>visibleTop?Math.max(visibleTop,header.bottom)+12:visibleTop+12;
+ const height=node.offsetHeight,target=window.innerHeight-bottom-height;
+ const anchor=[...flow.querySelectorAll(FIELD)].find(field=>field.getClientRects().length)||flow.querySelector('.launch-steps');
+ const anchorBottom=anchor?.getBoundingClientRect().bottom??box.top;
+ const available=box.bottom>visibleTop&&box.top<visibleBottom&&target>=top&&anchorBottom<target;
+ const next=available?{left:box.left+(mobile?0:16),width:box.width-(mobile?0:32),bottom,height}:null;
+ setDock(current=>current?.left===next?.left&&current?.width===next?.width&&current?.bottom===next?.bottom&&current?.height===next?.height?current:next);
+ };
+ const schedule=()=>{if(!frame)frame=requestAnimationFrame(measure);};const resize=new ResizeObserver(schedule);observer.current=resize;resize.observe(flow);if(bar.current)resize.observe(bar.current);const header=document.querySelector('.site-header');if(header)resize.observe(header);
+ measure();window.addEventListener('scroll',schedule,{passive:true});window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);window.visualViewport?.addEventListener('scroll',schedule);
+ return()=>{if(frame)cancelAnimationFrame(frame);resize.disconnect();observer.current=null;window.removeEventListener('scroll',schedule);window.removeEventListener('resize',schedule);window.visualViewport?.removeEventListener('resize',schedule);window.visualViewport?.removeEventListener('scroll',schedule);};},[]);
+ const content=<div ref={setBar} className="launch-step-actions" data-dock={dock?'floating':'inline'} role="group" aria-label={label}>{children}</div>;
+ return <><span ref={mark} className="launch-step-actions-mark" style={dock?{height:dock.height+28}:undefined} aria-hidden="true"/>{dock?createPortal(<div className="launch-flow launch-action-portal" style={{position:'fixed',left:dock.left,width:dock.width,bottom:dock.bottom,zIndex:40}}>{content}</div>,document.body):content}</>;
 }
