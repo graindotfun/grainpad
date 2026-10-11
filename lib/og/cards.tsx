@@ -130,3 +130,16 @@ export function crewCard(wallet:string,{contributions,approved,paid,projects}:{c
   <Line>Work signed by this wallet. Payments checked against finalized transfers.</Line>
  </Frame>;
 }
+/** Rewards Tracker card: verified wXMR holder payments for one wallet. Only finalized, registered payments are counted;
+ * the amount is the page total the route read, labelled with its coverage. */
+export function trackerCard({owner,sourceMint,amount,paymentCount,pageCount,partial,historical}:{owner:string;sourceMint:string|null;amount:string;paymentCount:number;pageCount:number;partial:boolean;historical:boolean},assets:CardAssets){
+ // Called as a function so the returned tree holds the card's text directly (the route test reads it).
+ return Frame({seed:owner,assets,corner:'grainpad / holder payment record',path:'FINALIZED / REGISTERED / RECEIPT-BACKED',children:<>
+  <div style={{display:'flex',flexDirection:'column'}}>
+   <Mono size={18} color={C.mute}>{`${short(owner)} received`}</Mono>
+   <div style={{display:'flex',marginTop:16,fontSize:amount.length>17?52:amount.length>11?64:88,letterSpacing:-2.5,lineHeight:1}}>{`${amount} wXMR`}</div>
+   <div style={{display:'flex',fontSize:27,letterSpacing:-.4,color:C.mute,marginTop:16}}>{`Verified payments for holding${sourceMint?' · '+short(sourceMint):''}`}</div>
+   <div style={{display:'flex',marginTop:28}}><Mono size={15} color={C.mute}>{keep(`${paymentCount} wXMR payments · latest ${pageCount} indexed payments${partial?' · partial history':''}`)}</Mono></div>
+   {historical&&<div style={{display:'flex',marginTop:10}}><Mono size={13} color={C.mute}>Includes historical retired-source payments</Mono></div>}
+  </div></>});
+}

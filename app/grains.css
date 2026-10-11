@@ -846,4 +846,34 @@ html[data-theme] .shell:not(.gx) :is(.panel,.form-panel,.preview-panel,.product-
 html[data-theme] .shell:not(.gx)>footer:not(.gx-footer){display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:clamp(28px,4vw,48px) 0 0;padding:14px 0;border-top:1px dashed var(--gx-rule);font:400 11px/1.5 var(--gx-mono);letter-spacing:.06em;color:var(--gx-mute)}
 html[data-theme] .shell:not(.gx)>footer:not(.gx-footer) *{font-weight:400}
 @media(max-width:640px){html[data-theme] .shell:not(.gx) :is(.page-heading,.product-title){padding-top:26px}}
-html[data-theme] .shell:not(.gx) :is(.page-heading,.product-title) h1+p{margin-top:20px}
+html[data-theme] .shell:not(.gx) :is(.page-heading,.product-title) h1+p:not(.eyebrow){margin-top:20px}
+
+/* ---------- dialogs: wallet, claim, room composer (grains language, presentation only) ---------- */
+html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog)[data-slot=dialog-content]{border-radius:24px!important;background:var(--gx-card)!important;border:1px solid var(--gx-rule)!important;color:var(--gx-ink);padding:26px!important;box-shadow:0 24px 70px -20px rgba(16,16,16,.35)!important}
+html[data-theme] .wallet-session-dialog .wallet-dialog-header{display:grid!important;grid-template-columns:auto 1fr;grid-template-rows:auto auto;align-items:center;column-gap:14px;row-gap:2px;text-align:left!important;padding:0 28px 4px 0}
+html[data-theme] .wallet-session-dialog .wallet-dialog-mark{grid-row:1/3;width:46px;height:46px;margin:0;border-radius:14px;background:var(--gx-soft);border:0}
+html[data-theme] :is(.wallet-session-dialog .wallet-dialog-header,.trade-flow-dialog) [data-slot=dialog-title]{font:600 clamp(24px,3vw,30px)/1.05 var(--gx-sans);letter-spacing:-.045em;color:var(--gx-ink)}
+html[data-theme] :is(.wallet-session-dialog .wallet-dialog-header,.trade-flow-dialog) [data-slot=dialog-description]{font:400 11px/1.5 var(--gx-mono);letter-spacing:.08em;text-transform:none;color:var(--gx-mute)}
+html[data-theme] .wallet-session-dialog .wallet-row{border-radius:16px;border:1px solid var(--gx-rule);background:var(--gx-card);transition:border-color .15s}
+html[data-theme] .wallet-session-dialog .wallet-row:hover{border-color:var(--gx-ink);background:var(--gx-card)}
+html[data-theme] .wallet-session-dialog .wallet-row.is-install{border-style:dashed}
+html[data-theme] .wallet-session-dialog .wallet-row-name{font:600 15px/1.2 var(--gx-sans)}
+html[data-theme] .wallet-session-dialog :is(.wallet-row-status,.wallet-row-install,.wallet-row-last){font:400 11px/1.4 var(--gx-mono);letter-spacing:.06em;color:var(--gx-mute)}
+html[data-theme] .wallet-session-dialog .wallet-more-toggle,html[data-theme] .wallet-session-dialog .wallet-rows.is-secondary::before{font:400 11px/1.5 var(--gx-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gx-ink)}
+html[data-theme] .wallet-session-dialog .wallet-safety{font:400 11px/1.5 var(--gx-mono);color:var(--gx-mute);border-top:1px dashed var(--gx-rule)}
+html[data-theme] .wallet-session-dialog .wallet-account-card{border-radius:18px;background:var(--gx-soft);border:0}
+html[data-theme] .wallet-session-dialog .wallet-account-id{font:600 18px/1.2 var(--gx-sans);letter-spacing:-.02em}
+html[data-theme] .wallet-session-dialog .wallet-account-address{font:400 12px/1.4 var(--gx-mono);color:var(--gx-mute)}
+html[data-theme] .wallet-session-dialog .wallet-action{border-radius:999px;border:1.5px solid var(--gx-rule);background:none;color:var(--gx-ink);font:600 13px/1.2 var(--gx-sans)}
+html[data-theme] .wallet-session-dialog .wallet-action:hover{border-color:var(--gx-ink);background:none}
+html[data-theme] .wallet-session-dialog .wallet-disconnect{color:var(--gx-ink);font:600 14px/1.2 var(--gx-sans);text-decoration:underline;text-decoration-color:var(--gx-rule);text-underline-offset:4px}
+html[data-theme] .wallet-session-dialog .wallet-connecting-ring{border-color:var(--gx-soft2);border-top-color:var(--grain-orange)}
+html[data-theme] .wallet-session-dialog :is(.wallet-retry,.wallet-back){border-radius:999px}
+html[data-theme] .trade-flow-dialog [data-slot=dialog-header]{text-align:left;padding-right:28px}
+html[data-theme] .trade-flow-dialog [data-slot=dialog-footer] button,html[data-theme] .trade-flow-dialog>button[data-slot=button]{border-radius:999px;min-height:44px}
+html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog) :is(.feedback.error,[role=alert]){background:var(--gx-soft);border:0;border-left:3px solid var(--grain-warning);border-radius:12px;color:var(--gx-ink);font:600 14px/1.45 var(--gx-sans)}
+html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog) [data-slot=dialog-close]{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--gx-rule);opacity:1}
+html[data-theme] :is(.wallet-session-dialog,.trade-flow-dialog) [data-slot=dialog-close]:hover{border-color:var(--gx-ink)}
+html[data-theme] dialog.room-composer-dialog{border-radius:24px 0 0 24px;box-shadow:-24px 0 70px -30px rgba(16,16,16,.35)}
+html[data-theme] dialog.room-composer-dialog :is(h2,h3,legend){font:600 clamp(22px,2.6vw,28px)/1.1 var(--gx-sans);letter-spacing:-.04em;text-transform:none}
+@media(max-width:640px){html[data-theme] dialog.room-composer-dialog{border-radius:24px 24px 0 0}}
