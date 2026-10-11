@@ -38,7 +38,7 @@ export function TokenLaunchPost({mint}:{mint:string}){
  }
  const current=data?.mint===mint?data:null;
  return <section className="token-launch-post" aria-label="Launch post">
-  {current?.url&&<a className="token-launch-post-link" href={current.url} target="_blank" rel="noreferrer noopener">Launch post <ArrowUpRight size={14}/><span className="small muted">on X</span></a>}
+  {current?.url&&<a className="token-launch-post-link" href={current.url} target="_blank" rel="noreferrer noopener" aria-label="Launch post on X (opens in a new tab)"><svg className="x-mark" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>Launch post</span><ArrowUpRight size={14} aria-hidden="true"/></a>}
   {current&&(!owner||owner===current.creator)&&<details className="token-launch-post-editor"><summary>{current.url?'Edit launch post':'Add launch post'} <span className="small muted">· creator</span></summary>
    <p className="small muted">Link the post announcing this token. This is separate from your X profile and can be added after publishing the CA. Your wallet signs a message; no payment is requested.</p>
    <label>Launch post URL<Input type="url" value={url} maxLength={300} placeholder="https://x.com/your_project/status/123456789" disabled={busy} onChange={event=>{setUrl(event.target.value);setSaved(false);}}/></label>

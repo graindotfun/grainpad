@@ -12,7 +12,7 @@ await build({entryPoints:['app/api/market/[mint]/history/route.ts'],outfile:'.te
   '@/lib/server-owner':'export const database=()=>({prepare:()=>({bind:()=>({first:async()=>null})})});',
   '@/lib/server-cache':'export const sharedMarketCache=async(db,key,load,options)=>{globalThis.marketHistoryTest.refresh=options.refresh;if(!options.refresh)throw Error("No visible viewer");return {data:await load(),updatedAt:123,stale:false};};',
   '@/lib/shared-market-cache.mjs':'export const takeBudget=async()=>globalThis.marketHistoryTest.budget!==false;',
-  '@/lib/native-history.mjs':'export const readNativeHistory=async(db,mint,options)=>{globalThis.marketHistoryTest.historyOptions=options;return globalThis.marketHistoryTest.native;};export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
+  '@/lib/native-history.mjs':'export const readNativeHistory=async(db,mint,options)=>{globalThis.marketHistoryTest.historyOptions=options;return globalThis.marketHistoryTest.native;};export const lifetimeWindow=async(db,mint,options)=>{globalThis.marketHistoryTest.lifetimeOptions=options;return {seconds:1800,range:3*86400+1800,first:1};};export const geckoFallbackAllowed=(createdAt,coverage,rowCount,now)=>!(rowCount>0||coverage?.status==="no-trades"||coverage?.status==="indexed");',
   '@/lib/realtime-ingest.mjs':'export const confirmedCatchup=async()=>[];export const mergeIndexedAndConfirmed=(indexed=[])=>indexed;',
   '@/lib/server-rpc':'export const chain=async()=>[];export const chartHistoryRead=chain;',
   '@/lib/platform-policy':'export const POLICY={cpConfig:"config"};export const grainpadPlatformId=()=>({toBase58:()=>"platform"});'
@@ -45,6 +45,15 @@ test('day view requests intraday resolution bounded to the past 24 hours; incomp
  let response=await call('interval=5m&range=1d',false);assert.equal(response.status,200);
  assert.equal(globalThis.marketHistoryTest.historyOptions.seconds,300);assert.equal(globalThis.marketHistoryTest.historyOptions.rangeSeconds,86400);
  for(const query of ['interval=1d&range=1d','interval=5m&range=1w','kind=trades&interval=5m&range=1d']){response=await call(query,false);assert.equal(response.status,400);}
+});
+
+test('All requests the lifetime window the server picks; other lifetime shapes are refused',async()=>{
+ globalThis.marketHistoryTest.native={rows:[{time:100,close:1}],events:[],coverage:{status:'indexed'}};
+ const response=await call('interval=1h&range=all&bars=90',false);assert.equal(response.status,200);
+ assert.equal(globalThis.marketHistoryTest.lifetimeOptions.bars,90);
+ const options=globalThis.marketHistoryTest.historyOptions;assert.equal(options.lifetime,true);assert.equal(options.seconds,1800);assert.equal(options.rangeSeconds,3*86400+1800);
+ assert.deepEqual((await response.json()).window,{seconds:3*86400+1800,resolution:1800});
+ for(const query of ['interval=5m&range=all','interval=1h&range=all&bars=5','interval=1h&range=all&bars=999','kind=trades&interval=1h&range=all']){assert.equal((await call(query,false)).status,400,query);}
 });
 
 test('minute and five-minute buttons request the actual durations at intraminute resolution',async()=>{

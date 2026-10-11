@@ -3,7 +3,7 @@ import {database} from '@/lib/server-owner';
 import {sharedMarketCache} from '@/lib/server-cache';
 import {takeBudget} from '@/lib/shared-market-cache.mjs';
 import {parseCandles,parseTrades} from '@/lib/market-display';
-import {geckoFallbackAllowed,readNativeHistory} from '@/lib/native-history.mjs';
+import {geckoFallbackAllowed,lifetimeWindow,readNativeHistory} from '@/lib/native-history.mjs';
 import {confirmedCatchup,mergeIndexedAndConfirmed} from '@/lib/realtime-ingest.mjs';
 import {buildCandles,mergeCandleHistory,recentTradeRows} from '@/lib/native-market.mjs';
 import {decodeChartTrades} from '@/lib/chart-trade-decoder.mjs';
@@ -20,20 +20,23 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
  try{
   const {mint}=await params,url=new URL(request.url),kind=url.searchParams.get('kind')||'candles',interval=url.searchParams.get('interval')||'5m';
   if(!['candles','trades'].includes(kind)||!intervals[interval])return Response.json({error:'Unsupported history request.'},{status:400,headers});
-  const range=url.searchParams.get('range');
-  const window=range!==null?chartWindows[range]:null;
-  if(range!==null&&(!window||kind!=='candles'||interval!==window.interval))return Response.json({error:'Unsupported chart range.'},{status:400,headers});
-  const resolution=window?.seconds??intervals[interval];
+  const range=url.searchParams.get('range'),lifetime=range==='all',bars=Number(url.searchParams.get('bars')||240);
+  if(lifetime&&(kind!=='candles'||interval!=='1h'||!Number.isInteger(bars)||bars<30||bars>240))return Response.json({error:'Unsupported chart range.'},{status:400,headers});
+  let window=range!==null&&!lifetime?chartWindows[range]:null;
+  if(range!==null&&!lifetime&&(!window||kind!=='candles'||interval!==window.interval))return Response.json({error:'Unsupported chart range.'},{status:400,headers});
   const viewer=request.headers.get('X-Grainpad-Viewer')==='visible';
   const market=await serverMarket(mint,{viewer});
   const db=database();
+  // "All": the token's whole trading life, from the first indexed trade, in the smallest bar size that fits.
+  if(lifetime){const life=await lifetimeWindow(db,mint,{bars,now:Math.floor(Date.now()/1000)});window={interval,seconds:life.seconds,range:life.range};}
+  const resolution=window?.seconds??intervals[interval];
   let recovery:{processed:number;trades:number;remaining:number;tailOpen?:boolean}|undefined;
   if(viewer){
    try{const saved=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();
     if(saved)recovery=(await backfillChartTrades(db,chartHistoryRead,JSON.parse(saved.record),POLICY.cpConfig,{recentPool:market.pool})).data;
    }catch{recovery={processed:0,trades:0,remaining:0,tailOpen:true};/* Keep verified history, but do not claim a complete recent tail. */}
   }
-  const native=await readNativeHistory(db,mint,{kind,seconds:resolution,activity:market.activity,rangeSeconds:window?.range??null});
+  const native=await readNativeHistory(db,mint,{kind,seconds:resolution,activity:market.activity,rangeSeconds:window?.range??null,lifetime});
   let rows=native.rows,coverage=native.coverage;
   if((recovery?.remaining||recovery?.tailOpen)&&coverage.status!=='no-trades')coverage={...coverage,status:'partial',notice:'Recent finalized trades are still being recovered. The chart includes only verified executions.'};
   const source='grainpad',unit='quote';
@@ -68,14 +71,14 @@ export async function GET(request:Request,{params}:{params:Promise<{mint:string}
     const result=await sharedMarketCache(db,`history:v2:${market.pool}:${mint}:${kind}:${kind==='candles'?interval:'recent'}:${range||'bars'}`,async()=>{
      if(!await takeBudget(db,'gecko-minute',1,10,60_000))throw Error('Market provider is busy. Please retry shortly.');
      const period=geckoIntervals[interval];
-     const path=kind==='trades'?'trades':`ohlcv/${period.timeframe}?aggregate=${period.aggregate}&limit=${window?Math.ceil(window.range/60)+1:240}&currency=usd&token=base`;
+     const path=kind==='trades'?'trades':`ohlcv/${period.timeframe}?aggregate=${period.aggregate}&limit=${lifetime?1000:window?Math.ceil(window.range/60)+1:240}&currency=usd&token=base`;
      const response=await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${market.pool}/${path}`,{signal:AbortSignal.timeout(7000)});
      if(!response.ok)throw Error('Market history is temporarily unavailable.');
      const body=await response.json();
      const parsed=kind==='trades'?parseTrades(body,mint,market.quote.mint):parseCandles(body);
-     return window?parsed.filter((row:{time:number})=>row.time>=Math.floor(Date.now()/1000)-window.range):parsed;
+     return window&&!lifetime?parsed.filter((row:{time:number})=>row.time>=Math.floor(Date.now()/1000)-window.range):parsed;
     },{ttl:60_000,maxStale:300_000,refresh:viewer});
-    if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',window:window?{seconds:window.range,resolution:geckoIntervals[interval].aggregate*(geckoIntervals[interval].timeframe==='minute'?60:geckoIntervals[interval].timeframe==='hour'?3600:86400)}:undefined,coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
+    if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',window:lifetime?{seconds:Math.max(3600,Math.floor(Date.now()/1000)-(result.data[0]?.time??Math.floor(Date.now()/1000)-86400)),resolution:3600}:window?{seconds:window.range,resolution:geckoIntervals[interval].aggregate*(geckoIntervals[interval].timeframe==='minute'?60:geckoIntervals[interval].timeframe==='hour'?3600:86400)}:undefined,coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
    }catch{/* A failed external fallback is not indexed history, and it is not zero trades. */}
   }
   return Response.json({rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source,unit,quote:market.quote.symbol,coverage,recovery,anchor:native.anchor,window:window?{seconds:window.range,resolution,start:native.start}:undefined},{headers});
