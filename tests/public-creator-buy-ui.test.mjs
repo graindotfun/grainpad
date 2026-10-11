@@ -20,7 +20,7 @@ const stubComponents={
  '@/components/ui/textarea':`export const Textarea='textarea';`,
  '@/components/ui/tabs':`export const Tabs='div',TabsList='div',TabsTrigger='button',TabsContent='div';`,
  '@/components/site-header':`export function SiteHeader(){return null;}`,
- '@/lib/launch':`export const DEVNET_PLATFORM=null;export function solToLamports(){return 1;}export async function prepareLaunch(input){globalThis.__launchUi.preparations.push(input);if(globalThis.__launchUi.prepareFailure)throw globalThis.__launchUi.prepareFailure;return globalThis.__launchUi.preparedResult;}export async function refreshPreparedReview(p){return p;}export async function quoteSolCreatorBuyDraft(input){const f=globalThis.__launchUi;(f.solQuotes??=[]).push(input);const intent={quote:'SOL',amountIn:'10000000',minOut:'49500000000',taxBps:input.taxBps,slippageBps:100,quoteExpiresAt:Math.floor(Date.now()/1000)+(f.solTtl??900)};return {intent,quote:{ticks:['t']},packetBytes:1198};}export function signAndSend(){throw Error('UI regression must never submit');}`,
+ '@/lib/launch':`export const DEVNET_PLATFORM=null;export async function verifyClassicSolAvailability(){const f=globalThis.__launchUi;f.classicChecks=(f.classicChecks??0)+1;if(f.classicUnavailable)throw Error('SOL admission is not enabled');}export function solToLamports(){return 1;}export async function prepareLaunch(input){globalThis.__launchUi.preparations.push(input);if(globalThis.__launchUi.prepareFailure)throw globalThis.__launchUi.prepareFailure;return globalThis.__launchUi.preparedResult;}export async function refreshPreparedReview(p){return p;}export async function quoteSolCreatorBuyDraft(input){const f=globalThis.__launchUi;(f.solQuotes??=[]).push(input);const intent={quote:'SOL',amountIn:'10000000',minOut:'49500000000',taxBps:input.taxBps,slippageBps:100,quoteExpiresAt:Math.floor(Date.now()/1000)+(f.solTtl??900)};return {intent,quote:{ticks:['t']},packetBytes:1198};}export function signAndSend(){throw Error('UI regression must never submit');}`,
  '@/lib/metadata-publication.mjs':`export async function contentHash(bytes){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');}export async function buildMetadataPublication(draft){globalThis.__launchUi.publications.push(draft);return {uri:'https://grainpad.fun/metadata/fixture.json',metadataHash:'a'.repeat(64),profile:'fixture',imageUri:'https://grainpad.fun/image/fixture.png',imageHash:'b'.repeat(64)};}`,
 };
 await build({entryPoints:[join(candidate,'components/launch-workspace.tsx')],outfile,bundle:true,platform:'node',format:'esm',packages:'external',jsx:'automatic',logLevel:'silent',plugins:[{name:'public-ui-boundaries',setup(b){
@@ -37,7 +37,7 @@ const {LaunchCreatorBuyReview,formatLaunchUnits}=await import('../.test-output/p
 const walk=node=>!node||typeof node!=='object'?[]:[node,...[node.props?.children].flat(Infinity).flatMap(walk)];
 const text=node=>node==null||typeof node==='boolean'?'':typeof node!=='object'?String(node):[node.props?.children].flat(Infinity).map(text).join('');
 function render(f){f.stateIndex=0;f.refIndex=0;f.effects=[];return LaunchWorkspace({});}
-const input=(tree,id)=>walk(tree).find(n=>n.type==='input'&&n.props.id===id);
+const input=(tree,id)=>{const direct=walk(tree).find(n=>n.type==='input'&&n.props.id===id);if(direct)return direct;const tax=walk(tree).find(n=>n.type?.name==='LaunchTransferTax');return tax?walk(tax.type(tax.props)).find(n=>n.type==='input'&&n.props.id===id):undefined;};
 const button=(tree,label)=>walk(tree).find(n=>n.type==='button'&&text(n)===label);
 const creatorKey=nacl.sign.keyPair(),owner=bs58.encode(creatorKey.publicKey),mint='E3VuTQzZMSKaK2HxtGX1hLaAnxcmcR3MrAM8Bf6MFgrn';
 async function withUi(run){
@@ -45,7 +45,7 @@ async function withUi(run){
  const stored=new Map(),f={states:[],refs:[],effects:[],publications:[],preparations:[],metadataPosts:[],readers:[],signs:0,preparedResult:{owner,symbol:'CAT',mint,quoteAsset:'wXMR',platformName:'Grainpad',network:'mainnet-beta',estimatedLamports:10000000,balanceBeforeLamports:100000000,measuredDebitLamports:9000000,rewards:{taxBps:200},fees:{protocol:'25',platform:'75',creator:'25'},creatorBuy:null},wallet:{publicKey:{toBase58:()=>owner},signMessage:async bytes=>{f.signs++;return nacl.sign.detached(bytes,creatorKey.secretKey);}}};
  globalThis.__launchUi=f;globalThis.FileReader=class {readAsDataURL(file){this.file=file;f.readers.push(this);}};globalThis.window={location:{origin:'https://grainpad.fun'}};globalThis.localStorage={getItem:key=>stored.get(key)??null,setItem:(key,value)=>stored.set(key,value),removeItem:key=>stored.delete(key)};
  globalThis.fetch=async(url,options)=>{assert.equal(url,'/api/metadata');f.metadataPosts.push(JSON.parse(options.body));return Response.json({uri:'https://grainpad.fun/metadata/fixture.json',metadataHash:'a'.repeat(64)});};
- try{render(f);f.states[3]='Creator Cat';f.states[4]='CAT';f.states[8]='https://x.com/creatorcat';f.states[12]='data:image/png;base64,AQ==';f.states[15]=owner;f.states[19]=mint;f.states[35]={active:true};f.refs[3]={current:owner};f.refs[4]={current:{publicKey:{toBase58:()=>mint}}};return await run(f,stored);}finally{Object.assign(globalThis,old);delete globalThis.__launchUi;}
+ try{render(f);f.states[4]='Creator Cat';f.states[5]='CAT';f.states[9]='https://x.com/creatorcat';f.states[13]='data:image/png;base64,AQ==';f.states[16]=owner;f.states[20]=mint;f.states[36]={active:true,policyMatches:true,creationEnabled:true,rules:[{symbol:'SOL'},{symbol:'wXMR'}]};f.refs[3]={current:owner};f.refs[4]={current:{publicKey:{toBase58:()=>mint}}};return await run(f,stored);}finally{Object.assign(globalThis,old);delete globalThis.__launchUi;}
 }
 
 const currency=tree=>walk(tree).find(n=>n.props?.ariaLabel==='Creator buy payment currency');
@@ -66,8 +66,8 @@ test('invalid purchase refuses before metadata wallet approval or transaction pr
  input(render(f),'creator-buy-amount').props.onChange({target:{value:'-0.1'}});await button(render(f),'Review launch').props.onClick();assert.equal(f.signs,0);assert.equal(f.publications.length,0);assert.equal(f.preparations.length,0);assert.match(text(render(f)),/up to 12 decimal places/);
 }));
 test('editing purchase amount invalidates prior review and acknowledgement; refresh also clears acknowledgement',()=>withUi(async f=>{
- f.states[26]=f.preparedResult;f.states[32]=true;input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.2'}});assert.equal(f.states[26],null);assert.equal(f.states[32],false);
- f.states[26]=f.preparedResult;f.states[32]=true;await button(render(f),'Refresh review').props.onClick();assert.equal(f.states[32],false);
+ f.states[27]=f.preparedResult;f.states[33]=true;input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.2'}});assert.equal(f.states[27],null);assert.equal(f.states[33],false);
+ f.states[27]=f.preparedResult;f.states[33]=true;await button(render(f),'Refresh review').props.onClick();assert.equal(f.states[33],false);
 }));
 test('actual review preserves12decimal quote and6decimal token precision and separates SOL costs',()=>{
  const buy={amountIn:'145000000001',curvePrincipalRaw:'143187500001',totalCurveFeeRaw:'1812500000',expectedNetOutputRaw:'20906213618421',simulatedNetOutputRaw:'20906213618421',minOut:'20697151482236',transferFeeRaw:'426657420784',balanceBeforeRaw:'300000000001',quoteDecimals:12,tokenDecimals:6,slippageBps:100};
@@ -93,17 +93,17 @@ test('only primary action changes from preparation to deploy and requires exact-
  const start=render(f);assert.equal(primary(start).length,1);assert.equal(text(primary(start)[0]),'Review launch');
  await button(start,'Review launch').props.onClick();let tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Sign and launch');assert.equal(primary(tree)[0].props.disabled,true);
  const acknowledgement=walk(tree).find(n=>n.props?.className==='check-label');assert(acknowledgement);const ack=walk(acknowledgement).find(n=>n.type==='input'&&n.props.type==='checkbox');assert(ack);ack.props.onChange({target:{checked:true}});tree=render(f);assert.equal(primary(tree)[0].props.disabled,false);
- input(tree,'creator-buy-amount').props.onChange({target:{value:'0.1'}});tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Review launch');assert.equal(f.states[32],false);
+ input(tree,'creator-buy-amount').props.onChange({target:{value:'0.1'}});tree=render(f);assert.equal(primary(tree).length,1);assert.equal(text(primary(tree)[0]),'Review launch');assert.equal(f.states[33],false);
 }));
 
  test('public provenance conflict reuses the main action for one explicit message, preserves review and requires a new acknowledgement',()=>withUi(async f=>{
-  f.states[26]={...f.preparedResult,metadataHash:'a'.repeat(64)};f.states[32]=true;f.states[23]='No submission was attempted. Planned immutable identity or source policy changed.';f.states[36]='static';
-  const before=f.states[26],tree=render(f),action=button(tree,'Approve updated token details');assert(action);assert.equal(action.props.disabled,false);assert.match(text(tree),/original approval stays in history/);
-  await action.props.onClick();assert.equal(f.provenanceReplacements.length,1);assert.equal(f.provenanceReplacements[0].mint,mint);assert.equal(f.provenanceReplacements[0].owner,owner);assert.equal(f.provenanceReplacements[0].metadataHash,'a'.repeat(64));assert.equal(f.states[26],before);assert.equal(f.states[32],false);assert.equal(f.states[36],'static');assert.match(f.states[24],/no transaction was sent/);assert.equal(f.preparations.length,0);assert.equal(f.signs,0);assert(button(render(f),'Sign and launch').props.disabled);
+  f.states[27]={...f.preparedResult,metadataHash:'a'.repeat(64)};f.states[33]=true;f.states[24]='No submission was attempted. Planned immutable identity or source policy changed.';f.states[37]='static';
+  const before=f.states[27],tree=render(f),action=button(tree,'Approve updated token details');assert(action);assert.equal(action.props.disabled,false);assert.match(text(tree),/original approval stays in history/);
+  await action.props.onClick();assert.equal(f.provenanceReplacements.length,1);assert.equal(f.provenanceReplacements[0].mint,mint);assert.equal(f.provenanceReplacements[0].owner,owner);assert.equal(f.provenanceReplacements[0].metadataHash,'a'.repeat(64));assert.equal(f.states[27],before);assert.equal(f.states[33],false);assert.equal(f.states[37],'static');assert.match(f.states[25],/no transaction was sent/);assert.equal(f.preparations.length,0);assert.equal(f.signs,0);assert(button(render(f),'Sign and launch').props.disabled);
  }));
  test('public replacement refuses a switched creator before any message and keeps the pending review',()=>withUi(async f=>{
-  f.states[26]=f.preparedResult;f.states[32]=true;f.states[23]='Planned immutable identity or source policy changed.';f.wallet.publicKey={toBase58:()=>bs58.encode(nacl.sign.keyPair().publicKey)};
-  await button(render(f),'Approve updated token details').props.onClick();assert.equal(f.provenanceReplacements,undefined);assert.equal(f.states[26],f.preparedResult);assert.match(f.states[23],/original creator/);assert.equal(f.signs,0);
+  f.states[27]=f.preparedResult;f.states[33]=true;f.states[24]='Planned immutable identity or source policy changed.';f.wallet.publicKey={toBase58:()=>bs58.encode(nacl.sign.keyPair().publicKey)};
+  await button(render(f),'Approve updated token details').props.onClick();assert.equal(f.provenanceReplacements,undefined);assert.equal(f.states[27],f.preparedResult);assert.match(f.states[24],/original creator/);assert.equal(f.signs,0);
  }));
 
 test('SOL payment selector relabels the amount, explains the wXMR pairing and persists in the draft',()=>withUi(async(f,stored)=>{
@@ -146,7 +146,7 @@ test('SOL review shows the exact debit, conversion estimate, fees, net minimum a
 
 const buttonText=tree=>walk(tree).filter(n=>n.type==='button').map(text);
 test('banner-free community launch asks for one wallet message that carries metadata and community together',()=>withUi(async f=>{
- f.states[10]='https://x.com/i/communities/123';
+ f.states[11]='https://x.com/i/communities/123';
  await button(render(f),'Review launch').props.onClick();
  assert.equal(f.signs,1,'exactly one wallet message before the unsigned simulation');
  const body=f.metadataPosts[0];assert.equal(body.signature,undefined,'no legacy metadata signature');
@@ -157,16 +157,19 @@ test('banner-free community launch asks for one wallet message that carries meta
 test('mint address is assigned automatically; recovery shows only when an interrupted allocation is saved',()=>withUi(async(f,stored)=>{
  const labels=()=>buttonText(render(f));
  assert(!labels().includes('Get grn address'));assert(!labels().includes('Recover my assigned address'),'a loaded mint has nothing to recover');
- f.states[19]='';assert(!labels().includes('Get grn address'));assert(!labels().includes('Recover my assigned address'),'nothing saved, nothing to recover');
+ f.states[20]='';assert(!labels().includes('Get grn address'));assert(!labels().includes('Recover my assigned address'),'nothing saved, nothing to recover');
  stored.set('grainpad-mint-allocation:'+owner,mint);assert(labels().includes('Recover my assigned address'));assert.match(text(render(f)),/Resume an interrupted launch/);
- f.states[28]={mint};assert(!labels().includes('Recover my assigned address'),'a confirmed launch mint is not offered again');
- f.states[28]=null;f.states[30]=[{mint}];assert(!labels().includes('Recover my assigned address'),'a mint already listed as a launch was used');assert.doesNotMatch(text(render(f)),/Resume an interrupted launch/);
- f.states[30]=[];f.states[15]='';assert(!labels().includes('Recover my assigned address'),'recovery needs the original creator wallet');
+ f.states[29]={mint};assert(!labels().includes('Recover my assigned address'),'a confirmed launch mint is not offered again');
+ f.states[29]=null;f.states[31]=[{mint}];assert(!labels().includes('Recover my assigned address'),'a mint already listed as a launch was used');assert.doesNotMatch(text(render(f)),/Resume an interrupted launch/);
+ f.states[31]=[];f.states[16]='';assert(!labels().includes('Recover my assigned address'),'recovery needs the original creator wallet');
 }));
 test('a pending address request can be cancelled from a visible notice, not a collapsed section',()=>withUi(async f=>{
  assert(!buttonText(render(f)).includes('Cancel address request'),'nothing to cancel while idle');
- f.states[22]='Approving the address request';const tree=render(f);
+ f.states[23]='Approving the address request';const tree=render(f);
  const notice=walk(tree).find(n=>n.props?.role==='status'&&/Approve the address request in your wallet/.test(text(n)));assert(notice,'visible notice');
  assert(walk(notice).some(n=>n.type==='button'&&text(n)==='Cancel address request'));
  const folds=walk(tree).filter(n=>n.type==='details');assert(!folds.some(d=>walk(d).some(n=>n.type==='button'&&text(n)==='Cancel address request')),'not inside a fold');
 }));
+
+test('classic SOL selection hides taxed buy fields, binds zero-tax metadata and checks admission before message requests',()=>withUi(async f=>{let tree=render(f);const pair=walk(tree).find(n=>n.props?.ariaLabel==='Trading pair');pair.props.onValueChange('SOL');tree=render(f);assert.equal(input(tree,'creator-buy-amount'),undefined);assert.equal(input(tree,'launch-transfer-tax'),undefined);f.preparedResult={...f.preparedResult,launchMode:'classic-sol-v1',quoteAsset:'SOL',rewards:undefined};await button(tree,'Review launch').props.onClick();assert.equal(f.classicChecks,1);assert.equal(f.signs,1);assert.equal(f.metadataPosts[0].draft.launchMode,'classic-sol-v1');assert.equal(f.metadataPosts[0].draft.quoteAsset,'SOL');assert.equal(f.preparations[0].quoteAsset,'SOL');assert.equal(f.preparations[0].taxBps,0);assert.equal(f.preparations[0].creatorBuyAmount,'0');}));
+test('closed SOL admission refuses the UI flow before any metadata request or signature',()=>withUi(async f=>{walk(render(f)).find(n=>n.props?.ariaLabel==='Trading pair').props.onValueChange('SOL');f.classicUnavailable=true;await button(render(f),'Review launch').props.onClick();assert.equal(f.signs,0);assert.equal(f.metadataPosts.length,0);assert.equal(f.preparations.length,0);assert.match(text(render(f)),/SOL admission is not enabled/);}));
