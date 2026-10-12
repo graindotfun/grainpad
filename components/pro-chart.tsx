@@ -128,14 +128,17 @@ export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,u
  useEffect(()=>{
   const want=pendingRange.current,instance=chart.current;if(!want||!instance||!rows.candles.length||meta.key!==key)return;
   const option=RANGE_OPTIONS.find(([label])=>label===want);if(!option)return;
-  const span=option[1],now=Math.floor(Date.now()/1000),from=span===null?(meta.first??bars[0].time):now-span,earliest=bars[0].time;
+  // Live trades can reach the chart before the first history page: read the earliest bar from what is drawn (history
+  // plus live), never from the fetched history alone, which may still be empty.
+  const earliest=merged[0]?.time;if(earliest===undefined)return;
+  const span=option[1],now=Math.floor(Date.now()/1000),from=span===null?(meta.first??earliest):now-span;
   if(earliest>from&&!meta.exhausted&&!(meta.first!=null&&earliest<=meta.first)){void loadOlder();return;}
   // Apply once the bars are drawn; the engine cannot map a time range onto an empty series.
   if(!main.current||drawn.current.key!==key||!drawn.current.length)return;
   pendingRange.current=null;
   try{if(span===null)instance.timeScale().fitContent();else instance.timeScale().setVisibleRange({from:(Math.max(from,earliest)+shift) as Time,to:(now+shift+bar*6) as Time});}
   catch{instance.timeScale().fitContent();}
- },[rows,bars,meta,key,loadOlder,shift,bar,ready]);
+ },[rows,merged,meta,key,loadOlder,shift,bar,ready]);
  // Panning near the left edge pulls the previous page.
  useEffect(()=>{
   const instance=chart.current;if(!instance)return;
