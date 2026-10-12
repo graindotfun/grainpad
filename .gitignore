@@ -11,3 +11,12 @@ coverage/
 .agents/
 outputs/
 artifacts/
+
+# Local build outputs; source releases include source only.
+dist/
+.vite/
+.vinext/
+.next/
+.wrangler/
+.test-output/
+coverage/

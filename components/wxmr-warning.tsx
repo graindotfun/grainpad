@@ -1,0 +1,2 @@
+import {WXMR_WARNING} from '@/lib/quote-assets.mjs';
+export function WxmrWarning(){return <aside className="setup-note" aria-label="wXMR bridge risk"><strong>Paired with wXMR · third-party bridge risk</strong><p>{WXMR_WARNING}</p><p>Supply wXMR directly from your wallet. Network fees and account rent are paid in SOL.</p><a className="inline-link" href="https://wxmr.io/" target="_blank" rel="noopener noreferrer">Open the third-party bridge ↗</a></aside>;}

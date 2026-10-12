@@ -1,0 +1,32 @@
+.launch-desk{margin:20px 0 56px;border:1px solid var(--brand-line,var(--line));border-radius:3px;background:var(--card);overflow:hidden}
+.launch-desk-heading{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:26px 28px 22px;border-bottom:1px solid var(--brand-line,var(--line))}
+.launch-desk-heading .overline{margin:0 0 10px;font-size:10px;letter-spacing:.1em;color:var(--brand-muted,var(--muted))}
+.launch-desk-heading h2{margin:0;font-size:clamp(24px,2.7vw,36px);font-weight:500;letter-spacing:-.035em;line-height:1.12}
+.launch-desk a,.launch-desk button{display:inline-flex;align-items:center;gap:9px;font-size:13px;text-decoration:none;color:inherit;min-height:44px}
+.launch-desk a:hover,.launch-desk button:hover{text-decoration:underline;text-underline-offset:4px}
+.launch-desk-grid{display:grid;grid-template-columns:1fr 1fr}
+.launch-desk-grid article{min-width:0;padding:26px 28px}
+.launch-desk-grid article+article{border-left:1px solid var(--brand-line,var(--line))}
+.launch-desk-label{display:flex;align-items:center;gap:8px;font:10px/1.5 var(--font-code);letter-spacing:.08em;color:var(--brand-muted,var(--muted));margin:0 0 12px}
+.launch-desk-label i{width:7px;height:7px;background:var(--brand-muted,var(--muted));opacity:.55}
+.launch-desk-grid article:is([data-state=open],[data-state=published]) .launch-desk-label i{background:var(--xmr-orange);opacity:1}
+.launch-desk-grid h3{font-size:21px;line-height:1.2;font-weight:500;letter-spacing:-.02em;margin:0 0 9px}
+.launch-desk-grid article>p:not(.launch-desk-label){color:var(--brand-muted,var(--muted));font-size:13px;line-height:1.65;margin:0 0 8px;max-width:46ch}
+.launch-desk-ca{display:block;font:12px/1.8 var(--font-code);overflow-wrap:anywhere;user-select:all}
+.launch-desk-actions{display:flex;align-items:center;gap:24px;margin-top:6px;flex-wrap:wrap}
+.launch-desk-actions button{padding:0;border:0;background:none;cursor:pointer}
+.launch-desk-copy-error{font-size:12px;color:var(--brand-muted,var(--muted))}
+.launch-desk-allocation{display:grid;grid-template-columns:70fr 15fr 15fr;border-top:1px solid var(--brand-line,var(--line))}
+.launch-desk-allocation>div{border-top:3px solid var(--xmr-orange);padding:20px 28px;display:flex;gap:9px;align-items:flex-start;flex-direction:column;min-width:0}
+.launch-desk-allocation>div+div{border-left:1px solid var(--brand-line,var(--line));border-top-color:var(--brand-muted,var(--muted));padding-inline:18px}
+.launch-desk-allocation>div:last-child{border-top-style:dotted}
+.launch-desk-allocation strong{font:500 clamp(23px,2.7vw,34px)/1 var(--font-body);letter-spacing:-.04em}
+.launch-desk-allocation span{font-size:13px;line-height:1.3}
+.launch-desk-allocation span span{display:block;font:10px/1.5 var(--font-code);color:var(--brand-muted,var(--muted));margin-top:5px}
+.launch-desk-foot{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:14px 28px;border-top:1px solid var(--brand-line,var(--line))}
+.launch-desk-foot p{margin:0;max-width:76ch;color:var(--brand-muted,var(--muted));font-size:11px;line-height:1.6}
+.launch-desk-foot a{flex:none;font-size:11px}
+@media(max-width:1100px){.launch-desk-allocation{grid-template-columns:2fr 1fr 1fr}.launch-desk-allocation>div{gap:10px;align-items:flex-start;flex-direction:column}.launch-desk-foot{align-items:flex-start}}
+@media(max-width:700px){.launch-desk{margin:16px 0 36px}.launch-desk-heading{display:block;padding:22px 20px 16px}.launch-desk-heading>a{margin-top:9px}.launch-desk-grid{grid-template-columns:1fr}.launch-desk-grid article{padding:21px 20px}.launch-desk-grid article+article{border-left:0;border-top:1px solid var(--brand-line,var(--line))}.launch-desk-grid h3{font-size:20px}.launch-desk-allocation{grid-template-columns:1fr 1fr 1fr}.launch-desk-allocation>div,.launch-desk-allocation>div+div{padding:16px 12px;gap:10px}.launch-desk-allocation strong{font-size:27px}.launch-desk-allocation span{font-size:12px}.launch-desk-allocation span span{font-size:10px}.launch-desk-foot{display:block;padding:14px 20px}.launch-desk-foot a{margin-top:4px}}
+/* Long impersonator addresses remain legible without widening the mobile hero. */
+.grain-updates .hero-copy .setup-note{overflow-wrap:anywhere}

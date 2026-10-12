@@ -1,0 +1,100 @@
+import {verifyLaunchIdentityAuthorization} from '@/lib/launch-identity-authorization.mjs';
+import {headerRenditions,validateHeaderImage} from '@/lib/header-image.mjs';
+import {canonicalXCommunity} from '@/lib/identity-amendment.mjs';
+import {assertPublicCreatorBuyCompatibility} from '@/lib/public-creator-buy.mjs';
+import {completedMetadataRetry} from '@/lib/metadata-completed-retry.mjs';
+import {canonicalTokenWebsite} from '@/lib/token-website.mjs';
+import {validateImage} from '@/lib/image-validation.mjs';
+import {env} from 'cloudflare:workers';
+import {buildMetadataPublication,assertPublicationBinding} from '@/lib/metadata-publication.mjs';
+import {acceptLaunchHeader} from '@/lib/canonical-identity.mjs';
+import {acceptLaunchIdentityIntent} from '@/lib/identity-amendment.mjs';
+import {persistMetadata} from '@/lib/metadata-persistence.mjs';
+import {database} from "@/lib/server-owner";
+import {consumeRequestBudget} from "@/lib/abuse-budget.mjs";
+import {requestClientKey} from '@/lib/client-key.mjs';
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+import { SITE } from "@/lib/site-config";
+import { launchRegistrationIdentity } from "@/lib/launch-registration.mjs";
+import { bucket, fail, limitedJSON, sameOrigin, sha256 } from "@/lib/server-utils";
+import { assertMetadataText,metadataMessage,metadataPayload,metadataLink,type MetadataDraft } from "@/lib/metadata-shared";
+import { TOKEN_CREATION_ENABLED, PLATFORM_SETTINGS } from "@/lib/platform-settings.mjs";
+import { PILOT_SIGNING_ENABLED, PILOT_APPROVED } from "@/lib/pilot-review.mjs";
+import { OFFICIAL_LAUNCH_CREATOR } from "@/lib/official-launch-policy.mjs";
+import { buildOfficialMetadataPublication, OFFICIAL_METADATA_DESCRIPTION_DRAFT, canonicalOfficialTwitter } from "@/lib/official-metadata.mjs";
+import { isPreviousOfficialMint } from "@/lib/previous-official-mints.mjs";
+import { takeBudget } from "@/lib/shared-market-cache.mjs";
+import {canonicalLaunchTweet} from '@/lib/launch-post-link.mjs';
+// Throwaway keys make the per-wallet quota unbounded; these atomic D1 counters bound one network and the whole site.
+const UPLOADS_PER_IP_HOUR=12,UPLOADS_PER_HOUR=240;
+function isOfficialMetadataUpload(draft:MetadataDraft){
+ return draft?.owner===OFFICIAL_LAUNCH_CREATOR&&draft?.name?.trim()==='Grainpad'&&draft?.symbol==='GRAIN'&&typeof draft?.mint==='string'&&draft.mint.length>31&&!isPreviousOfficialMint(draft.mint);
+}
+export async function POST(request:Request){
+ try{
+  sameOrigin(request);
+  // Official uploads always use the creator-bound approved builder. While public
+  // creation is locked, only that path or an explicitly enabled pilot is admitted.
+  const client=requestClientKey(request),ipHash=await sha256(client);
+  if(!await consumeRequestBudget(database(),'upload-attempts-global',200)||!await consumeRequestBudget(database(),'upload-attempts-ip:'+ipHash,30))return fail(Error('Upload request limit reached. Retry shortly.'),429);
+  const body=await limitedJSON(request,2_800_000);const draft=body.draft as MetadataDraft;
+  const official=isOfficialMetadataUpload(draft),pilotOnly=!TOKEN_CREATION_ENABLED;
+  if(pilotOnly&&!official&&!PILOT_SIGNING_ENABLED)return fail(Error("Token creation is locked pending separate approval. Metadata uploads are closed."),403);
+  if(pilotOnly&&!official&&(draft?.owner!==PLATFORM_SETTINGS.admin||draft?.symbol!==PILOT_APPROVED.symbol))return fail(Error("Only the approved GRAINU pilot metadata can be uploaded while token creation is locked."),403);
+  if(!draft||typeof draft.name!=="string"||!draft.name.trim()||new TextEncoder().encode(draft.name.trim()).length>32)throw new Error("Name must be 1–32 UTF-8 bytes.");
+  if(typeof draft.symbol!=="string"||!/^[$A-Za-z0-9]{1,10}$/.test(draft.symbol))throw new Error("Ticker must have 1–10 letters or digits.");
+  if(typeof draft.description!=="string"||draft.description.length>1000)throw new Error("Description is too long.");
+  assertMetadataText(draft);
+  if(typeof draft.imageBase64!=="string"||draft.imageBase64.length>2_700_000)throw new Error("Choose an image below 2 MB.");
+  if(!Number.isSafeInteger(draft.expires)||draft.expires<Date.now()||draft.expires>Date.now()+15*60*1000)throw new Error("Metadata signature expired. Please sign again.");
+  if(typeof draft.mint!=='string')throw Error('A valid token mint is required before publishing metadata.');
+  const website=canonicalTokenWebsite(draft.mint);if(!official&&draft.website!==undefined&&draft.website!==''&&draft.website!==website)throw Error('Token website cannot be overridden.');const twitter=official?canonicalOfficialTwitter(draft.twitter):metadataLink(draft.twitter,"twitter"),telegram=draft.telegram===undefined?undefined:metadataLink(draft.telegram,"telegram");
+  const launchTweet=canonicalLaunchTweet(draft.launchTweet);
+  if(official&&launchTweet)throw Error('Use the official X field for a launch post; the separate public launch-post field is not part of official metadata.');
+  if(!official&&draft.declaredCreatorBuy!==undefined&&(!['SOL','wXMR'].includes(draft.quoteAsset||'')||typeof draft.declaredCreatorBuy!=='string'||!/^\d{1,12}(\.\d{1,9})?$/.test(draft.declaredCreatorBuy)))throw Error('Creator buy declaration must be an amount in the selected quote asset.');
+  if(official&&draft.creatorBuy!==undefined)throw Error('Use the approved official creator buy.');
+  if(!official)assertPublicCreatorBuyCompatibility(draft);
+  const payload=metadataPayload(draft);const hash=await sha256(payload);
+  const owner=bs58.decode(draft.owner),sig=body.authorization===undefined?bs58.decode(body.signature):null;
+  if(body.authorization===undefined&&(owner.length!==32||!sig||sig.length!==64||!nacl.sign.detached.verify(new TextEncoder().encode(metadataMessage(new URL(request.url).origin,hash)),sig,owner)))throw new Error("Wallet signature did not verify.");
+  const bytes=Uint8Array.from(atob(draft.imageBase64),c=>c.charCodeAt(0));
+  const {type}=validateImage(bytes,draft.imageType);
+  const storage=bucket();const imageHash=await sha256(bytes);
+  const reserved=launchRegistrationIdentity({name:draft.name,symbol:draft.symbol,imageHash,website,twitter,mint:draft.mint},draft.owner);if(reserved)throw Error(reserved);
+  if(official&&(draft.description.trim()!==OFFICIAL_METADATA_DESCRIPTION_DRAFT||draft.twitter!==twitter))throw Error('Official metadata draft was not the published document. Nothing was stored.');
+  const publication=official?await buildOfficialMetadataPublication({mint:draft.mint,imageBytes:bytes,twitter}):await buildMetadataPublication({...draft,website,twitter,...(telegram!==undefined?{telegram}:{}),...(draft.launchTweet!==undefined?{launchTweet}:{})},bytes,SITE.origin);
+  assertPublicationBinding(draft,publication);
+  const {metadata,metadataHash:metaHash}=publication;const json=JSON.stringify(metadata);
+  if(body.authorization!==undefined){
+   if(official||body.signature!==undefined)throw Error('Combined authorization is only for public launches; mixed proofs are refused.');
+   let headerHash=null;
+   if(body.header!==undefined){
+    if(!body.header||Object.keys(body.header).sort().join(',')!=='authorization,imageBase64,imageType'||typeof body.header.imageBase64!=='string'||body.header.imageBase64.length>2700000||JSON.stringify(body.header.authorization)!==JSON.stringify(body.authorization))throw Error('Exact combined banner proof required.');
+    const headerBytes=Uint8Array.from(atob(body.header.imageBase64),c=>c.charCodeAt(0));validateHeaderImage(headerBytes,body.header.imageType);headerHash=await sha256((await headerRenditions(headerBytes)).large);
+   }
+   let xCommunity=null;
+   if(body.identityIntent!==undefined){
+    if(!body.identityIntent||Object.keys(body.identityIntent).sort().join(',')!=='authorization,xCommunity'||JSON.stringify(body.identityIntent.authorization)!==JSON.stringify(body.authorization))throw Error('Exact combined community proof required.');
+    xCommunity=canonicalXCommunity(body.identityIntent.xCommunity);if(xCommunity!==body.identityIntent.xCommunity)throw Error('Canonical X Community required.');
+   }
+   verifyLaunchIdentityAuthorization(body.authorization,{schema:'grainpad.launch-identity.authorization.v1',origin:new URL(request.url).origin,network:'mainnet-beta',creator:draft.owner,mint:draft.mint,metadataPayloadHash:hash,metadataHash:metaHash,imageHash:publication.imageHash,headerHash,xCommunity,expires:draft.expires});
+  }else if(body.header?.authorization!==undefined||body.identityIntent?.authorization!==undefined)throw Error('Mixed legacy and combined proofs refused.');
+  const header=await acceptLaunchHeader({header:body.header,owner:draft.owner,mint:draft.mint,metadataHash:metaHash,imageHash:publication.imageHash});
+  const identityIntent=await acceptLaunchIdentityIntent({intent:body.identityIntent,owner:draft.owner,mint:draft.mint,metadataHash:metaHash,imageHash:publication.imageHash});
+  const retry=await completedMetadataRetry(storage,{owner:draft.owner,mint:draft.mint,publication,header,identityIntent});
+  if(retry)return Response.json(retry);
+  const db=database(),ownerHash=await sha256(draft.owner),uploadKey=client==='local'?`metadata-owner:${ownerHash}`:`metadata-ip:${ipHash}`;
+  if(!await takeBudget(db,uploadKey,1,UPLOADS_PER_IP_HOUR,3_600_000))return fail(Error(client==='local'?'Too many metadata uploads from this wallet. Try again later.':'Too many metadata uploads from this network. Try again later.'),429);
+  if(!await takeBudget(db,'metadata-global',1,UPLOADS_PER_HOUR,3_600_000))return fail(Error('Metadata uploads are busy. Try again shortly.'),429);
+  if(!await consumeRequestBudget(database(),'upload-global',2000,{windowMs:86_400_000})||!await consumeRequestBudget(database(),(client==='local'?'upload-authenticated-owner:'+ownerHash:'upload-ip:'+ipHash),40,{windowMs:86_400_000})||!await consumeRequestBudget(database(),'upload-owner:'+draft.owner,20,{windowMs:86_400_000}))throw Error('Metadata upload budget reached. Please retry tomorrow.');
+  const bindings=env as unknown as {METADATA_PRIMARY?:Fetcher;METADATA_SECONDARY?:Fetcher};
+  const persistence=await persistMetadata(publication,[bindings.METADATA_PRIMARY,bindings.METADATA_SECONDARY]);
+  if(!await storage.head(`assets/${imageHash}`))await storage.put(`assets/${imageHash}`,bytes,{httpMetadata:{contentType:type,cacheControl:"public, max-age=31536000, immutable"}});
+  if(!await storage.head(`assets/${metaHash}`))await storage.put(`assets/${metaHash}`,json,{httpMetadata:{contentType:"application/json",cacheControl:"public, max-age=31536000, immutable"}});
+  if(header&&!await storage.head(`assets/${header.sha256}`))await storage.put(`assets/${header.sha256}`,header.bytes,{httpMetadata:{contentType:header.type,cacheControl:"public, max-age=31536000, immutable"}});
+  if(header&&!await storage.head(`assets/${header.smallSha256}`))await storage.put(`assets/${header.smallSha256}`,header.smallBytes,{httpMetadata:{contentType:"image/png",cacheControl:"public, max-age=31536000, immutable"}});
+  await storage.put(`owners/${metaHash}/${draft.owner}`,JSON.stringify({createdAt:new Date().toISOString(),mint:draft.mint,metadata,uri:publication.uri,profile:publication.profile,imageHash,signedPayloadHash:hash,persistence,...(header?{header:{sha256:header.sha256,smallSha256:header.smallSha256,type:header.type,mint:header.mint,metadataHash:header.metadataHash,imageHash:header.imageHash,signature:header.signature,...(header.authorization!==undefined?{authorization:header.authorization}:{})}}:{}),...(identityIntent?{identityIntent}:{})}));
+  return Response.json({uri:publication.uri,metadataHash:metaHash,image:`${SITE.origin}/api/assets/${imageHash}`});
+ }catch(error){return fail(error);}
+}

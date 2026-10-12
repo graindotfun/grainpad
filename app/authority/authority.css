@@ -1,0 +1,37 @@
+/* Who-controls-what ledger. Status is never conveyed by colour alone: every item carries its status text. */
+.ledger{padding:32px 0;display:grid;gap:8px}
+.ledger-muted{color:var(--brand-muted);font-size:.9375rem;line-height:1.7}
+.ledger-banner{border:1px solid var(--brand-line);border-left-width:3px;background:var(--card);padding:18px 22px;font-size:.9375rem;line-height:1.7}
+.ledger-banner p{margin:0}
+.ledger-banner-fresh{border-left-color:var(--brand-muted)}
+.ledger-banner-stale,.ledger-banner-failed{border-left-color:var(--grain-warning,var(--xmr-orange))}
+.ledger-warnings{margin:12px 0 0;padding-left:20px}
+.ledger-section{padding:40px 0;border-bottom:1px solid var(--brand-line);display:grid;gap:24px}
+.ledger-section-head p{color:var(--brand-muted);margin:8px 0 0;max-width:760px;line-height:1.7}
+.ledger-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:16px}
+.ledger-item{border:1px solid var(--brand-line);background:var(--card);padding:18px 20px;min-width:0}
+.ledger-item header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline;margin-bottom:12px}
+.ledger-item h3{font-size:1.125rem;margin:0}
+.ledger-status{font-size:.8125rem;color:var(--brand-muted)}
+.ledger-differs{border-color:var(--grain-warning,var(--xmr-orange));border-width:2px}
+.ledger-differs .ledger-status,.ledger-stale .ledger-status{color:var(--foreground);font-weight:600}
+.ledger-unavailable{opacity:.8}
+.ledger-item dl{margin:0;display:grid;gap:10px}
+.ledger-item dl>div{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr);gap:12px}
+.ledger-item dt{font-size:.8125rem;color:var(--brand-muted)}
+.ledger-item dd{margin:0;text-align:left;font-size:.9375rem;line-height:1.6;overflow-wrap:anywhere}
+.ledger-holder{display:grid;gap:2px}
+.ledger-holder code,.ledger-item code,.ledger-table code{font:.8125rem/1.6 var(--font-code);overflow-wrap:anywhere}
+.ledger-holder-grainpad-founder strong,.ledger-holder-grainpad-operator strong{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
+.ledger-links{display:inline-flex;flex-wrap:wrap;gap:4px 12px;margin-left:8px}
+.ledger-links a,.ledger-table a{text-decoration:underline;text-underline-offset:4px;margin-right:8px}
+.ledger-table-wrap{overflow-x:auto;border:1px solid var(--brand-line)}
+.ledger-table{width:100%;border-collapse:collapse;font-size:.875rem;text-align:left}
+.ledger-table th{background:var(--card);padding:12px 14px;border-bottom:1px solid var(--brand-line);font-weight:500}
+.ledger-table td{padding:12px 14px;border-bottom:1px solid var(--brand-line);vertical-align:top;overflow-wrap:anywhere}
+.ledger-code{background:var(--card);border:1px solid var(--brand-line);padding:14px 16px;overflow-x:auto;font:.8125rem/1.7 var(--font-code)}
+@media (max-width:640px){.ledger-item dl>div{grid-template-columns:1fr;gap:2px}}
+/* Long commands scroll inside their block instead of widening the page grid. */
+.record-shell .record-commitment>*{min-width:0}
+.record-commitment code{overflow-wrap:anywhere}
+.ledger-code{max-width:100%}
