@@ -2,6 +2,7 @@ import {marketLive} from './lib/server-market-live';
 import handler from 'vinext/server/fetch-handler';
 import {runScheduledIndexer,refreshMoneroOnIndexerTick} from './lib/scheduled-indexer.mjs';
 import {createPublicReadCache} from './lib/public-read-cache.mjs';
+import {EXPORT_PATH,handleMigrationExport} from './lib/migration-export.mjs';
 
 declare const __GRAINPAD_COMMIT__: string | null;
 const publicReads = createPublicReadCache({
@@ -19,6 +20,8 @@ const worker = {
   headers.delete('Content-Security-Policy');
   headers.delete('Content-Security-Policy-Report-Only');
   const clean = new Request(request, {headers});
+  // Bypass app hooks: export requests must never trigger background data writes.
+  if(new URL(clean.url).pathname===EXPORT_PATH)return handleMigrationExport(clean,env);
   if(/^\/api\/market\/[1-9A-HJ-NP-Za-km-z]{32,44}\/live$/.test(new URL(clean.url).pathname))return marketLive(clean,env);
   refreshMoneroOnIndexerTick(clean,handler,env,context);
   return publicReads(clean, () => handler.fetch(clean, env, context), (task: Promise<unknown>) => context.waitUntil(task));
