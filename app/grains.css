@@ -182,7 +182,8 @@ html[data-theme] .price-tab-dot{background:var(--grain-orange)}
 .gx-hero-copy{padding:56px 0 40px;display:flex;flex-direction:column;justify-content:center;min-width:0}
 .gx-hero .gx-h1{margin:26px 0 24px}
 .gx-hero-sub{font-size:clamp(18px,1.6vw,23px);line-height:1.3;max-width:520px;color:var(--gx-ink)}
-.gx-composer{margin-top:34px;max-width:540px;border:1.5px solid var(--gx-ink);border-radius:22px 999px 999px 22px;padding:12px 12px 12px 22px;display:flex;align-items:center;gap:14px;background:var(--gx-bg)}
+/* Right radius = half the composer height: a larger value would make CSS scale every corner down, squaring the left. */
+.gx-composer{margin-top:34px;max-width:540px;border:1.5px solid var(--gx-ink);border-radius:22px 41px 41px 22px;padding:12px 12px 12px 22px;display:flex;align-items:center;gap:14px;background:var(--gx-bg)}
 .gx-composer:focus-within{box-shadow:0 0 0 4px var(--grain-orange-ring)}
 .gx-composer-field{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;cursor:text}
 .gx-composer-field input{width:100%;border:0;outline:0;background:none;color:var(--gx-ink);font:600 clamp(26px,2.4vw,34px)/1.15 var(--gx-sans);letter-spacing:-.04em;padding:0}
@@ -272,7 +273,7 @@ html[data-theme="dark"] .gx-tile.is-k{background:#fff;color:#101010}
 .gx-token-card.is-loading>span:nth-of-type(2){height:34px;width:50%}
 .gx-invite{background:var(--grain-orange);border:1px solid #101010;border-radius:22px;padding:22px;display:flex;flex-direction:column;justify-content:space-between;gap:28px;min-height:340px;color:#101010;transition:background .2s,color .2s}
 .gx-invite-title{font-size:clamp(36px,3.2vw,44px);line-height:.95;letter-spacing:-.05em}
-.gx-invite-title span{color:#fff}
+.gx-invite-title span{color:#101010}
 .gx-invite-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:14px}
 .gx-invite-foot .gx-mono{max-width:150px;font-size:11px;color:rgba(16,16,16,.72)}
 .gx-invite-plus{width:60px;height:60px;flex:none;border-radius:50%;background:#101010;color:var(--grain-orange);display:flex;align-items:center;justify-content:center;transition:transform .3s}
@@ -374,7 +375,7 @@ html[data-theme="dark"] .gx-tile.is-k{background:#fff;color:#101010}
  :root{--gx-pad:20px}
  .gx-section{padding-top:64px}
  .gx-hero .gx-h1{font-size:clamp(50px,15vw,72px)}
- .gx-composer{padding:10px 10px 10px 16px;border-radius:18px 999px 999px 18px}
+ .gx-composer{padding:10px 10px 10px 16px;border-radius:18px 35px 35px 18px}
  .gx-composer-go{padding:14px 16px;font-size:15px}
  .gx-stage-canvas{min-height:320px}
  .gx-stage-top{flex-direction:column;gap:6px}

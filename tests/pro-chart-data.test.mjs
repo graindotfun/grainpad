@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mergeBars,withLiveTrades,seriesRows,minMoveFor,utcLabel,withAlpha,BAR_OPTIONS,RANGE_OPTIONS} from '../lib/pro-chart-data.mjs';
+import {mergeBars,withLiveTrades,seriesRows,minMoveFor,utcLabel,withAlpha,pageCursor,BAR_OPTIONS,RANGE_OPTIONS} from '../lib/pro-chart-data.mjs';
 const bar=(time,close,extra={})=>({time,open:close,high:close,low:close,close,volume:1,...extra});
 test('pages merge by bar time, newest read wins, invalid bars are dropped',()=>{
  const merged=mergeBars([bar(60,1),bar(120,2)],[bar(120,3),bar(180,4),{time:240,open:0,high:1,low:1,close:1}]);
@@ -22,4 +22,12 @@ test('tiny prices get a fine scale step; labels and colors format for the engine
  assert.equal(utcLabel(180),'UTC+3');assert.equal(utcLabel(-270),'UTC−4:30');assert.equal(utcLabel(0),'UTC');
  assert.equal(withAlpha('#ff6600',.5),'rgba(255,102,0,0.5)');assert.equal(withAlpha('rgba(16, 16, 16, .6)',.2),'rgba(16,16,16,0.2)');assert.equal(withAlpha('red',.2),'red');
  assert.deepEqual(BAR_OPTIONS.map(([l])=>l),['1s','1m','5m','15m','1h','4h','1d']);assert.deepEqual(RANGE_OPTIONS.map(([l])=>l),['1D','1W','1M','3M','1Y','All']);
+});
+test('history pages by time window: a short or empty page is not the end, only reaching the first trade is',()=>{
+ assert.deepEqual(pageCursor(null,{first:1000,window:{start:50000}}),{cursor:50000,exhausted:false});
+ assert.deepEqual(pageCursor(50000,{first:1000,window:{start:20000}}),{cursor:20000,exhausted:false});
+ assert.deepEqual(pageCursor(20000,{first:1000,window:{start:900}}),{cursor:900,exhausted:true});
+ assert.deepEqual(pageCursor(20000,{first:1000,window:{start:30000}}),{cursor:20000,exhausted:false},'a newer poll never moves the cursor forward');
+ assert.equal(pageCursor(null,{first:null,window:{start:5}}).exhausted,true,'no trades at all');
+ assert.deepEqual(pageCursor(7,{first:1}),{cursor:7,exhausted:true},'a page without a window cannot be continued');
 });
