@@ -9,7 +9,7 @@ test('pause blocks framework traffic and schedules before hooks, retaining pure 
  const head=await migrationFreezeResponse(new Request('https://example.test/api/version',{method:'HEAD'}),env,commit);assert.equal(await head.text(),'');
  assert.equal(await(await migrationFreezeResponse(new Request('https://example.test/_next/static/chunks/test-disposable.js'),env,commit)).text(),'test-disposable-static-asset');
  assert.equal((await migrationFreezeResponse(new Request('https://example.test/_next/static/chunks/test-disposable.js',{method:'POST'}),env,commit)).status,503);
- const source=readFileSync(new URL('../worker.ts',import.meta.url),'utf8');const pause=source.indexOf('const frozen=migrationFreezeResponse');assert.ok(pause>source.indexOf('pathname===EXPORT_PATH'));assert.ok(pause<source.indexOf('return marketLive'));assert.ok(pause<source.indexOf('refreshMoneroOnIndexerTick(clean'));assert.match(source,/if\(migrationFrozen\(env\)\)return;[\s\S]*const jobs=\[runScheduledIndexer/);
+ const source=readFileSync(new URL('../worker.ts',import.meta.url),'utf8');const pause=source.indexOf('const frozen=migrationFreezeResponse');assert.ok(pause>=0);assert.doesNotMatch(source,/handleMigrationExport|handleMigrationRestore|migration-export|migration-restore/);assert.ok(pause<source.indexOf('return marketLive'));assert.ok(pause<source.indexOf('refreshMoneroOnIndexerTick(clean'));assert.match(source,/if\(migrationFrozen\(env\)\)return;[\s\S]*const jobs=\[runScheduledIndexer/);
 });
 test('normal operation stays unchanged; configured malformed pause fails closed',()=>{
  for(const env of [{},{MIGRATION_WRITE_FREEZE:'false'}]){assert.equal(migrationFrozen(env),false);assert.equal(migrationFreezeResponse(new Request('https://example.test/'),env,null),null);}
