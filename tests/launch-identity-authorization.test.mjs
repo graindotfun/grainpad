@@ -1,0 +1,18 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {Keypair} from '@solana/web3.js';
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
+import {LAUNCH_IDENTITY_AUTHORIZATION,launchIdentityAuthorizationMessage,verifyLaunchIdentityAuthorization,signLaunchIdentityAuthorization} from '../lib/launch-identity-authorization.mjs';
+import {metadataMessage} from '../lib/metadata-shared.ts';
+import {creatorAuthorizationBytesV2} from '../lib/monero-creator-text-v2.mjs';
+const owner=Keypair.generate(),mint=Keypair.generate(),now=Date.now();
+const base=()=>({schema:LAUNCH_IDENTITY_AUTHORIZATION,origin:'https://grainpad.fun',network:'mainnet-beta',creator:owner.publicKey.toBase58(),mint:mint.publicKey.toBase58(),metadataPayloadHash:'a'.repeat(64),metadataHash:'b'.repeat(64),imageHash:'c'.repeat(64),headerHash:'d'.repeat(64),xCommunity:'https://x.com/i/communities/123',expires:now+600000});
+const signed=payload=>({payload,signature:bs58.encode(nacl.sign.detached(new TextEncoder().encode(launchIdentityAuthorizationMessage(payload)),owner.secretKey))});
+test('one signature cryptographically binds metadata, banner and community',()=>{const p=base();assert.deepEqual(verifyLaunchIdentityAuthorization(signed(p),p,{now}),p);});
+for(const [field,value] of Object.entries({creator:Keypair.generate().publicKey.toBase58(),mint:Keypair.generate().publicKey.toBase58(),metadataPayloadHash:'f'.repeat(64),metadataHash:'f'.repeat(64),imageHash:'f'.repeat(64),headerHash:null,xCommunity:null,expires:now+500000}))test(`rejects changed ${field}`,()=>{const p=base();assert.throws(()=>verifyLaunchIdentityAuthorization({...signed(p),payload:{...p,[field]:value}},p,{now}));});
+test('rejects unknown authorization fields, wrong origin/network and noncanonical community',()=>{for(const change of [{payment:'allow'},{origin:'https://evil.example'},{network:'devnet'},{xCommunity:'https://x.com/user'}])assert.throws(()=>signed({...base(),...change}));});
+test('rejects expired upload, keeps verifiable historical signed evidence',()=>{const p=base(),proof=signed(p);assert.throws(()=>verifyLaunchIdentityAuthorization(proof,p,{now:p.expires}));assert.deepEqual(verifyLaunchIdentityAuthorization(proof,p,{now:p.expires+1000,historical:true}),p);});
+test('legacy metadata and Monero signatures cannot be relabelled as a combined approval',()=>{const p=base();for(const message of [new TextEncoder().encode(metadataMessage(p.origin,p.metadataPayloadHash)),creatorAuthorizationBytesV2({mint:p.mint,creator:p.creator,metadataHash:p.metadataHash,nonce:'a'.repeat(32)})])assert.throws(()=>verifyLaunchIdentityAuthorization({payload:p,signature:bs58.encode(nacl.sign.detached(message,owner.secretKey))},p,{now}));});
+test('wallet change while approving fails before upload',async()=>{const wallet={publicKey:owner.publicKey,signMessage:async bytes=>{wallet.publicKey=mint.publicKey;return nacl.sign.detached(bytes,owner.secretKey);}};await assert.rejects(signLaunchIdentityAuthorization(wallet,base()),/wallet changed/);});
+test('client requests one readable message and verifies returned signature',async()=>{let calls=0;const wallet={publicKey:owner.publicKey,signMessage:async bytes=>{calls++;assert.match(new TextDecoder().decode(bytes),/authorizes no transfer/);return nacl.sign.detached(bytes,owner.secretKey);}};assert.equal((await signLaunchIdentityAuthorization(wallet,base())).payload.creator,owner.publicKey.toBase58());assert.equal(calls,1);});

@@ -1,0 +1,29 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {build} from 'esbuild';
+import {OFFICIAL_LAUNCH_CREATOR} from '../lib/official-launch-policy.mjs';import {grainpadPlatformId} from '../lib/platform-policy.mjs';
+const platform=grainpadPlatformId().toBase58();
+const mint='6EUHSgM1TiH6MZCMGLYPRsCwZPa8F3GyZmvcx4Jgrain',metadataHash='ab'.repeat(32);
+const outfile='.test-output/official-ca-manual-route.mjs';
+await build({entryPoints:['app/api/token/route.ts'],outfile,bundle:true,format:'esm',platform:'node',packages:'external',logLevel:'silent',plugins:[{name:'offline-boundaries',setup(b){
+ b.onLoad({filter:/server-owner\.ts$/},()=>({contents:'export const database=()=>globalThis.__manualCa.db;export const verifyOwner=()=>{globalThis.__manualCa.ownerVerified++;};',loader:'js'}));
+ b.onLoad({filter:/server-utils\.ts$/},()=>({contents:'export const bucket=()=>globalThis.__manualCa.bucket;export const sameOrigin=()=>{};export const limitedJSON=r=>r.json();export const fail=e=>Response.json({error:e.message},{status:400});',loader:'js'}));
+ b.onLoad({filter:/server-rpc\.ts$/},()=>({contents:"export const chain=async()=> '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';",loader:'js'}));
+ b.onLoad({filter:/server-chain-connection\.ts$/},()=>({contents:'export const readConnection=()=>({});',loader:'js'}));
+ b.onLoad({filter:/server-market\.ts$/},()=>({contents:'export const serverMarket=async()=>({route:"curve",stale:false});',loader:'js'}));
+ b.onLoad({filter:/verify-launch\.mjs$/},()=>({contents:'export const LAUNCH_EXPECTED={};export async function verifyLaunch(args){globalThis.__manualCa.verifications.push(args);return {status:"PASS",checks:[{name:"T0-creation-declared-creator-buy",observed:{signature:globalThis.__manualCa.verifiedSignature}}]};}',loader:'js'}));
+ }}]});
+const api=await import('../'+outfile);
+function fixture(){const state={reservation:{state:'registered',mint,creator:OFFICIAL_LAUNCH_CREATOR,metadata_hash:metadataHash,signature:'stored-creation',generation:2},ownerVerified:0,verifiedSignature:'stored-creation',verifications:[],stored:null};
+ const launch={mint,metadataHash,pool:'stored-pool',creator:OFFICIAL_LAUNCH_CREATOR,platformId:platform,name:'Grainpad',symbol:'GRAIN'};state.launch=launch;
+ state.db={prepare(sql){return {bind(){return this;},async first(){if(sql.includes('official_launch_reservation'))return state.reservation;if(sql.includes('official_generation_identity'))return {generation:2,mint,metadata_hash:metadataHash};if(sql.includes('launch_index'))return {record:JSON.stringify(launch)};return state.stored;},async run(){state.stored={generation:2,mint,pool:launch.pool};}};}};state.bucket={get:async()=>null};globalThis.__manualCa=state;return state;}
+const post=()=>api.POST(new Request('https://grainpad.fun/api/token',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({approval:{value:mint},signature:'owner-message-signature',creationSignature:'untrusted-client-signature'})}));
+test('real manual CA route authenticates owner and passes only the trusted reservation receipt',async()=>{const f=fixture(),r=await post();assert.equal(r.status,200,JSON.stringify(await r.clone().json()));assert.equal(f.ownerVerified,1);assert.equal(f.verifications.length,1);assert.equal(f.verifications[0].creationSignature,'stored-creation');assert.equal(f.stored.mint,mint);});
+for(const mode of ['missing','reserved','foreign-mint','foreign-creator','foreign-hash','missing-signature','foreign-verification'])test(`manual route refuses ${mode} without a substitute client receipt`,async()=>{const f=fixture();if(mode==='missing')f.reservation=null;if(mode==='reserved')f.reservation.state='reserved';if(mode==='foreign-mint')f.reservation.mint=OFFICIAL_LAUNCH_CREATOR;if(mode==='foreign-creator')f.reservation.creator=platform;if(mode==='foreign-hash')f.reservation.metadata_hash='f'.repeat(64);if(mode==='missing-signature')f.reservation.signature=null;if(mode==='foreign-verification')f.verifiedSignature='foreign';const r=await post();assert.equal(r.status,400);assert.equal(f.stored,null);assert.equal(f.verifications.length,mode==='foreign-verification'?1:0);});
+test('manual route retains the independently tested exact initialization verifier',()=>{const source=readFileSync('app/api/token/route.ts','utf8');assert.match(source,/verifyLaunch\(\{/);assert.match(source,/creationSignature:reservation.signature/);});
+
+test('manual CA uses the registered hash-bound X link and refuses a substituted registered identity',async()=>{
+ const f=fixture();f.launch.twitter='https://x.com/GrainXMR/status/123456789';const response=await post();assert.equal(response.status,200);assert.equal(f.verifications[0].expected.twitter,f.launch.twitter);assert.equal(f.verifications[0].expected.metadataHash,metadataHash);
+ for(const field of ['mint','metadataHash']){const bad=fixture();bad.launch[field]=field==='mint'?OFFICIAL_LAUNCH_CREATOR:'ff'.repeat(32);const rejected=await post();assert.equal(rejected.status,400);assert.equal(bad.verifications.length,0);assert.equal(bad.stored,null);}
+});
+
+test('public CA response explicitly binds pending and published identities to generation 2',async()=>{fixture();const pending=await (await api.GET()).json();assert.deepEqual(pending,{generation:2,token:null,network:'mainnet-beta'});await post();const published=await (await api.GET()).json();assert.equal(published.generation,2);assert.equal(published.token.generation,2);assert.equal(published.token.mint,mint);});
+test('public CA route excludes a record with the wrong stored generation',async()=>{const f=fixture();f.stored={mint,pool:'stored-pool',generation:1};assert.equal((await (await api.GET()).json()).token,null);});

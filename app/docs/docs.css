@@ -1,0 +1,81 @@
+/* Documentation extends the shared editorial grid, type and theme tokens. */
+.docs-shell{--docs-accent:var(--xmr-orange);--docs-header-height:86px}
+.docs-heading{align-items:flex-end;padding-bottom:36px;border-bottom:1px solid var(--brand-line);margin-bottom:0}
+.docs-heading h1{font-size:clamp(58px,7vw,96px);line-height:1.05;margin:16px 0 20px}
+.docs-intro{font-size:18px;color:var(--brand-muted);margin:0}
+.docs-edition{display:grid;gap:7px;font:13px/1.6 var(--font-code);color:var(--brand-muted);padding-bottom:4px}
+.docs-edition time{font-size:14px;color:var(--foreground)}
+.docs-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:clamp(40px,6vw,96px);align-items:start}
+.docs-index{position:sticky;top:100px;padding:40px 0}
+.docs-index .eyebrow{font-size:12px;margin:0 0 18px}
+.docs-index ol{list-style:none;padding:0;margin:0}
+.docs-index li a{display:flex;gap:15px;padding:9px 0;font-size:14px;line-height:1.5;color:var(--brand-muted)}
+.docs-index li a span{flex-shrink:0;white-space:nowrap;font:12px/1.75 var(--font-code);color:var(--docs-accent)}
+.docs-index a:hover{color:var(--foreground)}
+.docs-status-link{display:inline-block;font-size:14px;border-bottom:1px solid var(--brand-line);padding:6px 0;margin-top:24px}
+.docs-article{min-width:0;max-width:870px}
+.docs-section{padding:40px 0;border-bottom:1px solid var(--brand-line);scroll-margin-top:var(--docs-header-height)}
+.docs-section:last-child{border-bottom:0}
+.docs-section-heading{display:flex;gap:18px;align-items:baseline;margin-bottom:22px}
+.docs-section-heading>span{font:13px/1.5 var(--font-code);color:var(--docs-accent);flex-shrink:0}
+.docs-section h2{font-size:clamp(25px,2.5vw,34px);line-height:1.2;letter-spacing:-.035em;font-weight:500;margin:0}
+.docs-section-body{font-size:16px;line-height:1.8;color:var(--brand-muted)}
+.docs-section-body p{margin:0 0 18px}
+.docs-section-body p:last-child{margin-bottom:0}
+.docs-section-body a{color:var(--foreground);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px;text-decoration-color:var(--brand-faint)}
+.docs-section-body a:hover{color:var(--docs-accent);text-decoration-color:currentColor}
+.docs-section-body code{font-family:var(--font-code);font-size:.9em;color:var(--foreground)}
+.docs-section-body .docs-related{display:inline-block;margin-top:4px}
+.docs-flow{list-style:decimal-leading-zero outside;padding-left:3.2rem;margin:0 0 28px}
+.docs-flow li{display:list-item;padding-left:12px;margin-bottom:20px}
+.docs-flow li::marker{content:counter(list-item,decimal-leading-zero) " /  ";color:var(--docs-accent);font-family:var(--font-code);font-size:13px}
+.docs-facts{margin:0 0 24px}
+.docs-facts>div{display:grid;grid-template-columns:1fr 1fr;gap:18px;border-bottom:1px solid var(--brand-line);padding:13px 0}
+.docs-facts dt{font-size:15px;color:var(--brand-muted)}
+.docs-facts dd{font:14px/1.8 var(--font-code);text-align:right;margin:0;color:var(--foreground)}
+.docs-section-body .docs-status{border-left:2px solid var(--docs-accent);padding:10px 15px;background:var(--card);color:var(--foreground);font:14px/1.6 var(--font-code);margin-bottom:24px}
+.docs-status.is-active{border-left-color:#81af87}
+.docs-fees{padding-top:12px}
+.docs-fees p{margin-bottom:0;font-size:14px;color:var(--brand-muted)}
+.docs-fees strong{color:var(--foreground)}
+.docs-section-body .docs-note{font-size:14px;line-height:1.75}
+.docs-callout{border-left:2px solid var(--docs-accent);background:var(--card);padding:22px 24px;margin:24px 0}
+.docs-callout strong{display:block;color:var(--foreground);font-weight:550;margin-bottom:10px}
+.docs-addresses{border:1px solid var(--brand-line);background:var(--card);margin:24px 0 16px;padding:0 22px}
+.docs-address-row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;padding:20px 0;border-bottom:1px solid var(--brand-line)}
+.docs-address-row:last-child{border-bottom:0}
+.docs-address-row dt{font:14px/1.8 var(--font-code);color:var(--foreground)}
+.docs-address-row dd{margin:0;min-width:0;text-align:left}
+.docs-address-row a{display:block;overflow-wrap:anywhere;text-decoration:none}
+.docs-address-row code{font-size:13px;line-height:1.9;user-select:all;overflow-wrap:anywhere}
+.docs-address-row .docs-explorer{display:block;text-decoration:underline;text-underline-offset:4px;font-size:13px;margin-top:3px}
+.docs-address-row small{display:block;font-size:13px;line-height:1.65;color:var(--brand-muted);margin-top:7px}
+.docs-placeholder{color:var(--brand-faint)}
+.docs-links{padding:0;margin:0;list-style:none}
+.docs-links li{display:flex;justify-content:space-between;gap:24px;padding:13px 0;border-bottom:1px solid var(--brand-line)}
+.docs-links li:last-child{border-bottom:0}
+.docs-shell .brand-footer{margin-top:50px}
+html[data-theme="light"] .docs-shell{--docs-accent:var(--light-accent)}
+/* Rails are decorative: canonical orange; the accent variable stays ink for text. */
+html[data-theme="light"] :is(.docs-section-body .docs-status,.docs-callout){border-left-color:var(--grain-orange)}
+@media(max-width:1000px){.docs-layout{grid-template-columns:200px minmax(0,1fr);gap:35px}.docs-address-row{grid-template-columns:1fr;gap:7px}}
+@media(max-width:760px){.docs-heading{padding-bottom:26px}.docs-edition{margin-top:24px}.docs-layout{grid-template-columns:minmax(0,1fr);gap:0}.docs-index{position:static;padding:26px 0;border-bottom:1px solid var(--brand-line)}.docs-index ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}.docs-index li a{font-size:14px;gap:9px}.docs-status-link{margin-top:16px}.docs-section{padding:32px 0}.docs-callout{padding:18px}.docs-addresses{padding:0 18px}.docs-facts>div{grid-template-columns:1fr;gap:4px}.docs-facts dd{text-align:left}.docs-links li{flex-wrap:wrap;gap:5px 20px}.docs-fees{gap:12px}.docs-fees strong{font-size:32px}}
+@media(max-width:380px){.docs-index ol{grid-template-columns:1fr}.docs-fees{grid-template-columns:1fr}.docs-fees>div{display:flex;align-items:baseline;gap:16px}.docs-fees p{margin:0}}
+
+/* Long protocol addresses in prose must shrink the track, not the viewport. */
+.docs-layout>*,.docs-section-heading h2,.docs-index li,.docs-index li a{min-width:0}
+.docs-section-body,.docs-section-heading h2,.docs-index li a,.docs-facts dd,.docs-links a{overflow-wrap:anywhere}
+.docs-section-body :is(pre,table,.docs-scroll){display:block;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.docs-section-body pre{white-space:pre;overflow-wrap:normal}
+.docs-section-body pre code{white-space:inherit;overflow-wrap:normal}
+.docs-section-body :not(pre)>code{overflow-wrap:anywhere}
+.docs-heading[id],.docs-section [id]{scroll-margin-top:var(--docs-header-height)}
+@media(max-width:980px){.docs-shell{--docs-header-height:80px}}
+@media(max-width:420px){.docs-shell{--docs-header-height:74px}}
+/* The section margin supplies the entire sticky offset; avoid adding the global 90px twice. */
+html:has(.docs-shell){scroll-padding-top:0}
+
+.wallets-faq>details{padding:18px 0;border-bottom:1px solid var(--brand-line)}
+.wallets-faq>details>summary{cursor:pointer;font-weight:600;line-height:1.5}
+.wallets-faq>details[open]>summary{margin-bottom:14px}
+.wallets-faq .address-line{overflow-wrap:anywhere}

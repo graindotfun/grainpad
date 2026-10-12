@@ -1,0 +1,1 @@
+ALTER TABLE `rpc_submissions` ADD `accounts` text;

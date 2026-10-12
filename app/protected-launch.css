@@ -1,0 +1,5 @@
+/* Protected Launch shares the launch flow styles in launch-modes.css; only mode-specific details live here. */
+.protected-workspace{padding:0;max-width:none;margin:0}
+.protected-workspace .feedback{align-items:flex-start}
+.protected-workspace .feedback svg{flex:none}
+.protected-workspace .transaction-review .address-line{font-size:13px}
