@@ -2,14 +2,14 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Camera,Maximize2,Minimize2,RotateCcw,ZoomIn,ZoomOut} from 'lucide-react';
 import type {IChartApi,ISeriesApi,MouseEventParams,SeriesType,Time,LogicalRange} from 'lightweight-charts';
-import {BAR_OPTIONS,RANGE_OPTIONS,mergeBars,minMoveFor,seriesRows,utcLabel,withAlpha,withLiveTrades} from '@/lib/pro-chart-data.mjs';
+import {BAR_OPTIONS,RANGE_OPTIONS,mergeBars,minMoveFor,pageCursor,seriesRows,utcLabel,withAlpha,withLiveTrades} from '@/lib/pro-chart-data.mjs';
 import {formatNumber,formatPercent} from '@/lib/price-format';
 import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import {KeepCase} from './keep-case';
 import type {LiveTrade} from './use-live-market';
 
 type Bar={time:number;open:number;high:number;low:number;close:number;volume?:number;lastTime?:number;live?:boolean};
-type Page={rows:Bar[];first?:number|null;unit?:string;source?:string;coverage?:{status:string;notice:string};error?:string};
+type Page={rows:Bar[];first?:number|null;unit?:string;source?:string;coverage?:{status:string;notice:string};window?:{start?:number;end?:number;resolution?:number};error?:string};
 type Legend={time:number;open:number;high:number;low:number;close:number;volume:number}|null;
 export type ProChartProps={mint:string;pool?:string;symbol:string;style:'line'|'candles';metric:'price'|'market-cap';setMetric:(m:'price'|'market-cap')=>void;
  quote:string;supply:number|null;usdRate:number|null;colors:{up:string;down:string;hollow:boolean};live:LiveTrade[];onSource?:(source:{unit:string;source:string}|null)=>void};
@@ -24,7 +24,7 @@ const viewerShift=()=>typeof window==='undefined'?0:-new Date().getTimezoneOffse
 export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,usdRate,colors,live,onSource}:ProChartProps){
  const host=useRef<HTMLDivElement>(null),frame=useRef<HTMLDivElement>(null),chart=useRef<IChartApi|null>(null),main=useRef<ISeriesApi<SeriesType>|null>(null),engine=useRef<typeof import('lightweight-charts')|null>(null),mainStyle=useRef(''),volume=useRef<ISeriesApi<'Histogram'>|null>(null);
  const [ready,setReady]=useState(0),[bar,setBar]=useState(300),[range,setRange]=useState<string|null>('1D'),[mode,setMode]=useState<0|1|2>(0),[auto,setAuto]=useState(true),[full,setFull]=useState(false);
- const [bars,setBars]=useState<Bar[]>([]),[meta,setMeta]=useState<{key:string;first:number|null;unit:string;source:string;coverage?:Page['coverage'];error?:string;loading:boolean;exhausted:boolean}>({key:'',first:null,unit:'quote',source:'grainpad',loading:true,exhausted:false});
+ const [bars,setBars]=useState<Bar[]>([]),[meta,setMeta]=useState<{key:string;first:number|null;unit:string;source:string;coverage?:Page['coverage'];error?:string;loading:boolean;exhausted:boolean;cursor:number|null}>({key:'',first:null,unit:'quote',source:'grainpad',loading:true,exhausted:false,cursor:null});
  const [legend,setLegend]=useState<Legend>(null),[clock,setClock]=useState<number|null>(null),shift=useMemo(viewerShift,[]);
  const [currency,setCurrency]=useState<'usd'|'quote'>('usd');
  const key=`${mint}:${pool}:${bar}`,loadingOlder=useRef(false),pendingRange=useRef<string|null>('1D');
@@ -85,22 +85,22 @@ export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,u
 
  // Latest page for the bar size, then a poll that merges the newest bars; older pages load as the view reaches them.
  useEffect(()=>{
-  setBars([]);setMeta({key,first:null,unit:'quote',source:'grainpad',loading:true,exhausted:false});
+  setBars([]);setMeta({key,first:null,unit:'quote',source:'grainpad',loading:true,exhausted:false,cursor:null});
   return startViewerPolling(async(signal:AbortSignal)=>{
    try{const page=await fetchPage(null,signal);if(signal.aborted)return;
     setBars(previous=>mergeBars(previous,page.rows));
-    setMeta(previous=>({key,first:page.first??null,unit:page.unit||'quote',source:page.source||'grainpad',coverage:page.coverage,loading:false,exhausted:previous.key===key?previous.exhausted||page.rows.length<PAGE:page.rows.length<PAGE}));
+    setMeta(previous=>({key,first:page.first??null,unit:page.unit||'quote',source:page.source||'grainpad',coverage:page.coverage,loading:false,...pageCursor(previous.key===key?previous.cursor:null,page)}));
    }catch(e){if(!signal.aborted)setMeta(previous=>({...previous,key,loading:false,error:e instanceof Error?e.message:'Price history unavailable.'}));}
   },{intervalMs:15_000});
  },[key,fetchPage]);
  useEffect(()=>{onSource?.(meta.key===key?{unit:meta.unit,source:meta.source}:null);},[meta.unit,meta.source,meta.key,key,onSource]);
  const loadOlder=useCallback(async()=>{
-  if(loadingOlder.current||meta.exhausted||!bars.length)return;
-  const earliest=bars[0].time;if(meta.first!=null&&earliest<=meta.first)return;
+  // Step back one time window at a time from the oldest window read, even when a window had few or no trades.
+  if(loadingOlder.current||meta.exhausted||meta.cursor==null)return;
   loadingOlder.current=true;
-  try{const page=await fetchPage(earliest-1);setBars(previous=>mergeBars(page.rows,previous));if(page.rows.length<PAGE||meta.first!=null&&page.rows.some(r=>r.time<=meta.first!))setMeta(previous=>({...previous,exhausted:true}));}
+  try{const page=await fetchPage(meta.cursor-1);setBars(previous=>mergeBars(page.rows,previous));setMeta(previous=>previous.key!==key?previous:{...previous,...pageCursor(previous.cursor,page)});}
   catch{/* Older history stays where it is; the next pan retries. */}finally{loadingOlder.current=false;}
- },[bars,meta.exhausted,meta.first,fetchPage]);
+ },[meta.exhausted,meta.cursor,key,fetchPage]);
 
  const merged=useMemo(()=>usdSeries?bars:withLiveTrades(bars,live,bar),[bars,live,bar,usdSeries]);
  const rows=useMemo(()=>seriesRows(merged,{multiplier,volumeMultiplier,shift}),[merged,multiplier,volumeMultiplier,shift]);
@@ -132,7 +132,7 @@ export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,u
   // plus live), never from the fetched history alone, which may still be empty.
   const earliest=merged[0]?.time;if(earliest===undefined)return;
   const span=option[1],now=Math.floor(Date.now()/1000),from=span===null?(meta.first??earliest):now-span;
-  if(earliest>from&&!meta.exhausted&&!(meta.first!=null&&earliest<=meta.first)){void loadOlder();return;}
+  if((meta.cursor??earliest)>from&&!meta.exhausted){void loadOlder();return;}
   // Apply once the bars are drawn; the engine cannot map a time range onto an empty series.
   if(!main.current||drawn.current.key!==key||!drawn.current.length)return;
   pendingRange.current=null;
@@ -147,7 +147,7 @@ export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,u
  },[loadOlder,ready]);
  useEffect(()=>{chart.current?.applyOptions({timeScale:{secondsVisible:bar<60}});},[bar,ready]);
  // Once the first trade is loaded there is nothing older: panning stops at the start of history, as on TradingView.
- const atStart=meta.key===key&&(meta.exhausted||meta.first!=null&&bars.length>0&&bars[0].time<=meta.first);
+ const atStart=meta.key===key&&meta.exhausted;
  useEffect(()=>{chart.current?.applyOptions({timeScale:{fixLeftEdge:atStart}});},[atStart,ready]);
  useEffect(()=>{chart.current?.priceScale('right').applyOptions({mode,autoScale:auto});},[mode,auto,ready]);
  useEffect(()=>{setClock(Date.now());const id=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(id);},[]);
