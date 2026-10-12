@@ -23,3 +23,12 @@ test('levels lower count or frame rate monotonically and end in one static frame
  assert.equal(GRAIN_LEVELS[STATIC_LEVEL].fps,0);assert.equal(windowFrames(STATIC_LEVEL),0);assert.equal(windowFrames(0),30);
  assert.equal(overBudget({frames:0,totalIntervalMs:0,totalWorkMs:0},30),false);
 });
+test('grain size follows the stage short side, and smaller stages draw more grains for their area',async()=>{
+ const {grainScale,grainCount,GRAIN_COUNT_RANGE,GRAIN_MIN_SCALE}=await import('../lib/grain-stage-policy.mjs');
+ assert.equal(grainScale(714,640),1);assert.equal(grainScale(350,320),GRAIN_MIN_SCALE);assert.equal(grainScale(0,0),1);
+ assert.ok(grainScale(500,520)>GRAIN_MIN_SCALE&&grainScale(500,520)<1);
+ const phone=grainCount(350,320),desktop=grainCount(714,619);
+ assert.ok(phone>2200,'a phone stage draws more grains than the old fixed 2200');
+ assert.ok(phone/(350*320)>desktop/(714*619)*2,'phone grains are denser per pixel');
+ assert.equal(grainCount(0,300),GRAIN_COUNT_RANGE[0]);assert.equal(grainCount(4000,3000),GRAIN_COUNT_RANGE[1]);
+});

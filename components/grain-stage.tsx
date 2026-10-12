@@ -2,7 +2,7 @@
 import {useEffect,useRef} from 'react';
 import {GRAIN_ORANGE} from '@/lib/brand-colors.mjs';
 import {BRAND_ASSETS} from '@/lib/brand-assets';
-import {GRAIN_LEVELS,STATIC_LEVEL,nextGrainLevel,windowFrames} from '@/lib/grain-stage-policy.mjs';
+import {GRAIN_LEVELS,STATIC_LEVEL,grainCount,grainScale,nextGrainLevel,windowFrames} from '@/lib/grain-stage-policy.mjs';
 
 /** The grain stage: an illustration only. It never reads a wallet, a market or a transaction.
  * 0 idea: a free swarm. 1 identity: the word with an orange period. 2 on-chain: the Grainpad symbol, or a stone token. */
@@ -47,7 +47,7 @@ class Stage{
  private c!:Uint8Array;private nc!:Uint8Array;private fl!:Uint8Array;
  private F:Point[]=[];private T:Point[][]=[[],[],[]];
  private mx=-1e4;private my=-1e4;private pulse=0;
- private W=0;private H=0;private dpr=1;private ready=false;
+ private W=0;private H=0;private dpr=1;private ready=false;private k=1;
  private reduce:boolean;private visible=false;private raf=0;private last=0;
  private fontsReady=false;private disposed=false;
  // Adaptive quality (lib/grain-stage-policy.mjs): a random rank per grain decides which grains stay when the count drops.
@@ -81,7 +81,7 @@ class Stage{
   if(!this.fontsReady||this.disposed)return;
   const r=this.cv.getBoundingClientRect();if(r.width<10||r.height<10)return;
   if(Math.abs(r.width-this.W)<1&&Math.abs(r.height-this.H)<1&&this.ready)return;
-  this.W=r.width;this.H=r.height;this.dpr=Math.min(2,window.devicePixelRatio||1);
+  this.W=r.width;this.H=r.height;this.dpr=Math.min(2,window.devicePixelRatio||1);this.k=grainScale(this.W,this.H);
   this.cv.width=Math.round(this.W*this.dpr);this.cv.height=Math.round(this.H*this.dpr);
   this.build();this.assign(false);this.ready=true;
   if(this.frozen)this.snap();this.schedule();
@@ -230,7 +230,7 @@ class Stage{
   if(!this.ready)return;
   const ctx=this.ctx,dpr=this.dpr,dark=this.palette==='theme'&&document.documentElement.dataset.theme==='dark',quarter=Math.PI/2;
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,this.cv.width,this.cv.height);
-  const {x,y,s,a,c}=this,N=this.N,rank=this.rank!,active=this.active;
+  const {x,y,s,a,c,k}=this,N=this.N,rank=this.rank!,active=this.active;
   if(!this.bucket||this.bucket.length!==N)this.bucket=new Uint8Array(N);
   const bucket=this.bucket;
   for(let i=0;i<N;i++){const turn=a[i]%quarter;bucket[i]=((turn<0?turn+quarter:turn)/quarter*ROTATIONS)%ROTATIONS|0;}
@@ -239,7 +239,7 @@ class Stage{
    for(let r=0;r<ROTATIONS;r++){
     const angle=r/ROTATIONS*quarter,co=Math.cos(angle),si=Math.sin(angle);
     ctx.setTransform(co*dpr,si*dpr,-si*dpr,co*dpr,0,0);
-    for(let i=0;i<N;i++){if(c[i]!==ci||bucket[i]!==r||rank[i]>=active)continue;const h=s[i]/2,px=x[i]*co+y[i]*si,py=-x[i]*si+y[i]*co;ctx.fillRect(px-h,py-h,s[i],s[i]);}
+    for(let i=0;i<N;i++){if(c[i]!==ci||bucket[i]!==r||rank[i]>=active)continue;const size=s[i]*k,h=size/2,px=x[i]*co+y[i]*si,py=-x[i]*si+y[i]*co;ctx.fillRect(px-h,py-h,size,size);}
    }
   }
   ctx.setTransform(1,0,0,1,0,0);
@@ -254,7 +254,9 @@ export function GrainStage({mode,word,palette='theme',count,floor=.16,kick=0,cla
  useEffect(()=>{
   const node=canvas.current;if(!node||!node.getContext('2d'))return;
   const o=initial.current;
-  const instance=new Stage(node,{count:o.count??(window.innerWidth<700?2200:4500),floor:o.floor,palette:o.palette,word:o.word,mode:o.mode});
+  // Count from the stage's own size (grainCount): smaller stages draw smaller, denser grains.
+  const box=node.getBoundingClientRect();
+  const instance=new Stage(node,{count:o.count??grainCount(box.width,box.height),floor:o.floor,palette:o.palette,word:o.word,mode:o.mode});
   stage.current=instance;return()=>{instance.dispose();stage.current=null;};
  },[]);
  useEffect(()=>{stage.current?.setMode(mode);},[mode]);
