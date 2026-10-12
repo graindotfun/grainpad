@@ -3,6 +3,7 @@ import handler from 'vinext/server/fetch-handler';
 import {runScheduledIndexer,refreshMoneroOnIndexerTick} from './lib/scheduled-indexer.mjs';
 import {createPublicReadCache} from './lib/public-read-cache.mjs';
 import {EXPORT_PATH,handleMigrationExport} from './lib/migration-export.mjs';
+import {migrationFrozen,migrationFreezeResponse} from './lib/migration-freeze.mjs';
 
 declare const __GRAINPAD_COMMIT__: string | null;
 const publicReads = createPublicReadCache({
@@ -13,7 +14,7 @@ const publicReads = createPublicReadCache({
 });
 
 const worker = {
- fetch(request: Request, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string; SOLANA_RPC_URL?:string}, context: ExecutionContext) {
+ fetch(request: Request, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string; SOLANA_RPC_URL?:string; MIGRATION_WRITE_FREEZE?:string}, context: ExecutionContext) {
   // Strip untrusted policies before vinext's nonce extraction, which happens
   // before its middleware request-header overrides are applied.
   const headers = new Headers(request.headers);
@@ -22,11 +23,14 @@ const worker = {
   const clean = new Request(request, {headers});
   // Bypass app hooks: export requests must never trigger background data writes.
   if(new URL(clean.url).pathname===EXPORT_PATH)return handleMigrationExport(clean,env);
+  const frozen=migrationFreezeResponse(clean,env,__GRAINPAD_COMMIT__);
+  if(frozen!==null)return frozen;
   if(/^\/api\/market\/[1-9A-HJ-NP-Za-km-z]{32,44}\/live$/.test(new URL(clean.url).pathname))return marketLive(clean,env);
   refreshMoneroOnIndexerTick(clean,handler,env,context);
   return publicReads(clean, () => handler.fetch(clean, env, context), (task: Promise<unknown>) => context.waitUntil(task));
  },
- async scheduled(_controller: ScheduledController, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string; SOLANA_RPC_URL?:string}, context: ExecutionContext) {
+ async scheduled(_controller: ScheduledController, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string; SOLANA_RPC_URL?:string; MIGRATION_WRITE_FREEZE?:string}, context: ExecutionContext) {
+  if(migrationFrozen(env))return;
   const jobs=[runScheduledIndexer(handler,env,context)];
   // The Monero reader is activated only when its daemon binding exists. A missing
   // operator service must not turn a successful Solana indexer tick into failure.
