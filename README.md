@@ -1,88 +1,71 @@
 # grainpad.
 
-Grainpad is a live Solana launchpad built on Raydium LaunchLab. Creators launch Token-2022 tokens paired with wXMR, choose a transfer tax and earn creator trading fees. Grainpad processes the transfer tax into wXMR holder rewards and an allocated GRAIN buy-and-burn share.
+Open tools for checking Grainpad launch provenance on Monero.
 
-Trading and token balances stay on Solana. A separate record layer publishes launch provenance on Monero mainnet.
+This repository contains the **GRN1 record codec, creator authorization checks,
+daemon response validation and a runnable read-only record inspector**. The
+protocol modules are exported unchanged from the application source, with
+file hashes in [PUBLIC_EXPORT_MANIFEST.json](PUBLIC_EXPORT_MANIFEST.json).
 
-**Public token creation and holder rewards are enabled.** This overview reflects the system as of **6 October 2026**; it is not a continuous operator-health report.
+Grainpad is a Solana launchpad. Its GRN1 records commit to the Solana mint,
+metadata hash and creator authorization inside a Monero transaction. Trading
+and token balances stay on Solana. GRN1 carries no token balances or transfers
+and provides no bridge or private trading.
 
-## Official links
+## Run it
 
-- Website: [grainpad.fun](https://grainpad.fun)
-- Updates: [@GrainXMR on X](https://x.com/GrainXMR)
-- Monero reference record: [Grainpad Lab](https://grainpad.fun/lab)
-- Security reports: [security@grainpad.fun](mailto:security@grainpad.fun)
+Requires Node.js 22.22.3 or later and npm. Tests generate disposable keys in
+memory, use mocked data or a local HTTP server, and move no funds.
 
-## What creators and holders can do
+```sh
+npm ci --ignore-scripts --no-audit --no-fund
+npm test
+npm run verify:public
+```
 
-- Launch a token paired with wXMR through the launch workspace.
-- Trade on token pages and inspect the launch receipt.
-- Update banners and social links through Creator Desk without rewriting the original signed metadata.
-- Claim accrued creator trading fees.
-- Participate in Rooms using a wallet; X verification is optional.
-- Inspect holder rewards and distinguish pending amounts from finalized payment and burn receipts.
+To read a mined transaction with your own synchronized Monero mainnet daemon:
 
-SOL trading routes through a separate SOL/wXMR market when the route is enabled and passes execution checks. The launch pool and holder payouts still use wXMR. Route availability depends on liquidity and current system controls.
+```sh
+MONERO_DAEMON_URL=http://127.0.0.1:18081 npm run read:record -- --tx YOUR_TRANSACTION_HASH
+```
 
-## Transfer tax and holder rewards
+For receipt matching, supply all three immutable fields from the receipt:
 
-The launch form offers a **1–3% transfer tax in 0.1% steps**, defaulting to 1%. Official GRAIN uses 2%. This Token-2022 tax applies to applicable token transfers and is additional to trading fees.
+```sh
+MONERO_DAEMON_URL=http://127.0.0.1:18081 npm run read:record -- \
+  --tx YOUR_TRANSACTION_HASH \
+  --mint SOLANA_MINT \
+  --metadata-hash METADATA_SHA256 \
+  --creator SOLANA_CREATOR
+```
 
-For new conversion sources, realized tax-conversion proceeds are allocated as follows:
+The inspector checks the signature, daemon-reported block membership and
+confirmations, then rechecks the block. Ten confirmations and matching supplied
+identity produce `receipt-matched`; fewer confirmations produce `pending`.
+Without receipt fields, a confirmed record is only `signature-valid`.
+This is a daemon observation, not independent Monero consensus or proof of
+a completed Solana launch. [Verification details](docs/VERIFICATION.md).
 
-| Destination | Share |
-| --- | ---: |
-| Eligible holders of the token that generated the tax | 70% |
-| Official GRAIN purchase and burn | 15% |
-| Grainpad | 15% |
+## Build with it
 
-The Grainpad share is gross revenue before operating costs. Previously frozen allocations retain their original economics.
+- [GRN1 binary format and signature domains](docs/GRN1.md)
+- [`lib/monero-record.mjs`](lib/monero-record.mjs): encode, decode and verify v1/v2 records
+- [`lib/monero-creator-message.mjs`](lib/monero-creator-message.mjs): derive authorization from reviewed identity
+- [`lib/monero-index.mjs`](lib/monero-index.mjs): bounded daemon reads, confirmation and receipt helpers
+- [`lib/read-record.mjs`](lib/read-record.mjs): one-transaction mainnet inspector
+- [Contributing](CONTRIBUTING.md) and [private vulnerability reporting](SECURITY.md)
 
-Grainpad's collector withdraws withheld tokens, converts them to wXMR, records eligible-holder credits and pays them in batches. Eligibility uses recorded balance snapshots, policy exclusions and rounding. Holder rewards are separate from creator trading fees.
+## Release scope
 
-**The collector is a Grainpad-operated off-chain service with a signing key.** Collection, conversion, snapshots, payout scheduling and burn execution depend on that service. These steps are automated, but the mechanism is not decentralized or trustless. Pending credits and allocated burn funds are not completed payments or burns. Funding, minimum payment thresholds, liquidity, RPC failures and paused controls can delay execution. No fixed payout schedule or yield is promised.
+This is a focused open-source component release. The full website, operated
+transaction services, production configuration, reward execution and private
+development history are outside this release. It is not a self-hostable copy
+of the complete Grainpad product or an independently audited implementation.
 
-## What the Monero record proves
+Original exported code and tools use **GPL-3.0-only**. Dependencies retain their
+licenses. Source availability does not grant rights to Grainpad branding or
+imply endorsement of a fork. See [LICENSE](LICENSE) and
+[third-party notices](THIRD_PARTY_NOTICES.md).
 
-Grainpad's `GRN1` record commits to a Solana mint and metadata hash and carries the creator's Solana authorization. It is written into a Monero mainnet transaction's `tx_extra`.
-
-Grainpad marks a record verified only after at least **10 Monero confirmations**, a valid creator signature and a match with the launch receipt. Each launch has its own publication and confirmation status; the verified GRAINU reference record does not establish that every launch has already been recorded.
-
-The record provides provenance. It contains no token balances or transfers, does not bridge assets, spends no user XMR and does not make Solana trading private. Grainpad tokens remain Solana tokens.
-
-## wXMR and current trust assumptions
-
-**wXMR is a third-party wrapped asset, not native XMR.** Grainpad does not issue it, custody its backing or verify its backing or redemption. Using wXMR therefore adds the wrapped asset's issuer, custody and redemption risks.
-
-Grainpad's platform admin is currently a dedicated, founder-controlled **single-signature wallet**. It can change platform fees, recipients and launch rules. **No multisig or timelock is active.** The separate collector key controls transfer-tax withdrawal and reward execution; separating the two wallets does not remove single-key control.
-
-Users approve transactions in their own wallets. The interface, RPC providers, receipt indexing and operator services introduce availability and verification dependencies. Raydium's programs and migration infrastructure have their own authorities and dependencies.
-
-Neither a Monero record nor a published receipt guarantees token value, wrapped-asset solvency or investment safety.
-
-## Trading fees
-
-| Phase | Configured fees |
-| --- | --- |
-| Bonding curve | 0.25% Raydium protocol + 0.75% Grainpad + 0.25% creator = 1.25% |
-| After graduation, selected CPMM configuration | 0.25% trade fee + separate 1% creator fee, where enabled |
-
-The post-graduation fees replace the curve split. Transfer tax, network costs, slippage and applicable third-party fees are separate. Actual debits depend on trade direction and rounding. Platform settings are mutable; inspect the current transaction and chain configuration before relying on a quoted rate.
-
-## Public identities
-
-| Role | Solana address |
-| --- | --- |
-| Official GRAIN mint | `FCN2KLyUGT9EddKf8MZYjPce8CWxUid7nWpAx9ograin` |
-| Platform admin / platform revenue recipient | `FuAqW3zEPjVFVeE8ditPabjU5iJbF3BzE2i4djrvWQFM` |
-| Collector / transfer-tax and platform claim authority / Fee Key authority | `BxJZSApDy7i4VVAQSRCL5FQJ2RCCP676PUWKYEcY1Z6i` |
-
-Verify the full mint address. A `grain` or `grn` suffix alone does not prove authenticity. GRAINU is a historical rehearsal token, distinct from official GRAIN.
-
-## About this repository
-
-This repository contains public project information. Application development is maintained in a private repository. This repository does not contain the application source code, verification tools or a buildable release, and does not provide independent source reproducibility.
-
-This overview is not an independent security audit. Grainpad uses existing Raydium programs for launches and migration; it does not deploy a custom Grainpad launchpad program.
-
-Grainpad's Monero record research was inspired by p/xmr. References to Monero, p/xmr, Solana or Raydium do not imply affiliation or endorsement.
+[Website](https://grainpad.fun) · [Lab](https://grainpad.fun/lab) ·
+[Updates](https://x.com/GrainXMR)

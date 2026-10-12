@@ -1,0 +1,126 @@
+{
+  "schema": "grainpad.public-core.v1",
+  "sourceCommit": "1819c5b10a8b31c869ba99399ccb970bf0ed3024",
+  "files": [
+    {
+      "path": ".github/workflows/verify.yml",
+      "sha256": "d8bbe9db1de3323bcdb42a9abc0b81a10db20eb5942d5ab8b5d6500bce09e4f1",
+      "origin": "public-tooling"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "3aa425e1c07bb6958b5e5f08fd3328576d8f79b3e8a85fb117e4b623f10394a7",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "24b673efe36369139e88ed1aea0afab9c42332a0f80feaeda97d0d544004f9a8",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "8e985a24f834ab59c8f61c7ddc405752d69c1850d06acf3fb8254c5f08eaa994",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "origin": "unchanged-source"
+    },
+    {
+      "path": "README.md",
+      "sha256": "298387f5f7fb59bbea0d6ab2f18a71f64334f94a100f50f2ec48579f8d53c7ae",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "29e9d0cde9199ada38c2fbf3388bc141b9aab5db68156400dcc4af241618731b",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "00891924fa4397a5539f31c108f5b00a5efc067cd3ab75fce56f7d1a3e3d9c21",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "docs/GRN1.md",
+      "sha256": "2f4ee891f97e138038cc0297143a230cd76ced1011e760b0b55887bc7c45e137",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "docs/VERIFICATION.md",
+      "sha256": "f803e085aab85206d66bd5c02abfbd97bd636d1d46d14742573b763aaa9244ed",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "lib/monero-creator-message.mjs",
+      "sha256": "73bc68d0c96f248561fec0bf0ac8fe018eeaa7d90e5799c316a971a231391d63",
+      "origin": "unchanged-source"
+    },
+    {
+      "path": "lib/monero-creator-text-v2.mjs",
+      "sha256": "9b61b4dc67303011643c3e470a4c3a66f80498c1d50f38f6fd48f503b1c35a23",
+      "origin": "unchanged-source"
+    },
+    {
+      "path": "lib/monero-daemon-validation.mjs",
+      "sha256": "b125e2a4dbf7cde86238df942eeed95cfa598c85f37c89ac2167dfa8016d65f5",
+      "origin": "unchanged-source"
+    },
+    {
+      "path": "lib/monero-index.mjs",
+      "sha256": "38626439a782130af4fc16273387c19e00a0aaab8057e1b43b7abce4d156f205",
+      "origin": "unchanged-source"
+    },
+    {
+      "path": "lib/monero-record-format.mjs",
+      "sha256": "07bc8d6c6ab04413cd41426d9d21217795061bc3df2421714bde8417f318b288",
+      "origin": "unchanged-source"
+    },
+    {
+      "path": "lib/monero-record.mjs",
+      "sha256": "fa583c9a79c1888dcb4d34b7614cbcb18f2ecec54312a8d5ebb44a29499a3688",
+      "origin": "unchanged-source"
+    },
+    {
+      "path": "lib/read-record.mjs",
+      "sha256": "940a6569b577903d16ca7d805feaa7b893c195b9b0cda7a058c02c8731d3d0c6",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "29a58cb48edc903edb085ad85a75b5cc32e0fc73b4fd423873a7931146411195",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "package.json",
+      "sha256": "66fd4af4d888ae5691f92278cfbc2a941ccca934f8051d550379db311b27970f",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "scripts/check-public-boundary.mjs",
+      "sha256": "5f999287a7a045032cbd0215e947c85360acfc6db3162405103ef4be051d8589",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "scripts/read-record.mjs",
+      "sha256": "34ba3a3e792d8980c0236b51f4a52e26df74d994b2faed0b99939f53ba54a16f",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "tests/monero-daemon.test.mjs",
+      "sha256": "6163c4ddc7ab66d040fac558cb3edca536c7d198569d77edf3fcfb9709d3b2e2",
+      "origin": "unchanged-source"
+    },
+    {
+      "path": "tests/public-core.test.mjs",
+      "sha256": "36759d9e6b58af6429e8b7b14e2642649d8b9e1beb1a5d7cba5c172978c250b7",
+      "origin": "public-tooling"
+    },
+    {
+      "path": "tests/read-record.test.mjs",
+      "sha256": "22ba05914f9827b2478ffa8ebf5c872bac493a4d1a3872d638bca1ebce4a5c8b",
+      "origin": "public-tooling"
+    }
+  ]
+}
