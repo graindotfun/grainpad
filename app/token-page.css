@@ -97,7 +97,7 @@
 .public-tape .segmented button{color:var(--record-muted)}
 .public-tape .segmented button[aria-pressed=true]{background:#fff;color:var(--record-ink);box-shadow:0 0 0 1px var(--record-line)}
 .ledger{list-style:none;margin:14px 0 0;padding:0;border-top:1px solid var(--record-ink)}
-.ledger-row{display:grid;grid-template-columns:64px 118px minmax(0,1fr) 108px 64px;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--record-rule);font-size:13px}
+.ledger-row{display:grid;grid-template-columns:150px minmax(0,1fr) 108px 64px;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--record-rule);font-size:13px}
 .ledger-seq{color:var(--record-muted);font:500 11px/1 var(--font-code)}
 .ledger-side{display:inline-flex;align-items:center;gap:7px;font-weight:600}
 .ledger-side i{width:7px;height:7px;border-radius:2px;background:var(--record-muted);flex:none;align-self:center}
@@ -176,8 +176,8 @@
  .market-stat:nth-child(n+3){border-top:1px solid var(--market-border)}
  .market-chart-frame{height:200px}
  .public-tape{padding:16px 14px 14px!important}
- .ledger-row{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"seq side amount" "wallet wallet time";row-gap:6px;padding:10px 0}
- .ledger-seq{grid-area:seq}.ledger-side{grid-area:side}.ledger-wallet{grid-area:wallet;justify-self:start;font-size:11px}.ledger-time{grid-area:time}
+ .ledger-row{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"side amount" "wallet time";row-gap:6px;padding:10px 0}
+ .ledger-side{grid-area:side}.ledger-wallet{grid-area:wallet;justify-self:start;font-size:11px}.ledger-time{grid-area:time}
  .ledger-amount{grid-area:amount;text-align:right}
  .ledger-amount small{display:none}
  /* Swap becomes a bottom sheet opened from the sticky bar. */

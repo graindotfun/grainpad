@@ -969,3 +969,18 @@ html[data-theme] .official-profile-name .official-profile-dot{display:inline-blo
  .pro-legend{font-size:10.5px}
  .pro-clock{order:3;width:100%}
 }
+/* Tape: no sequence column, amounts read in SOL, and the list scrolls inside its card, loading earlier records as it
+   nears the end (no "Earlier" button). The filter tabs keep clear air above the list. */
+.gx.gx-token .public-tape .tape-head{margin-bottom:22px}
+.gx.gx-token .public-tape .segmented{margin:0 0 20px}
+.gx.gx-token .ledger-scroll{max-height:min(624px,70vh);overflow-y:auto;overscroll-behavior:contain;border-top:1.5px solid var(--gx-ink);scrollbar-width:thin;scrollbar-color:var(--gx-rule) transparent}
+.gx.gx-token .ledger-scroll:focus-visible{outline:2px solid var(--grain-orange);outline-offset:2px}
+.gx.gx-token .ledger-scroll .ledger{margin:0;border-top:0}
+.gx.gx-token .ledger-row{grid-template-columns:minmax(150px,190px) minmax(0,1fr) 120px 64px;gap:16px;padding:12px 0}
+.gx.gx-token .ledger-chip{margin-left:8px;padding:1px 7px;border:1px solid var(--gx-rule);border-radius:999px;font:400 10.5px var(--gx-mono)!important;color:var(--gx-mute)}
+.gx.gx-token .ledger-sentinel{list-style:none;padding:16px 0 6px;text-align:center;font:400 11px var(--gx-mono);color:var(--gx-mute)}
+.gx.gx-token .ledger-foot{margin-top:14px}
+@media(max-width:640px){
+ .gx.gx-token .ledger-row{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"side amount" "wallet time";gap:6px 12px}
+ .gx.gx-token .ledger-scroll{max-height:min(560px,64vh)}
+}

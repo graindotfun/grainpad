@@ -2,9 +2,10 @@
 import {useEffect,useRef,useState} from 'react';
 import {ArrowUpRight} from 'lucide-react';
 import {startViewerPolling} from '@/lib/viewer-polling.mjs';
-import {formatAmount,formatUnits,recordNumber,relativeTime,shortAddress} from '@/lib/price-format';
+import {formatAmount,relativeTime,shortAddress} from '@/lib/price-format';
 import {tapeLedgerRows} from '@/lib/tape-ledger.mjs';
-import {Button} from './ui/button';
+import {useQuotePrices} from '@/hooks/use-quote-prices';
+import {derivedSolWxmr} from '@/lib/reward-credit-illustration.mjs';
 /** `seq` is the event's position in the token's full indexed history. Integration point: the indexer does not
  * return it yet, so numbers are derived only once the whole history is loaded and are otherwise withheld.
  * `provisional` rows are confirmed but not yet finalized (PR #39 catch-up); they carry display amounts instead of raw units. */
@@ -39,35 +40,48 @@ function Ledger({mint,symbol,feed}:Props&{feed:TapeState}){
  const [older,setOlder]=useState<TapeEvent[]>([]),[cursor,setCursor]=useState<string|null|undefined>(undefined),[shown,setShown]=useState(PAGE),[loading,setLoading]=useState(false),[moreError,setMoreError]=useState(''),[filter,setFilter]=useState('all'),[now,setNow]=useState(()=>Date.now());
  const generation=useRef(0);
  useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
+ // Amounts read in SOL: the pool trades in its quote asset (wXMR), converted at the current SOL/wXMR rate.
+ const {prices,now:priceNow}=useQuotePrices(),wxmrPerSol=derivedSolWxmr(prices,priceNow) as number|null;
+ // Infinite scroll: reaching the end of the list loads the next records.
+ const scroller=useRef<HTMLDivElement>(null),sentinel=useRef<HTMLLIElement>(null),loadMore=useRef<()=>void>(()=>{});
  const data=feed.data,next=cursor===undefined?data?.nextCursor??null:cursor;
  const {finalized:all,confirmed}=tapeLedgerRows(data?.events||[],older,feed.pending);
- const complete=!!data&&next===null,numbered:TapeEvent[]=[...confirmed,...all.map((e,i)=>({...e,seq:e.seq??(complete?all.length-i:undefined)}))];
- const events=numbered.filter(e=>filter==='all'||filter==='trades'&&(e.kind==='buy'||e.kind==='sell')||filter==='fees'&&e.kind.startsWith('fee-'));
+ const events=[...confirmed,...all].filter(e=>filter==='all'||filter==='trades'&&(e.kind==='buy'||e.kind==='sell')||filter==='fees'&&e.kind.startsWith('fee-'));
  async function earlier(){
   if(shown<events.length){setShown(n=>n+PAGE);return;}
   if(!next||loading)return;const current=++generation.current;setLoading(true);setMoreError('');
   try{const r=await fetch(`/api/tape/${encodeURIComponent(mint)}?before=${encodeURIComponent(next)}&seconds=300`);if(!r.ok)throw Error('Earlier records are unavailable.');const body=await r.json() as TapeFeed;if(current===generation.current){setOlder(previous=>[...previous,...body.events]);setCursor(body.nextCursor);setShown(n=>n+PAGE);}}
   catch(e){setMoreError(e instanceof Error?e.message:'Earlier records are unavailable.');}finally{setLoading(false);}
  }
+ const hasMore=!!data&&(shown<events.length||!!next);
+ useEffect(()=>{loadMore.current=()=>void earlier();});
+ useEffect(()=>{
+  const root=scroller.current,target=sentinel.current;if(!root||!target||!hasMore)return;
+  const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))loadMore.current();},{root,rootMargin:'0px 0px 160px 0px'});
+  observer.observe(target);return()=>observer.disconnect();
+ },[hasMore,shown,events.length,loading]);
  return <section id="public-tape" className="panel corner-panel public-tape" aria-labelledby="tape-heading">
   <div className="corner-head"><span className="corner-label">Tape</span><span className="corner-label is-right">{data?`${all.length}${next?'+':''} finalized · ${confirmed.length} confirmed`:'indexed'}</span></div>
   <div className="tape-head"><h2 id="tape-heading" className="display-title">tape<span>.</span></h2><p>Observed trades and fees, curve to Raydium. Confirmed rows stay separate until the finalized index catches up.</p></div>
   <div className="segmented" role="group" aria-label="Event type">{[['all','All'],['trades','Trades'],['fees','Fees']].map(([value,label])=><button key={value} aria-pressed={filter===value} onClick={()=>{setFilter(value);setShown(PAGE);}}>{label}</button>)}</div>
   {feed.error&&!data&&<p role="status" className="ledger-empty">{feed.error}</p>}
   {!data&&!feed.error&&<p role="status" className="ledger-empty">Reading the ledger…</p>}
-  {data&&(events.length?<ol className="ledger" aria-label="Indexed events, newest first">{events.slice(0,shown).map(e=>{
+  {data&&(events.length?<div ref={scroller} className="ledger-scroll" tabIndex={0} aria-label="Indexed events, scroll for earlier records"><ol className="ledger" aria-label="Indexed events, newest first">{events.slice(0,shown).map(e=>{
    const side=e.kind==='buy'||e.kind==='sell'?e.kind:'event',time=e.blockTime?e.blockTime*1000:null;
-   const quote=e.display?`${formatAmount(e.display.quote,3)} ${e.quoteSymbol||data.quote}`:e.quoteAmount&&e.quoteDecimals!==undefined?`${formatUnits(e.quoteAmount,e.quoteDecimals,3)} ${e.quoteSymbol||data.quote}`:null;
-   const tokens=e.display?`${formatAmount(e.display.tokens,3)}${symbol?` ${symbol}`:''}`:e.baseAmount&&e.baseDecimals!==undefined&&(e.kind==='buy'||e.kind==='sell')?`${formatUnits(e.baseAmount,e.baseDecimals,3)}${symbol?` ${symbol}`:''}`:null;
+   const sym=e.quoteSymbol||data.quote,onChain=e.display?e.display.quote:e.quoteAmount&&e.quoteDecimals!==undefined?Number(e.quoteAmount)/10**e.quoteDecimals:null;
+   const inSol=onChain==null?null:sym==='SOL'?onChain:wxmrPerSol?onChain/wxmrPerSol:null;
+   const quote=onChain==null?null:inSol!=null?`${sym==='SOL'?'':'≈ '}${formatAmount(inSol,3)} SOL`:`${formatAmount(onChain,3)} ${sym}`;
+   const quoteTitle=onChain!=null&&sym!=='SOL'?`${formatAmount(onChain,4)} ${sym} on chain${inSol!=null?' · SOL at the current SOL/wXMR rate':''}`:undefined;
+   const tokenCount=e.display?e.display.tokens:e.baseAmount&&e.baseDecimals!==undefined&&(e.kind==='buy'||e.kind==='sell')?Number(e.baseAmount)/10**e.baseDecimals:null;
+   const tokens=tokenCount==null?null:`${formatAmount(tokenCount,3)}${symbol?` ${symbol}`:''}`;
    return <li key={e.id} className={`ledger-row is-${side}${e.provisional?' is-provisional':''}`}>
-    <span className="ledger-seq" title={e.provisional?'Confirmed on chain; the finalized index has not written it yet':e.seq===undefined?'Numbered once the full history is loaded':undefined}>{e.provisional?'confirmed':e.seq===undefined?'#····':recordNumber(e.seq)}</span>
-    <span className="ledger-side"><i aria-hidden="true"/>{LABEL[e.kind]||e.kind}{e.source!=='curve'&&SOURCE[e.source]?<small> · {SOURCE[e.source]}</small>:null}</span>
-    <span className="ledger-amount">{quote||'—'}{tokens&&<small>{tokens}</small>}</span>
+    <span className="ledger-side"><i aria-hidden="true"/>{LABEL[e.kind]||e.kind}{e.source!=='curve'&&SOURCE[e.source]?<small> · {SOURCE[e.source]}</small>:null}{e.provisional&&<small className="ledger-chip" title="Confirmed on chain; the finalized index has not written it yet">confirmed</small>}</span>
+    <span className="ledger-amount" title={quoteTitle}>{quote||'—'}{tokens&&<small>{tokens}</small>}</span>
     <a className="ledger-wallet" href={`/creator/${e.wallet}`} title={e.wallet}>{shortAddress(e.wallet)}</a>
     <a className="ledger-time" href={`https://explorer.solana.com/tx/${e.signature}`} target="_blank" rel="noreferrer" title={time?new Date(time).toLocaleString():`Slot ${e.slot}`}>{time?relativeTime(time,now):`slot ${e.slot}`}<ArrowUpRight size={11} aria-hidden="true"/></a>
-   </li>;})}</ol>:<p className="ledger-empty">{filter==='all'?'No finalized events yet. The first trade opens the ledger.':'No matching records in the loaded history.'}</p>)}
-  {data&&(shown<events.length||next)&&<Button variant="outline" className="ledger-more" disabled={loading} onClick={()=>void earlier()}>{loading?'Loading…':'Earlier'}</Button>}
+   </li>;})}
+   <li ref={sentinel} className="ledger-sentinel" aria-live="polite">{hasMore?(loading?'Loading earlier records…':moreError?<button type="button" className="gx-ghost" onClick={()=>void earlier()}>Retry</button>:'Scroll for earlier records'):'Start of the indexed history'}</li></ol></div>:<p className="ledger-empty">{filter==='all'?'No finalized events yet. The first trade opens the ledger.':'No matching records in the loaded history.'}</p>)}
   {moreError&&<p role="status" className="ledger-empty">{moreError}</p>}
-  {data&&<p className="ledger-foot">{data.coverage}</p>}
+  {data&&<p className="ledger-foot">{data.coverage}{data.quote!=='SOL'&&wxmrPerSol?` · Amounts in SOL at the current SOL/${data.quote} rate; on-chain amounts are in ${data.quote} (hover a row).`:''}</p>}
  </section>;
 }
