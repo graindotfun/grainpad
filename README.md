@@ -1,4 +1,4 @@
-# Grainpad launchpad — public source
+# Grainpad launchpad: public source
 
 The source of the grainpad.fun launchpad: website, product logic, Solana transaction builders, wallet signing helpers, receipts and charts, GRN1 Monero provenance records, read-only verifiers and tests. Files and commit history are exported from Grainpad's private development repository through a reviewed allowlist. Commits keep their original author dates; distribution commits add the public packaging and verification inventory.
 
