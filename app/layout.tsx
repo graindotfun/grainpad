@@ -21,8 +21,7 @@ import "./profile.css";
 import "./rewards-calculator.css";
 import "./price-tab.css";
 import "./grains.css";
-import {PriceTab} from "@/components/price-tab";
-import {ContractAddressBar} from "@/components/contract-address-bar";
+import {ChainContextChrome} from "@/components/chain-context-chrome";
 import {trackerReleased} from "@/lib/utility-rewards-tracker/server";
 
 export const metadata: Metadata = {
@@ -51,7 +50,7 @@ export default function RootLayout({
         <script src="/theme-init.js"/>
         <script src="/kernel.js" defer/>
       </head>
-      <body className="antialiased"><ContractAddressBar/>{children}<PriceTab/></body>
+      <body className="antialiased"><ChainContextChrome slot="contract"/>{children}<ChainContextChrome slot="prices"/></body>
     </html>
   );
 }

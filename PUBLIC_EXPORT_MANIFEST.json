@@ -1,12 +1,11 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "51ddae93ef246d4050519870a9742432a169b11a",
-  "releaseDate": "2026-10-13",
-  "scope": "Launchpad source release and GRN1 tools; operated services and private records excluded",
+  "sourceCommit": "46ec02a475aa331802172f30d86f2297a02b54ff",
+  "releaseKind": "incremental-reviewed-source",
   "files": [
     {
       "path": ".github/workflows/verify.yml",
-      "sha256": "d8bbe9db1de3323bcdb42a9abc0b81a10db20eb5942d5ab8b5d6500bce09e4f1"
+      "sha256": "394c6405b17e046f7f3dad5a8e7fa1988deefe1b48b77fe5cdff15d79b956beb"
     },
     {
       "path": ".gitignore",
@@ -14,15 +13,15 @@
     },
     {
       "path": "AGENTS.md",
-      "sha256": "519fb305b3f9984083dc80516c76a0a6a2ad9ae99b36585afe0e8e447176302d"
+      "sha256": "afe3087c979e2224bcd8cc630a402bebc54e1dc99ebfe633a02c4c8960eb1b17"
     },
     {
       "path": "CLAUDE.md",
-      "sha256": "c64b22531b6584a93da10b708dfb0bb26c1e8a2294dd5261f2f4dfc19c310473"
+      "sha256": "f9cdba197d44af4a2e6a992943c6ea6db5dee7281322d4d72dbdb2ebad4a0e1f"
     },
     {
       "path": "CONTRIBUTING.md",
-      "sha256": "81968ff2756402a5362dbf102fcb39da728582b52f687bdf5c75ba5b53063ff0"
+      "sha256": "58b0e7c2f9fe4fab111d3a8ad11fc484801b5ba667601e0ad8c53278f9f2029f"
     },
     {
       "path": "LICENSE",
@@ -30,7 +29,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "b6c47a2d51b0e618234047e4cb77e69ac46677ce308afa6963f50a7b0de3b229"
+      "sha256": "6af8e8fac98bc727fc82dc84ed95948ea3e1c148148ab73f18c334668f8db48d"
     },
     {
       "path": "SECURITY.md",
@@ -38,7 +37,7 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "sha256": "00891924fa4397a5539f31c108f5b00a5efc067cd3ab75fce56f7d1a3e3d9c21"
+      "sha256": "bb59c7ccf99eb78e3135a38b9ea5ad3d7961d08b4b4bd5f4818ae9d7c4101de6"
     },
     {
       "path": "app/api/assets/[key]/route.ts",
@@ -246,7 +245,7 @@
     },
     {
       "path": "app/grains.css",
-      "sha256": "9ca2090b3682473ae9189424a267b71f07438f8a16d39349867def8b119e9934"
+      "sha256": "f7f5ea3df7b23d479f77441f286e5e27d48a421e6926fea240fa349519d2ba4d"
     },
     {
       "path": "app/lab/layout.tsx",
@@ -265,12 +264,36 @@
       "sha256": "546b51e92c86bc7b19ba37a8d7bf959b650134fb285a97826b2ba9f86a5d9922"
     },
     {
+      "path": "app/launch-network-picker.css",
+      "sha256": "72a0c673381504889c5bf1e67cfd0c46700a100237829af56b125afff43d9b18"
+    },
+    {
       "path": "app/launch/layout.tsx",
       "sha256": "7a45c72c9672296e9ed18066f42ddfdad9e4520cc2ed6c38455e3e61f24817ed"
     },
     {
       "path": "app/launch/page.tsx",
-      "sha256": "96f6971492692d9625b2a9c94ab84fca90dd6ea1c3a3e70f6a2868411c2c923a"
+      "sha256": "019302f9e845226b9531c34f3f333df17812bda1f9bac1617771b5dc7651d3cd"
+    },
+    {
+      "path": "app/launch/robinhood/mainnet/page.tsx",
+      "sha256": "847db821e670d2e61e59f35a16d3b197d5c60681dc851f542de06eb7580839b1"
+    },
+    {
+      "path": "app/launch/robinhood/page.tsx",
+      "sha256": "f51613eeb00409aef268650391c825f66fc78fb44b59632fdbab8eb4aff535b4"
+    },
+    {
+      "path": "app/launch/robinhood/testnet/page.tsx",
+      "sha256": "8ba45b993e2ee4653272310a90bfe6f59a7549cfc4a0286f162b0c8824f798f1"
+    },
+    {
+      "path": "app/launch/solana/devnet/page.tsx",
+      "sha256": "f5ef19e5e018a57b42b9b630019aea77d62b170e2ba52bb82515a3b6b5e495a7"
+    },
+    {
+      "path": "app/launch/solana/mainnet/page.tsx",
+      "sha256": "c383210e4d64ff349133479ce4923b100747db6eaefb3daa0498ec1655485a42"
     },
     {
       "path": "app/launches/layout.tsx",
@@ -282,7 +305,7 @@
     },
     {
       "path": "app/layout.tsx",
-      "sha256": "2af438ede56e35647e6cf9f83efd6eefab5e9712f2bec80ae6b7059519756b53"
+      "sha256": "f518f970bf8b64057ae1a7310e82b85cd5a457d588d2d5c48ae77bf27d648236"
     },
     {
       "path": "app/marketing-refinements.css",
@@ -351,6 +374,10 @@
     {
       "path": "app/roadmap/page.tsx",
       "sha256": "d4433e4ab939e5f6f83da1065ea6f65ee7474bd2fbf292f3f95a819656b6479e"
+    },
+    {
+      "path": "app/robinhood-launch.css",
+      "sha256": "f00bbb690422e1f5b345d6345ccd4fef346d674c65295396f126b5e45a332d01"
     },
     {
       "path": "app/robots.txt/route.ts",
@@ -437,6 +464,10 @@
       "sha256": "8c4d6175516b475109c323b96a346eb530d1212df7d15279d3664e5475164a34"
     },
     {
+      "path": "components/chain-context-chrome.tsx",
+      "sha256": "a1419858508a8318c06f1cbeaaefe17e83cac8e9ba04df15595032d4f5699fc0"
+    },
+    {
       "path": "components/chart-boundary.tsx",
       "sha256": "ddff8cbe242c3cd7c138d1a19b21b3fcf41ded7469691ffe676140c02aedbd1f"
     },
@@ -485,6 +516,10 @@
       "sha256": "25a26e3b89e4f5235b0dbfde20f5e8ed46072fd19c9a13b7d92eb5a7ce4c363c"
     },
     {
+      "path": "components/github-link.tsx",
+      "sha256": "81e62b916604c01433065b144d5d967840be1c07b7b91b47159bdf2145d3c813"
+    },
+    {
       "path": "components/graduated-fees.tsx",
       "sha256": "fb8bbb8bcd8fce44becc95dcf6a88f168717232a460161dbd826744b11ee4c2f"
     },
@@ -502,7 +537,7 @@
     },
     {
       "path": "components/grain-stage.tsx",
-      "sha256": "ef918baa004bd826925a3960f93faa3316d3a9b0c223bb1c999532640c92457b"
+      "sha256": "8d8cd2d2c99025ab0b868e243afb3e6350a20d820ad0faec200cda05727f0e19"
     },
     {
       "path": "components/grain-ui.tsx",
@@ -514,7 +549,7 @@
     },
     {
       "path": "components/homepage.tsx",
-      "sha256": "8b0b1d12a1749e665464a0f71010520759e2c9e35cc44d8f666e8ab9763cddb7"
+      "sha256": "6c4c7aa28bdc82e0e0543ff098652e8789b8d1e5ac54671d7f4db117535737ec"
     },
     {
       "path": "components/identity-name.tsx",
@@ -541,6 +576,26 @@
       "sha256": "5013a37eba1ddb7e163e920e2d3739b88f695e921f1fd3db60b47d1519ec87c3"
     },
     {
+      "path": "components/launch-network-chip.tsx",
+      "sha256": "6b5106bcff175345d1855612d70c4aa97cd7bb1f7456972d3e4659b60cea9f36"
+    },
+    {
+      "path": "components/launch-network-home-select.tsx",
+      "sha256": "7956b0d876bf9581fc53eed127f46fff804b00343d53eb424e5bfcac8fcaa6f6"
+    },
+    {
+      "path": "components/launch-network-logo.tsx",
+      "sha256": "c82003e13b52d895e0961e03f04539c1d9df1f7ccf4ef476063a6d896d57bc6c"
+    },
+    {
+      "path": "components/launch-network-options.tsx",
+      "sha256": "02ae6c55d327bea2cfadd19af09f920298a2a9c20f9f835c90f7d481344e48c3"
+    },
+    {
+      "path": "components/launch-network-picker.tsx",
+      "sha256": "559c47a7dd9868df632185be767abcab9498de0ec04d3fe239088392ed4807a9"
+    },
+    {
       "path": "components/launch-proof.tsx",
       "sha256": "4bfb4f513207b2895f68f68df50d102a54831a183f46351c715ad821e55ab8e4"
     },
@@ -553,12 +608,16 @@
       "sha256": "ba6aff07843fb61448387a4c6b5223ef560d77990c21e703d5f9b67805bce0e9"
     },
     {
+      "path": "components/launch-token-preview-card.tsx",
+      "sha256": "d7b71a566662dd3ae7f79f8ceea64743bd5b31490df584756465b15b16bb528b"
+    },
+    {
       "path": "components/launch-transfer-tax.tsx",
       "sha256": "ce554da66f5ab618fe9eed0fbfa08c57ef1cd430eadca53db726c65296035d88"
     },
     {
       "path": "components/launch-workspace.tsx",
-      "sha256": "0a0033c903d90c4e96c4eb38f0ef41ac99f790e39e46eae88ec7900a66c97003"
+      "sha256": "a0bb90e7f1828f76a0c0e7ce84e49456d0b53f49277bdb345ace2fdad44c77b3"
     },
     {
       "path": "components/live-market-chart.tsx",
@@ -602,11 +661,43 @@
     },
     {
       "path": "components/protected-launch-workspace.tsx",
-      "sha256": "3011c7fe083ac71b7b945b4dfa48dd2c334600e0ae04783eff79090da7aeb50e"
+      "sha256": "537684d27977b2c43e95885ebb09798b33b617119ba6fa833cd57789b0b17774"
     },
     {
       "path": "components/reality-check.tsx",
       "sha256": "09c5fd547afc84683153c1026d646aa3b97743d64a42e79c80f5da7afca9872c"
+    },
+    {
+      "path": "components/robinhood-create.tsx",
+      "sha256": "6b5659bde0ac247ccc03afb7ae0751628df5dce3816ce07546b63c945396a6e1"
+    },
+    {
+      "path": "components/robinhood-header.tsx",
+      "sha256": "20726997213782c1ff9eef48ffa5373625b7f5d0cab0529a27abc42d77f076d5"
+    },
+    {
+      "path": "components/robinhood-mainnet-create.tsx",
+      "sha256": "3fa63dd7a7d290c1300deb2f95aad3f6c7124c736fc2944ca8a5dec81d56bbca"
+    },
+    {
+      "path": "components/robinhood-mainnet-header.tsx",
+      "sha256": "53827c3ca428213fbb29f01bb40581542bfaf82752940250bb39b19bec61e3ec"
+    },
+    {
+      "path": "components/robinhood-mainnet-identity.tsx",
+      "sha256": "9b3b312119bcc06ae88761e83d00d5c43fbe1a085eadd32edd9801097df1848e"
+    },
+    {
+      "path": "components/robinhood-mainnet-market.tsx",
+      "sha256": "7b6608dd194741fe806ec096f795d068558049e55ede513a4ed58f540bc1ad5f"
+    },
+    {
+      "path": "components/robinhood-market.tsx",
+      "sha256": "54172add70ea75a5e4e218190ff16d6a77f0fcf94152f52540839923d0071ace"
+    },
+    {
+      "path": "components/robinhood-provenance.tsx",
+      "sha256": "051794f67811af4d7db27ade8031ac34d97ef1f219f1e930ae64e4c31624d7ec"
     },
     {
       "path": "components/rules-badge.tsx",
@@ -614,11 +705,11 @@
     },
     {
       "path": "components/site-footer.tsx",
-      "sha256": "c65a9d40d3a9cb9496235a196960a65e45aa8b52bf9f3deb71fd80e3874427a7"
+      "sha256": "3dbc999aa6a74b45c967c483726f2d40f09e86a5bc8b7f34093ac1729745a929"
     },
     {
       "path": "components/site-header.tsx",
-      "sha256": "b0923c01a979ac5984bc89c5bfff6e4141265e2f8fca1675bb6dece645422734"
+      "sha256": "b1e3273f049cb2920196332b0be439b94f2916d4b3746dd68c57d72f63c4f27e"
     },
     {
       "path": "components/site-overview.tsx",
@@ -731,6 +822,110 @@
     {
       "path": "components/x-link.tsx",
       "sha256": "6f2b0745aef428dffe1d479f335070ef22d3c761867654a6df608b32ea71bb67"
+    },
+    {
+      "path": "contracts/foundry.toml",
+      "sha256": "85e6625f7183cade32e758bed9c8d09cd1d820d297e273d8923f00fb0ee77d14"
+    },
+    {
+      "path": "contracts/lib/openzeppelin-contracts/LICENSE",
+      "sha256": "8b3fddff3cff904ab9bd7c48a9288fb08ab4f47b179c07af6df7886b12cb04d6"
+    },
+    {
+      "path": "contracts/lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol",
+      "sha256": "56380323009ef4a119d44550b910fde1bff9cedde8f7f4c690152c7629bc3338"
+    },
+    {
+      "path": "contracts/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol",
+      "sha256": "c322867b0b30f6d5f791e5ab9af5e3f5ff1c8c127906748f6725e592a5f40719"
+    },
+    {
+      "path": "contracts/lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol",
+      "sha256": "30edf7394bab78d48b7db3a059248e1ea7c2c77d2ec0e37a13bb91415aafbe5a"
+    },
+    {
+      "path": "contracts/lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol",
+      "sha256": "9e7c70ec72d2f7d592e23ea84f3852b04f91f6f644ce57e0263493046b36afb9"
+    },
+    {
+      "path": "contracts/lib/openzeppelin-contracts/contracts/utils/Context.sol",
+      "sha256": "847fda5460fee70f56f4200f59b82ae622bb03c79c77e67af010e31b7e2cc5b6"
+    },
+    {
+      "path": "contracts/lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol",
+      "sha256": "32fbb1c908ec1b4de85cc1bb10091aebd5816ffe80dfdd5ca5e084fbea67a462"
+    },
+    {
+      "path": "contracts/src/GrainCurve.sol",
+      "sha256": "d9d9c85c3c62a24d857d8328a625418e113038e68eeb13270f5863acb1804b40"
+    },
+    {
+      "path": "contracts/src/GrainFactory.sol",
+      "sha256": "09fc79b6c227a59b86debcb5af145816c23076ff69d66d582e1742e8d8569456"
+    },
+    {
+      "path": "contracts/src/GrainFeeVault.sol",
+      "sha256": "34e91fe5cd9441302d593e670c4bdcd59c79ae1155be73c799bf66461f5d20ed"
+    },
+    {
+      "path": "contracts/src/GrainParams.sol",
+      "sha256": "8057f32f770a99426b7beb040deda0af1d852f1c7412e79fa412e77ca1887600"
+    },
+    {
+      "path": "contracts/src/GrainToken.sol",
+      "sha256": "99a9d9a8f006c884a9208b0f2ccc4a733746891bd27a9d28a195feb320def228"
+    },
+    {
+      "path": "contracts/src/mainnet/GrainMainnetCurve.sol",
+      "sha256": "3882b05e0f3983bb3a4b847b5a2702342ecb26137e837acc80690d72b8efdc63"
+    },
+    {
+      "path": "contracts/src/mainnet/GrainMainnetFactory.sol",
+      "sha256": "7726e8b4ad8c60f08aa764240d1aacafcfc11d23184e7ec25d08e6ded7fd798d"
+    },
+    {
+      "path": "contracts/src/mainnet/GrainMainnetFeeVault.sol",
+      "sha256": "15b6aadc257e9402fd6c798256077334d3d0eeb0660db9afcabb443311a03671"
+    },
+    {
+      "path": "contracts/src/mainnet/GrainMainnetLiquidityLocker.sol",
+      "sha256": "e3e2fed98b80e58dcaefd6703152f07c90627a7cc3db4e202423e7f66ce2e1a1"
+    },
+    {
+      "path": "contracts/src/mainnet/GrainMainnetParams.sol",
+      "sha256": "47ea298949569eed65b39b86e9549b1aa01302a2731f3a67138834ee001c6d87"
+    },
+    {
+      "path": "contracts/src/mainnet/GrainMainnetPolicy.sol",
+      "sha256": "d740a0c58b70e8b5992b67f5ef797fb68fe8572ad43cd59e75c7918391083edf"
+    },
+    {
+      "path": "contracts/src/mainnet/IGraduationPositions.sol",
+      "sha256": "a082ae09633635f2eba10f55a9c9fea58c1c7635d5eb30a12c257d60a5fc4ccc"
+    },
+    {
+      "path": "contracts/test/GrainLaunch.t.sol",
+      "sha256": "3bf48d5c24f08b9490b292938c88467b766b0a9d8ad9e03e9dfe2cc32a269c0d"
+    },
+    {
+      "path": "contracts/test/GrainMainnetLaunch.t.sol",
+      "sha256": "1bad726461214fbec792dd18651baf3552d7108b2d03597fae228a198f5116f1"
+    },
+    {
+      "path": "contracts/test/GrainMainnetLiquidityLocker.t.sol",
+      "sha256": "1aebe10e6af1c0fac8549312cf191a188f951f48d301f32477cbef9c96c058d2"
+    },
+    {
+      "path": "contracts/test/GrainMainnetLockerFork.t.sol",
+      "sha256": "e2eea1f5fb1ac4318d417dffcba1652c41af99ee06a7761c39be4d5554d43545"
+    },
+    {
+      "path": "contracts/test/GrainMainnetPolicy.t.sol",
+      "sha256": "edd142a24b8b371ec1eafb31a4c64b28d81a48ea975bd73de1eb199ab9392ad8"
+    },
+    {
+      "path": "contracts/test/LocalWeth.sol",
+      "sha256": "96270617cd536eba3d06b92392236dd2732eda626251b8fe28c28251dc7f00dd"
     },
     {
       "path": "data/donations.json",
@@ -861,6 +1056,142 @@
       "sha256": "219ef91965af3f6fe50806c82d5bd7a2a83a17741a0d043b311ff9a6eacde076"
     },
     {
+      "path": "lib/chain/adapter.ts",
+      "sha256": "5b23e499ea6d481062b83cf4d5ce943ecb812f54ce1239fc173680e48628075a"
+    },
+    {
+      "path": "lib/chain/evm-network-contracts.ts",
+      "sha256": "90ec0ebd2b7aed570e8b26a06cfb24ce979b5ec9911abee03b4dd23046570224"
+    },
+    {
+      "path": "lib/chain/evm-network-manifest.ts",
+      "sha256": "4a1d3428e1247582d501be9f95320cd33e1a8b7f4eef758c7b8e720b317a5da7"
+    },
+    {
+      "path": "lib/chain/evm-onboarding-readiness.ts",
+      "sha256": "dafaea0e93dd62cf042eca198d92d8085407e8c9efe9d49aee888a07ef2a8c45"
+    },
+    {
+      "path": "lib/chain/evm-transaction-safety.ts",
+      "sha256": "f44ef9b63928780eb1ce52dbed19c53535c90e0059dc62f4f0c249a655655d70"
+    },
+    {
+      "path": "lib/chain/evm-wallet-adapter.ts",
+      "sha256": "8494cd65cd2d6ddbe29b10f597e9eb849ebb85ce569ee4e032829c5bc83876a0"
+    },
+    {
+      "path": "lib/chain/evm-wallet.ts",
+      "sha256": "ba32f113225c295870aedd8766de088ff2c3a2df009734ef9fd2969d2ce6a2e5"
+    },
+    {
+      "path": "lib/chain/index.ts",
+      "sha256": "f5af28244a4dfcb9928045447075cab0842ec2ae5756e01adee6bc88bc26692f"
+    },
+    {
+      "path": "lib/chain/launch-network-handoff.ts",
+      "sha256": "ae896915aa51889e28084afd1bbfa6a993804bd8ae9e1db1c1b7fa84eaceee6c"
+    },
+    {
+      "path": "lib/chain/launch-network-picker.ts",
+      "sha256": "662b0cbe3d5595c430092acbe35c615ca22bba1a2d17a480b21a7324eccb0e94"
+    },
+    {
+      "path": "lib/chain/launch-submission-journal.ts",
+      "sha256": "5b73aa7eddb90cc60a21ce35e9e73fdfcd39e787d2dd16de43e74c5560e96847"
+    },
+    {
+      "path": "lib/chain/networks.ts",
+      "sha256": "4db01f4af2aa99bec76a342433c430deb21764ff02d6ab6c461bdd042db3e40f"
+    },
+    {
+      "path": "lib/chain/registry.ts",
+      "sha256": "98c6c31fcf213b01dac377e827929a67e87e3e7a71a451a3d906ce8cc69d1434"
+    },
+    {
+      "path": "lib/chain/robinhood-adapter.ts",
+      "sha256": "1ce3b9d96cdeb4269b701c46177b7ee8b03062229224e9d52ca7793ee9bda1ec"
+    },
+    {
+      "path": "lib/chain/robinhood-create.ts",
+      "sha256": "f6ca57cb47cd85b20d81f5a0859255f4d397b90cc2de788a5d1be7f6bf916624"
+    },
+    {
+      "path": "lib/chain/robinhood-factory.ts",
+      "sha256": "45e18bf37fc43fe6b55533d6a2d70158d71413cb6d140410787a551e7bd6bd2f"
+    },
+    {
+      "path": "lib/chain/robinhood-history.ts",
+      "sha256": "f7dda8ba6d200e2579cf321dfc17b70a90c326d275292a2dd1191f8d9b886e69"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-create.ts",
+      "sha256": "75814874b6421d72e4b56476363d7132c0e985b578f4d22edbcd7a85ed89455d"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-display.ts",
+      "sha256": "0467ddf07bfc283576752c8baa28a8415b6278c6d6a4d7c095afb343b65ff3ef"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-draft.ts",
+      "sha256": "7a0cab646f4d8227c7e82c6574ba67ec8fae8ecc37a57511a31731ddf437121a"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-economics.ts",
+      "sha256": "0bd1d9197fbffe3a92d683ee65eb73e0b563d29b3d85081823842be579a0173b"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-fees.ts",
+      "sha256": "ef4fc20ea62b8cacd7c9071ee13db9d527495d6f51b74edb618bba21865199c4"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-history.ts",
+      "sha256": "30953b445ac6026af00764e5c20d35db9b6dbbe7a3edd9876935423739b8b0c7"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-market.ts",
+      "sha256": "7ea30f1939df9417b1012ecce5835567ef9e389a73a2d0c30d1a7bb936901e0c"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-monero-authorization.ts",
+      "sha256": "fa81fbb6d4bac8bd79ff23f93220d4fdb28569da61ba78e217b985c2bdd7ba71"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-registration.ts",
+      "sha256": "59d28720ed79f7643396bfbc8b5067b3704e91f72adb729e148fe49f65c3b45a"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-wallet.ts",
+      "sha256": "8332a7b0503a19d9e64795e6b22cc732886bf4c96127be8099ffe350090ee87a"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet.ts",
+      "sha256": "671962f3c0aa14ef254704f221d4af7b35cb5d3895a75c6a618189f42bd0d572"
+    },
+    {
+      "path": "lib/chain/robinhood-market.ts",
+      "sha256": "c7667fcc7e306b9554497892ba7cab2c41b755eb2e2b6affb7ecb653f4c2cb2a"
+    },
+    {
+      "path": "lib/chain/robinhood-provenance.ts",
+      "sha256": "e704b8a5c67079b0519d49e36d05e6afb7a9173df1ea2039b6a1ebae64a4023b"
+    },
+    {
+      "path": "lib/chain/robinhood-registration.ts",
+      "sha256": "4fa3ab5ba803eceacf76b202091e4e801bdfb771055d8258870b129ad4bdf3e9"
+    },
+    {
+      "path": "lib/chain/robinhood-testnet.ts",
+      "sha256": "a082b77cc55301cb18b3c99395656f408ee62f3851e9f626e48ad67235af04a1"
+    },
+    {
+      "path": "lib/chain/solana-adapter.ts",
+      "sha256": "728733ab7526be95d8d708212880d3db743c5073c02dc29f18eaeee6f559f61a"
+    },
+    {
+      "path": "lib/chain/wallet-session.ts",
+      "sha256": "bfef551d1298874c5bf0a89672a0beaf9f0cbe9f43ce14699a3a7fbbe9599d12"
+    },
+    {
       "path": "lib/chart-backfill.mjs",
       "sha256": "d4ba5f712104a65221b55eca01c3b38444b5746316539a0c7f190c7c9faeec52"
     },
@@ -974,7 +1305,7 @@
     },
     {
       "path": "lib/grain-stage-policy.mjs",
-      "sha256": "57de3117f5f0852494cd4c073bb1e8d76840ea41e4fa5c47cb894ac789f9c426"
+      "sha256": "7651dbab5fcf6b613689a303ae50a409ca73bcda81378174976ab3804cd4acf9"
     },
     {
       "path": "lib/header-image.mjs",
@@ -1147,6 +1478,10 @@
     {
       "path": "lib/monero-daemon-validation.mjs",
       "sha256": "b125e2a4dbf7cde86238df942eeed95cfa598c85f37c89ac2167dfa8016d65f5"
+    },
+    {
+      "path": "lib/monero-evm-record.mjs",
+      "sha256": "dc35ab19fda8ae743915675b379a7ca5845bf1135a97b9b3076da154812f4cbc"
     },
     {
       "path": "lib/monero-index.mjs",
@@ -1626,7 +1961,7 @@
     },
     {
       "path": "lib/site-config.ts",
-      "sha256": "c0af1770dfb44ffef3db7d7acfd4e4fcb69232f0252f0ed01e0c0d3fde1e6949"
+      "sha256": "166e0f4b2bd5ac23f39312c927cb3a36321aa3f54b55a0f76738b379f07efb31"
     },
     {
       "path": "lib/sol-acceptance-policy.mjs",
@@ -1858,7 +2193,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "7ed8d2dc1625257ec6999dacc34c9b7a2259fa95c9a4396529f8a5637dc4fc52"
+      "sha256": "472124c508a62ea49d00c248597b1847b655305e53a3e94a339c519c502adf6b"
     },
     {
       "path": "postcss.config.mjs",
@@ -1875,6 +2210,30 @@
     {
       "path": "public/brand/grainpad-social-minute-two-20261010.jpeg",
       "sha256": "f222d5b72538cf61e34870efdc4afa8bb934d7351b453155e0ca255adb684557"
+    },
+    {
+      "path": "public/brand/networks/robinhood-hover.svg",
+      "sha256": "526b7c346f630ac94d196ec0e6041775f1dd8f406546cd55cbcbf8cb7e17d88d"
+    },
+    {
+      "path": "public/brand/networks/robinhood-main.svg",
+      "sha256": "d2c33026bc6d76e031201101e9b724c4528adcc8df1d0156415aa5d73675a5c8"
+    },
+    {
+      "path": "public/brand/networks/sol-hover.svg",
+      "sha256": "509462a67bb2ab00ffab47a1a145d6cb235bd45ee8b32bd4ac37b9e0e3c5b993"
+    },
+    {
+      "path": "public/brand/networks/sol-main.svg",
+      "sha256": "1be3415bc77956dd1ee7f09c0f28e91eea802c1ef4da49b3b78d2ec4cf7d8971"
+    },
+    {
+      "path": "public/fonts/AlbertSans-OFL.txt",
+      "sha256": "0f39abdc3bf858f48853e1e63f1124c9660c8cd8b77d2c9a641b30bcd53f8c64"
+    },
+    {
+      "path": "public/fonts/IBMPlexMono-OFL.txt",
+      "sha256": "23b0a9d0c6d3f140a0b77e483c5cfa6bba574325ef5cb189ed9f2fec4884533f"
     },
     {
       "path": "public/fonts/albert-sans-latin-variable.woff2",
@@ -1895,6 +2254,14 @@
     {
       "path": "scripts/build-unsigned.mjs",
       "sha256": "36c3c13751390701ed4664a615adbfef10abd5014997d61557983c607f9355fd"
+    },
+    {
+      "path": "scripts/chain-onboarding.mjs",
+      "sha256": "d63f672fc8916ca1cae2924190fe901279167ae577a840f9c8d2080de0a0bc3c"
+    },
+    {
+      "path": "scripts/check-chain-source.mjs",
+      "sha256": "65aad30f4cac7774f5e3e536174dd666f9504ea8a836f9c0962291d28cab8afb"
     },
     {
       "path": "scripts/check-public-boundary.mjs",
@@ -1945,6 +2312,10 @@
       "sha256": "c0c77a177e238db1d62ff4bc0160e5c276aa4077bfe499959733fb7924c4b3b0"
     },
     {
+      "path": "tests/chain-adapter.test.mjs",
+      "sha256": "3a025d78bc5eb2f86c41192519647b438a851952ea87aed6b83c14346f6d8154"
+    },
+    {
       "path": "tests/chart-candles.test.mjs",
       "sha256": "36d35a4b4f3587151e7db00a7d667c6d0c90a6a7d895822405c620e2639afdef"
     },
@@ -1971,6 +2342,22 @@
     {
       "path": "tests/discovery-refresh.test.mjs",
       "sha256": "4e9c8408a55a93505c184f1bb317ae2238fd50c01a6774be4bdd42f861d1fb7b"
+    },
+    {
+      "path": "tests/evm-network-contracts.test.mjs",
+      "sha256": "0675df3045326224d9d2c3823e2399f4611434b1c545244094a3bcfc8b10fc77"
+    },
+    {
+      "path": "tests/evm-network-manifest.test.mjs",
+      "sha256": "16e84b360c466071215fafb1fc2a08006a986e2e481ed91f08f922e869f63d2b"
+    },
+    {
+      "path": "tests/evm-onboarding-readiness.test.mjs",
+      "sha256": "2376a5ac00ecbb1e947ab92c211524188ab0f12492d67cded07dc51bed769317"
+    },
+    {
+      "path": "tests/evm-transaction-safety.test.mjs",
+      "sha256": "a89642dd2ec50387169eda7ec6d8f6ad47d93e7c6576920d132987f5ddb48fd4"
     },
     {
       "path": "tests/fee-freeze-review.test.mjs",
@@ -2006,7 +2393,7 @@
     },
     {
       "path": "tests/grain-stage-policy.test.mjs",
-      "sha256": "08311bdb71494618e347243e0a802d7690b378dfff1499e027289ff024980d9a"
+      "sha256": "5f9675db21d01645ffa7a7a9d13fb66379265e98fdedfde04393123f035c6433"
     },
     {
       "path": "tests/homepage-server-render.test.mjs",
@@ -2037,8 +2424,16 @@
       "sha256": "11e9efbcdf3d70d78566dd7491f42e8fbff97d0e13af670b3aa2c480cce3a901"
     },
     {
+      "path": "tests/launch-network-handoff.test.mjs",
+      "sha256": "caf339922692153985c069be6cea10ab238a361e6e5fea02fd4f29c1fb04351f"
+    },
+    {
+      "path": "tests/launch-network-picker.test.mjs",
+      "sha256": "164a6c12f8705290ce8438b47b20d855f41bd64ec87d36504a79ceaba3f07b45"
+    },
+    {
       "path": "tests/launch-pending-recovery.test.mjs",
-      "sha256": "5559cf8ac921aef5f6fe8360403652bab9d190a211d4e6d596ca85a352cd142e"
+      "sha256": "83a5b62e97f66f29e4ba46aec493eb2ec5e04884e32e0019ee4f12309cd1d409"
     },
     {
       "path": "tests/launch-rule-targets.test.mjs",
@@ -2050,7 +2445,11 @@
     },
     {
       "path": "tests/launch-simplification-ui.test.mjs",
-      "sha256": "bd3b03112558d44f643daac7a0315b7881b5a2c24c27a744fbfee08fb2ebdf87"
+      "sha256": "18aac115eb6563996d9ed6f3efcd275ea1b734888635087c212a1dd01305849a"
+    },
+    {
+      "path": "tests/launch-submission-journal.test.mjs",
+      "sha256": "312449ba1254cc10c1bf2bdc26a777ce12c1ab0a373d0042510c64a2eb860080"
     },
     {
       "path": "tests/live-chart.test.mjs",
@@ -2178,7 +2577,7 @@
     },
     {
       "path": "tests/public-creator-buy-ui.test.mjs",
-      "sha256": "056d5490aef4001e234ad7d6daf2ab825c22a67f43674fb3f9dd8611d993631d"
+      "sha256": "4ba1e99cd773d4864be39e4f62334087a1754a1b1b97a08083addd372102980f"
     },
     {
       "path": "tests/public-launch-eligibility.test.mjs",
@@ -2251,6 +2650,46 @@
     {
       "path": "tests/reward-credit-totals.test.mjs",
       "sha256": "ba48b9d0a986f49ac551951d57e418f0b364e53603ba1a594539c937a836b7cb"
+    },
+    {
+      "path": "tests/robinhood-contracts.test.mjs",
+      "sha256": "067ec7409b32653e19c521acaa85d23de151208c1f2407d4d77e5e979a31036d"
+    },
+    {
+      "path": "tests/robinhood-create.test.mjs",
+      "sha256": "00035b20744526a4d74745f151d8ab7da4cc5f3c23f76cbcb09bb65edba362cd"
+    },
+    {
+      "path": "tests/robinhood-history.test.mjs",
+      "sha256": "df1480bccb7ac9dba8e4d770d519d3195a48bc4794d8edb6802fb79e50b7fccb"
+    },
+    {
+      "path": "tests/robinhood-mainnet-history.test.mjs",
+      "sha256": "9fcacbfea104f0e8241baac6cb4c3b923a24cdd95f48d48a453d9e4b238c7423"
+    },
+    {
+      "path": "tests/robinhood-mainnet-market.test.mjs",
+      "sha256": "71df2dfdda793e760f9790bc202c1c7a1d9449b01c6f65f79e383ed6396c3382"
+    },
+    {
+      "path": "tests/robinhood-mainnet-registration.test.mjs",
+      "sha256": "191c927d50ad4a18386a98d99c359c9459fa9e8281edcf80ced56eedbde2ba6d"
+    },
+    {
+      "path": "tests/robinhood-mainnet-wallet-create.test.mjs",
+      "sha256": "4ad3fe38a2af5937acde930757d07a8393396c1978c4f62eb342f8996a2575e4"
+    },
+    {
+      "path": "tests/robinhood-mainnet.test.mjs",
+      "sha256": "777c6c16f5780eeab24937f45d8ae7845a1c98e723482fc652767af05469efef"
+    },
+    {
+      "path": "tests/robinhood-market.test.mjs",
+      "sha256": "4d387f6106d8957dfe9b1e55673d78c1d70c5e274edd3b29d963ba5f37075b3f"
+    },
+    {
+      "path": "tests/robinhood-wallet.test.mjs",
+      "sha256": "394087f461c931fd252f9a75096bd29aa8bd488dde61e6e95157bd904f9d5a64"
     },
     {
       "path": "tests/room-funding.test.mjs",

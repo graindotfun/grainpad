@@ -435,8 +435,8 @@ html body .site-header.gx-header .site-wallet-trigger:is(:hover,:focus-visible,:
 .gx.gx-create .launch-intro>span{display:block;max-width:90ch;margin-top:8px;font-family:var(--gx-mono)}
 .gx.gx-create .workspace{margin-top:0}
 .gx.gx-create .workspace-bar{border:0;padding:0;margin:0}
-.gx.gx-create .workspace-bar .launch-mode-tabs{gap:6px!important;border:1.5px solid var(--gx-rule);border-radius:999px;padding:4px;width:auto;display:inline-flex;max-width:100%;overflow-x:auto;scrollbar-width:none;background:none}
-.gx.gx-create .launch-mode-tabs [data-slot=tabs-trigger]{min-height:40px;padding:8px 16px;border-radius:999px;font:600 14px var(--gx-sans);color:var(--gx-mute);border:0;background:none;flex:none}
+.gx.gx-create .workspace-bar .launch-mode-tabs{gap:6px!important;border:1.5px solid var(--gx-rule);border-radius:999px;padding:4px;width:auto;display:inline-flex;max-width:100%;overflow-x:auto;scrollbar-width:none;background:none;flex-wrap:nowrap!important}
+.gx.gx-create .launch-mode-tabs [data-slot=tabs-trigger]{min-height:40px;height:auto;padding:8px 18px!important;border-radius:999px;font:600 14px var(--gx-sans);color:var(--gx-mute);border:0;background:none;flex:none}
 .gx.gx-create .launch-mode-tabs [data-slot=tabs-trigger]::after{display:none}
 .gx.gx-create .launch-mode-tabs [data-slot=tabs-trigger][data-state=active]{background:var(--gx-btn);color:var(--gx-btnfg)}
 .gx.gx-create .launch-mode-tabs [data-slot=tabs-trigger][data-state=active] svg{color:var(--grain-orange)}
@@ -741,6 +741,10 @@ html[data-theme] .shell:not(.gx) .preview-panel a{color:var(--gx-ink)}
  html[data-theme] .gx.gx-create .workspace-bar .launch-mode-tabs{flex-wrap:nowrap!important;gap:4px!important}
  html[data-theme] .gx.gx-create .workspace-bar .launch-mode-tabs .launch-lab-tab{width:auto;justify-content:center;padding:8px 14px!important}
 }
+@media(max-width:430px){
+ html[data-theme] .gx.gx-create .workspace-bar .launch-mode-tabs [data-slot=tabs-trigger]{padding:8px 10px!important;font-size:12px}
+}
+
 .gx.gx-create .gx-preview-id .token-mark::after{display:none}
 
 /* swap amount: underline focus, not a box */

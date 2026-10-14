@@ -2,11 +2,11 @@
 
 <img width="1774" height="887" alt="readme-image" src="https://github.com/user-attachments/assets/7c72333a-96e4-47e7-809f-837c06193043" />
 
-The source of the grainpad.fun launchpad: website, product logic, Solana transaction builders, wallet signing helpers, receipts and charts, GRN1 Monero provenance records, read-only verifiers and tests. Files and commit history are exported from Grainpad's private development repository through a reviewed allowlist. Commits keep their original author dates; distribution commits add the public packaging and verification inventory.
+The source of the grainpad.fun launchpad: website, product logic, Solana and Robinhood Chain transaction builders, EVM onboarding modules, wallet signing helpers, receipts and charts, GRN1 Monero provenance records, read-only verifiers and tests. Files and commit history are exported from Grainpad's private development repository through a reviewed allowlist. Commits keep their original author dates; distribution commits add the public packaging and verification inventory.
 
 ## Publication and development
 
-This repository is an intentionally read-only public source release. The archived status protects the publication boundary; it does not mean the product has stopped development. Product development continues in a separate private workspace. Future reviewed source releases can be published here through a controlled release step.
+This is an active public source distribution. Product development continues in a private workspace, and reviewed product changes are published here as incremental updates. The publication scope includes launchpad UI, transaction builders, Robinhood mainnet and testnet contracts and client modules, network selection, tests and verification tools. Each update passes the public inventory, secret scans, tests and build before publication. Private operational changes do not create empty public commits.
 
 The source is available for inspection, local builds and forks. This source release does not deploy the site or activate market execution. It is not an independent security audit or a claim that this tree matches the currently deployed service.
 
@@ -14,7 +14,7 @@ GRN1 format and standalone record inspection remain available in [docs/GRN1.md](
 
 ## What is not included
 
-This is **not** a complete, self-hostable copy of grainpad.fun. A build produces the site with 38 API routes and 19 pages. Several parts are not here.
+This is **not** a complete, self-hostable copy of grainpad.fun. A local build includes the reviewed site and launch forms. Several production services and routes are not here.
 
 **Operator services and their data**
 - Signing, payment execution, tax collection, conversion, publication and indexing services, with their journals and the scheduled jobs that drive them.
@@ -34,13 +34,19 @@ This is **not** a complete, self-hostable copy of grainpad.fun. A build produces
 - Owner, platform, treasury and rewards administration pages and APIs.
 - Holder-reward data APIs.
 - Internal and indexer APIs.
-- The Robinhood test network pages.
+- Robinhood registration, market/history APIs and Monero publication services. The exported client forms need separately operated backends for those features. Browser wallet interactions remain explicit user actions.
 
 **Configuration and records**
 - Production configuration: RPC endpoints, credentials, D1/R2 bindings, budgets and spending caps.
 - Internal operations material: records, reports and operating history.
 
 `lib/rpc-budget.mjs` is a packaging substitution. It contains the same validation and atomic allocation as production (the shared core is `lib/rpc-budget-core.mjs`), but uses **example caps** for local builds and tests. A deployment must set every `RPC_*` cap itself.
+
+## Network source and readiness
+
+`lib/chain/` contains network identities, wallet boundaries, recovery, Robinhood client builders and read-only EVM onboarding tools. `contracts/src/` contains the Robinhood contracts, with vendored OpenZeppelin sources and contract tests. The Base, Ethereum and BNB templates are preparation work, not enabled network launches. Source availability alone does not verify a live deployment or complete operational readiness.
+
+Run `node scripts/chain-onboarding.mjs --template base` for an offline plan. The optional RPC inspection mode only reads chain data. Solidity tests use Foundry with Solidity 0.8.28: `forge test --root contracts`. Fork tests need an explicitly configured public RPC; they are separate from the offline Node suite.
 
 ## Revenue split
 

@@ -36,11 +36,11 @@ test('storage failure retains pending state instead of claiming successful recov
 test('workspace places receipt recovery before disabled fields and only verified launches can reset',()=>{
  const source=readFileSync(new URL('../components/launch-workspace.tsx',import.meta.url),'utf8');
  assert.ok(source.indexOf('aria-label="Previous launch receipt"')<source.indexOf('<h2>Token details</h2>'));
- assert.match(source,/void recover\(pendingData,true\)/);
+ assert.match(source,/void recover\(saved,true\)/);
  assert.match(source,/automatic\?\{attempts:1\}:undefined/);
  assert.match(source,/function prepareAnother\(\)\{if\(!result\|\|pending.current\|\|busy\)return/);
- assert.match(source,/async function prepare\(\)\{if\(pending.current\|\|signature\|\|busy\|\|uploadsPending.current\)return/);
- assert.match(source,/const locked=!!busy\|\|!!signature/);
+ assert.match(source,/async function prepare\(\)\{if\(!draftReady\|\|externalRecovery\|\|network!=="mainnet-beta"\|\|attempt\?\.submissionAttempted\|\|pending.current\|\|signature\|\|busy\|\|uploadsPending.current\)return/);
+ assert.match(source,/const locked=!draftReady\|\|externalRecovery\|\|network==="devnet"\|\|!!busy\|\|!!signature\|\|!!pending.current\|\|!!attempt\?\.submissionAttempted\|\|uploading>0/);
 });
 
 function archivedMemory(){const values=new Map([[PENDING_LAUNCH_KEY,JSON.stringify(receipt)]]);return {values,getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};}

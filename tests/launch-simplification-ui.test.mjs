@@ -87,15 +87,16 @@ test('protected: clearing the shown terms without changing a term input (cost-li
 
 // Regular Launch: one closed-launch notice. The lock value is patched only inside this offline bundle.
 const regularStubs={...common,
+ '@/lib/chain/robinhood-mainnet-draft.ts':`export async function readMainnetDraft(){return null;}export async function saveMainnetDraft(){}`,
  '@/lib/monero-prelaunch-browser.mjs':`export async function replacePlannedLaunchAuthorization(){throw Error('not used');}`,
  '@/lib/launch':`export const DEVNET_PLATFORM=null;export function solToLamports(){return 1;}export async function prepareLaunch(){throw Error('not used');}export async function refreshPreparedReview(p){return p;}export function signAndSend(){throw Error('UI regression must never submit');}`,
 };
 const lockSource=readFileSync('lib/platform-settings.mjs','utf8');
 assert.match(lockSource,/TOKEN_CREATION_ENABLED=(?:true|false);/);
 const {default:LockedLaunchWorkspace}=await bundle('components/launch-workspace.tsx','.test-output/launch-simplification-locked.mjs',regularStubs,path=>path.endsWith('lib/platform-settings.mjs')?lockSource.replace(/TOKEN_CREATION_ENABLED=(?:true|false);/,'TOKEN_CREATION_ENABLED=false;'):null);
-test('regular: a locked launch shows one "not open yet" notice and keeps the action disabled',()=>{
- const f={states:[],refs:[],effects:[],wallet:null};globalThis.__simplifyUi=f;const old=globalThis.window;globalThis.window={location:{origin:'https://grainpad.fun'}};
- try{f.stateIndex=0;f.refIndex=0;const tree=LockedLaunchWorkspace({}),all=text(tree);
+test('regular: a locked launch shows one "not open yet" notice and keeps the action disabled',async()=>{
+ const f={states:[],refs:[],effects:[],wallet:null};globalThis.__simplifyUi=f;const old=globalThis.window;globalThis.window={location:{origin:'https://grainpad.fun',href:'https://grainpad.fun/launch/solana/mainnet'},history:{state:null,replaceState(){}}};
+ try{f.stateIndex=0;f.refIndex=0;LockedLaunchWorkspace({});f.effects.find(effect=>effect.toString().includes('draftEpoch.current'))();await settle();f.stateIndex=0;f.refIndex=0;let tree=LockedLaunchWorkspace({});const stepThree=walk(tree).filter(node=>node.type==='button'&&node.props.children?.[0]?.type==='b')[2];stepThree.props.onClick();f.stateIndex=0;f.refIndex=0;tree=LockedLaunchWorkspace({});const all=text(tree);
   assert.equal(all.match(/Launches are not open yet/g)?.length,1);assert.doesNotMatch(all,/Token creation is locked pending separate approval/);
   assert.match(all,/including after platform setup/,'the second notice’s detail is kept in the single notice');
   const primary=walk(tree).find(n=>n.type==='button'&&n.props.className==='primary-action');assert.equal(primary.props.disabled,true,'the lock still disables the action');
