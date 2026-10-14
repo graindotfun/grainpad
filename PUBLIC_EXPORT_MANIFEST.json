@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "2fc91a1359a3662d796555244fcc39054974b02b",
+  "sourceCommit": "114133a9d95446f6a6bf859569d139adf4ceac3b",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -1753,7 +1753,7 @@
     },
     {
       "path": "lib/public-read-cache.mjs",
-      "sha256": "d7331ce1bf2c8391e59b0124bff7a8b5a93b8d4a310dde16273b4b4706cc71a1"
+      "sha256": "00b2c7e2c1e33a1af7a26d483c65e7d1b70a64b89ee7a8c8378606abbfe4ae96"
     },
     {
       "path": "lib/public-receipt.mjs",
@@ -2645,7 +2645,7 @@
     },
     {
       "path": "tests/public-read-cache.test.mjs",
-      "sha256": "81abfcf1614cd1d942f2eed597378875c2c2742bd7505c7297170927739b8623"
+      "sha256": "7720d66663e7c5c1c07a55ab7a2c1fd6b04e6c9d87a42c333a8a994557bafaf1"
     },
     {
       "path": "tests/quote-price-client-store.test.mjs",
