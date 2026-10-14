@@ -17,6 +17,7 @@ import {SiteFooter} from "@/components/site-footer";
 import "@/app/launch-modes.css";
 import "@/app/robinhood-launch.css";
 import {ROBINHOOD_CHAIN_MAINNET} from "@/lib/chain/robinhood-mainnet.ts";
+import {ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS, ROBINHOOD_MAINNET_V3_DEPLOYMENT_BLOCK} from "@/lib/chain/robinhood-mainnet-v3.ts";
 import {robinhoodMainnetV2Profile} from "@/lib/chain/robinhood-mainnet-v2.ts";
 import {newRobinhoodMainnetLaunchId} from "@/lib/chain/robinhood-mainnet-create.ts";
 import {discoverRobinhoodMainnetWallets, watchRobinhoodMainnetWallet, type MainnetWalletSession, type MainnetWalletChoice} from "@/lib/chain/robinhood-mainnet-wallet.ts";
@@ -176,7 +177,7 @@ export function RobinhoodMainnetLaunchV2() {
   async function run(label: string, job: () => Promise<void>) {
     if (working.current) return;
     working.current = true; setBusy(label); setError("");
-    try { await job(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Please retry."); }
+    try { await job(); } catch (cause) { setError(cause instanceof Error ? cause.message : "The wallet or network request could not finish. Keep this form and check wallet activity before retrying."); }
     finally { working.current = false; setBusy(""); }
   }
 
@@ -208,7 +209,7 @@ export function RobinhoodMainnetLaunchV2() {
     const imageSha256 = imageBase64 ? await sha256Hex(Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0))) : null;
     // A browser journal cannot see a launch made from another browser or before storage was cleared: ask the chain.
     if (!another) {
-      const found = await recentCreatorLaunches((method, params) => wallet.provider.request({method, params}), profile.factory, wallet.account, LAUNCH_CREATED_TOPIC);
+      const found = await recentCreatorLaunches((method, params) => wallet.provider.request({method, params}), profile.factory, wallet.account, LAUNCH_CREATED_TOPIC, 200_000n, profile.factory.toLowerCase() === ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS?.toLowerCase() ? ROBINHOOD_MAINNET_V3_DEPLOYMENT_BLOCK ?? 0n : 0n);
       if (found.length) { setRecent(found); throw new Error("This wallet created a launch recently. Recover it below, or tick \"launch another token\" to continue."); }
     }
     const launchId = newRobinhoodMainnetLaunchId(wallet.account);
