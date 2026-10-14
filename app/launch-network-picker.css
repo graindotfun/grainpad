@@ -36,3 +36,14 @@ html[data-theme="light"] .launch-network-dialog{background:#fff;color:#111;borde
 .launch-network-row.is-selected .network-logo-main,.launch-network-home .network-logo-main,.launch-network-chip .network-logo-main,.launch-network-stamp .network-logo-main{opacity:0}
 .launch-network-row.is-selected .network-logo-hover,.launch-network-home .network-logo-hover,.launch-network-chip .network-logo-hover,.launch-network-stamp .network-logo-hover{opacity:1}
 .launch-network-row .launch-network-logo.is-solana img{inset:10%;width:80%;height:80%}
+
+/* Short facts share a stable column grid instead of opposing ragged text edges. */
+.launch-network-facts{display:grid;grid-template-columns:minmax(150px,1.45fr) minmax(100px,1fr) minmax(85px,.8fr);gap:22px;max-width:none;flex:0 1 405px;min-width:0}
+.launch-network-facts .launch-network-fact{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:7px;min-width:0}
+.launch-network-fact-label{font:10px 'IBM Plex Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:#929b9b}
+.launch-network-facts b{font-size:13px;font-weight:500;text-align:left;color:var(--gx-text,#f3f3f3);line-height:1.4}
+.launch-network-facts small{font-size:10px;line-height:1.5;color:#929b9b}
+.launch-network-facts .is-dex b{white-space:nowrap}
+html[data-theme="light"] .launch-network-facts b{color:#111}
+html[data-theme="light"] .launch-network-fact-label,html[data-theme="light"] .launch-network-facts small{color:#656565}
+@media(max-width:760px){.launch-network-row{flex-wrap:wrap}.launch-network-facts{flex-basis:100%;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr) minmax(72px,.85fr);gap:14px;padding:18px 0 0;border-top:1px solid #ffffff15;margin-top:3px}.launch-network-facts b{font-size:12px}.launch-network-facts small{max-width:140px}html[data-theme="light"] .launch-network-facts{border-color:#1112}}
