@@ -8,6 +8,7 @@ export const SITE = {
   origin: "https://grainpad.fun",
   twitter: "https://x.com/GrainXMR",
   discord: "https://discord.gg/PPDYqv4KWa",
+  github: "https://github.com/graindotfun/grainpad",
   twitterHandle: "GrainXMR",
   tokenName: "Grainpad",
   tokenSymbol: "GRAIN",

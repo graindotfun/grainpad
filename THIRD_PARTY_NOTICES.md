@@ -12,3 +12,8 @@ does not relicense the remaining application or its privately maintained code.
 - Grainpad branding and marks are not licensed by the source-code license.
 
 No third-party implementation from XMR20 is copied into this release.
+
+- `@raydium-io/raydium-sdk-v2` retains GPL-3.0 and its upstream notices.
+- Vendored OpenZeppelin contracts retain MIT; see `contracts/lib/openzeppelin-contracts/LICENSE`.
+- Albert Sans retains SIL OFL 1.1 and copyright notices in `public/fonts/AlbertSans-OFL.txt`.
+- IBM Plex Mono retains SIL OFL 1.1 and copyright notices in `public/fonts/IBMPlexMono-OFL.txt`.

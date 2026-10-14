@@ -38,7 +38,7 @@ function loadSymbol(){
 
 class Stage{
  private ctx:CanvasRenderingContext2D;
- private N:number;private nS=0;private floorFrac:number;
+ private N:number;private requestedCount?:number;private nS=0;private floorFrac:number;
  private word=DEFAULT_WORD;mode:GrainMode=0;private free=true;
  private palette:GrainPalette;
  // Particle state lives in typed arrays so the frame loop allocates nothing.
@@ -55,8 +55,8 @@ class Stage{
  private wFrames=0;private wInterval=0;private wWork=0;private wSkip=1;
  private cleanup:(()=>void)[]=[];
 
- constructor(private cv:HTMLCanvasElement,o:{count:number;floor:number;palette:GrainPalette;word:string;mode:GrainMode}){
-  this.ctx=cv.getContext('2d')!;this.N=o.count;this.floorFrac=o.floor;this.palette=o.palette;this.word=o.word;this.mode=o.mode;
+ constructor(private cv:HTMLCanvasElement,o:{count?:number;floor:number;palette:GrainPalette;word:string;mode:GrainMode}){
+  this.ctx=cv.getContext('2d')!;this.requestedCount=o.count;this.N=o.count??grainCount(0,0);this.floorFrac=o.floor;this.palette=o.palette;this.word=o.word;this.mode=o.mode;
   this.setLevel(savedLevel());
   const media=matchMedia('(prefers-reduced-motion: reduce)');this.reduce=media.matches;
   const onMedia=()=>{this.reduce=media.matches;this.mx=-1e4;if(this.frozen)this.snap();this.schedule();};
@@ -82,6 +82,7 @@ class Stage{
   const r=this.cv.getBoundingClientRect();if(r.width<10||r.height<10)return;
   if(Math.abs(r.width-this.W)<1&&Math.abs(r.height-this.H)<1&&this.ready)return;
   this.W=r.width;this.H=r.height;this.dpr=Math.min(2,window.devicePixelRatio||1);this.k=grainScale(this.W,this.H);
+  this.N=this.requestedCount??grainCount(this.W,this.H);this.setLevel(this.level);
   this.cv.width=Math.round(this.W*this.dpr);this.cv.height=Math.round(this.H*this.dpr);
   this.build();this.assign(false);this.ready=true;
   if(this.frozen)this.snap();this.schedule();
@@ -95,7 +96,7 @@ class Stage{
   const img=this.off(draw),W=img.width,H=img.height,d=img.data;let area=0;
   for(let i=3;i<d.length;i+=4)if(d[i]>140&&(!cls||cls(d[i-3],d[i-2],d[i-1])>=0))area++;
   if(!area||!n)return [];
-  let sp=Math.max(2.4,Math.sqrt(area/n)*.97),pts:Point[]=[];
+  let sp=Math.max(2.4*this.k,Math.sqrt(area/n)*.97),pts:Point[]=[];
   for(let it=0;it<9;it++){
    pts=[];
    for(let y=sp/2;y<H;y+=sp)for(let x=sp/2;x<W;x+=sp){
@@ -106,7 +107,7 @@ class Stage{
    if(pts.length>=n)break;sp*=.92;
   }
   shuffle(pts,rand);if(pts.length>n)pts.length=n;
-  const base=pts.length;while(pts.length<n&&base){const q=pts[(rand()*base)|0];pts.push({x:q.x+(rand()-.5)*3,y:q.y+(rand()-.5)*3,c:q.c});}
+  const base=pts.length;while(pts.length<n&&base){const q=pts[(rand()*base)|0];pts.push({x:q.x+(rand()-.5)*3*this.k,y:q.y+(rand()-.5)*3*this.k,c:q.c});}
   return pts;
  }
  private build(){
@@ -212,7 +213,7 @@ class Stage{
    if(rank[i]>=active)continue;
    if(sw[i]&&t>sw[i]){c[i]=nc[i];sw[i]=0;}
    if(free){dir[i]+=(Math.random()-.5)*.16*f;const tvx=Math.cos(dir[i])*sp[i],tvy=Math.sin(dir[i])*sp[i];vx[i]+=(tvx-vx[i])*.05*f;vy[i]+=(tvy-vy[i])*.05*f;}
-   else{const wob=fl[i]?0:.9;vx[i]+=(tx[i]+Math.sin(tt*1.1+ph[i])*wob-x[i])*k;vy[i]+=(ty[i]+Math.cos(tt*.9+ph[i])*wob-y[i])*k;}
+   else{const wob=fl[i]?0:.9*this.k;vx[i]+=(tx[i]+Math.sin(tt*1.1+ph[i])*wob-x[i])*k;vy[i]+=(ty[i]+Math.cos(tt*.9+ph[i])*wob-y[i])*k;}
    const dx=x[i]-mx,dy=y[i]-my,d2=dx*dx+dy*dy;
    if(d2<R2&&d2>.01){const d=Math.sqrt(d2),q=1-d/RR,fo=q*q*(this.pulse>0?7:3.6)*f;vx[i]+=dx/d*fo-dy/d*fo*.35;vy[i]+=dy/d*fo+dx/d*fo*.35;}
    if(free){vx[i]*=.995;vy[i]*=.995;}else{vx[i]*=damp;vy[i]*=damp;}
@@ -255,8 +256,7 @@ export function GrainStage({mode,word,palette='theme',count,floor=.16,kick=0,cla
   const node=canvas.current;if(!node||!node.getContext('2d'))return;
   const o=initial.current;
   // Count from the stage's own size (grainCount): smaller stages draw smaller, denser grains.
-  const box=node.getBoundingClientRect();
-  const instance=new Stage(node,{count:o.count??grainCount(box.width,box.height),floor:o.floor,palette:o.palette,word:o.word,mode:o.mode});
+  const instance=new Stage(node,{count:o.count,floor:o.floor,palette:o.palette,word:o.word,mode:o.mode});
   stage.current=instance;return()=>{instance.dispose();stage.current=null;};
  },[]);
  useEffect(()=>{stage.current?.setMode(mode);},[mode]);

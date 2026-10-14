@@ -12,7 +12,7 @@
     "dev": "vite --port 5173",
     "build": "vinext build",
     "test": "node --test tests/*.test.mjs",
-    "verify:public": "node scripts/check-public-boundary.mjs",
+    "verify:public": "node scripts/check-public-boundary.mjs && node scripts/check-chain-source.mjs",
     "read:record": "node scripts/read-record.mjs"
   },
   "dependencies": {

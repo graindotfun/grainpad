@@ -10,6 +10,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 const outfile='.test-output/public-creator-buy-ui.mjs';
 const candidate=process.env.GRAINPAD_LAUNCH_UI_CHECKOUT||process.cwd();
 const stubComponents={
+ '@/lib/chain/robinhood-mainnet-draft.ts':`export async function readMainnetDraft(){return null;}export async function saveMainnetDraft(){}`,
  '@/lib/monero-prelaunch-browser.mjs':`export async function replacePlannedLaunchAuthorization(prepared,wallet,mint){const f=globalThis.__launchUi;(f.provenanceReplacements??=[]).push(prepared);if(f.provenanceFailure)throw f.provenanceFailure;return {authorized:true};}`,
  'next/image':`export default function Image(){return null;}`,
  'next/link':`export default function Link(){return null;}`,
@@ -28,6 +29,7 @@ await build({entryPoints:[join(candidate,'components/launch-workspace.tsx')],out
  b.onResolve({filter:/^react$/},()=>({path:'react',namespace:'fixture'}));
  // The Protected Launch tab imports the shared wallet hook relatively; it gets the same stub.
  b.onResolve({filter:/^\.\/use-shared-wallet$/},()=>({path:'@/components/use-shared-wallet',namespace:'fixture'}));
+ b.onResolve({filter:/^\.\/robinhood-mainnet-draft\.ts$/},()=>({path:'@/lib/chain/robinhood-mainnet-draft.ts',namespace:'fixture'}));
  b.onResolve({filter:/^@\//},a=>{if(stubComponents[a.path])return {path:a.path,namespace:'fixture'};const alias=a.path.startsWith('@/lib/research/')?'data/lab-display.json':a.path.slice(2),base=join(candidate,alias),path=['','.ts','.tsx','.mjs','.js'].map(ext=>base+ext).find(existsSync);return {path};});
  b.onLoad({filter:/.*/,namespace:'fixture'},a=>({loader:'js',contents:a.path==='react'?`export function useState(initial){const f=globalThis.__launchUi,i=f.stateIndex++;if(!(i in f.states))f.states[i]=initial;return [f.states[i],v=>{f.states[i]=typeof v==='function'?v(f.states[i]):v;}];}export function useRef(initial){const f=globalThis.__launchUi,i=f.refIndex++;return f.refs[i]??(f.refs[i]={current:initial});}export function useEffect(fn){globalThis.__launchUi.effects.push(fn);}export function useEffectEvent(fn){return (...args)=>fn(...args);}export function useCallback(fn){return fn;}export function useMemo(fn){return fn();}export function useId(){return 'fixture';}export function useSyncExternalStore(){return null;}`:stubComponents[a.path]}));
  }}]});
@@ -43,15 +45,15 @@ const creatorKey=nacl.sign.keyPair(),owner=bs58.encode(creatorKey.publicKey),min
 async function withUi(run){
  const old={window:globalThis.window,fetch:globalThis.fetch,localStorage:globalThis.localStorage,FileReader:globalThis.FileReader};
  const stored=new Map(),f={states:[],refs:[],effects:[],publications:[],preparations:[],metadataPosts:[],readers:[],signs:0,preparedResult:{owner,symbol:'CAT',mint,quoteAsset:'wXMR',platformName:'Grainpad',network:'mainnet-beta',estimatedLamports:10000000,balanceBeforeLamports:100000000,measuredDebitLamports:9000000,rewards:{taxBps:200},fees:{protocol:'25',platform:'75',creator:'25'},creatorBuy:null},wallet:{publicKey:{toBase58:()=>owner},signMessage:async bytes=>{f.signs++;return nacl.sign.detached(bytes,creatorKey.secretKey);}}};
- globalThis.__launchUi=f;globalThis.FileReader=class {readAsDataURL(file){this.file=file;f.readers.push(this);}};globalThis.window={location:{origin:'https://grainpad.fun'}};globalThis.localStorage={getItem:key=>stored.get(key)??null,setItem:(key,value)=>stored.set(key,value),removeItem:key=>stored.delete(key)};
+ globalThis.__launchUi=f;globalThis.FileReader=class {readAsDataURL(file){this.file=file;f.readers.push(this);}};globalThis.window={location:{origin:'https://grainpad.fun',href:'https://grainpad.fun/launch/solana/mainnet'},history:{state:null,replaceState(){}}};globalThis.localStorage={getItem:key=>stored.get(key)??null,setItem:(key,value)=>stored.set(key,value),removeItem:key=>stored.delete(key)};
  globalThis.fetch=async(url,options)=>{assert.equal(url,'/api/metadata');f.metadataPosts.push(JSON.parse(options.body));return Response.json({uri:'https://grainpad.fun/metadata/fixture.json',metadataHash:'a'.repeat(64)});};
- try{render(f);f.states[4]='Creator Cat';f.states[5]='CAT';f.states[9]='https://x.com/creatorcat';f.states[13]='data:image/png;base64,AQ==';f.states[16]=owner;f.states[20]=mint;f.states[36]={active:true,policyMatches:true,creationEnabled:true,rules:[{symbol:'SOL'},{symbol:'wXMR'}]};f.refs[3]={current:owner};f.refs[4]={current:{publicKey:{toBase58:()=>mint}}};return await run(f,stored);}finally{Object.assign(globalThis,old);delete globalThis.__launchUi;}
+ try{render(f);f.effects.find(effect=>effect.toString().includes('mounted.current = true'))?.();f.effects.find(effect=>effect.toString().includes('draftEpoch.current'))();await settle();f.states[4]='Creator Cat';f.states[5]='CAT';f.states[9]='https://x.com/creatorcat';f.states[13]='data:image/png;base64,AQ==';f.states[16]=owner;f.states[20]=mint;f.states[36]={active:true,policyMatches:true,creationEnabled:true,rules:[{symbol:'SOL'},{symbol:'wXMR'}]};f.refs[3]={current:owner};f.refs[4]={current:{publicKey:{toBase58:()=>mint}}};const stepThree=walk(render(f)).filter(node=>node.type==='button'&&node.props.children?.[0]?.type==='b')[2];assert(stepThree,'the financial flow enters on-chain stage03');stepThree.props.onClick();return await run(f,stored);}finally{Object.assign(globalThis,old);delete globalThis.__launchUi;}
 }
 
 const currency=tree=>walk(tree).find(n=>n.props?.ariaLabel==='Creator buy payment currency');
 test('public creator buy defaults to zero and never converts an old metadata declaration into spending',()=>withUi(async(f,stored)=>{
- assert.equal(input(render(f),'creator-buy-amount').props.value,'0');stored.set('launch-lab-draft',JSON.stringify({name:'Legacy',symbol:'OLD',declaredCreatorBuy:'1.5'}));
- const tree=render(f),hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft'));assert(hydrate);hydrate();assert.equal(input(render(f),'creator-buy-amount').props.value,'0');assert.equal(currency(tree).props.value,'SOL');assert.match(text(tree),/positive amount swaps exactly this SOL to wXMR and buys your token in the same transaction/);assert.doesNotMatch(text(tree),/Public declaration only/);
+ assert.equal(input(render(f),'creator-buy-amount').props.value,'0');stored.delete('launch-lab-draft:mainnet-beta');stored.set('launch-lab-draft',JSON.stringify({name:'Legacy',symbol:'OLD',declaredCreatorBuy:'1.5'}));
+ const tree=render(f),hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft'));assert(hydrate);hydrate();await settle();assert.equal(input(render(f),'creator-buy-amount').props.value,'0');assert.equal(currency(tree).props.value,'SOL');assert.match(text(tree),/positive amount swaps exactly this SOL to wXMR and buys your token in the same transaction/);assert.doesNotMatch(text(tree),/Public declaration only/);
 }));
 test('selected positive amount binds signed metadata intent and actual launch preparation',()=>withUi(async f=>{
  currency(render(f)).props.onValueChange('wXMR');
@@ -109,14 +111,14 @@ test('only primary action changes from preparation to deploy and requires exact-
 test('SOL payment selector relabels the amount, explains the wXMR pairing and persists in the draft',()=>withUi(async(f,stored)=>{
  const select=currency(render(f));assert.ok(select);assert.equal(select.props.value,'SOL');assert.deepEqual(select.props.options.map(o=>o.value),['SOL','wXMR']);
  select.props.onValueChange('SOL');const tree=render(f);assert.equal(currency(tree).props.value,'SOL');assert.match(text(tree),/Creator buy · SOL \(optional\)/);assert.match(text(tree),/stays paired with wXMR/);assert.match(text(tree),/0\.005 SOL reserve/);
- stored.set('launch-lab-draft',JSON.stringify({name:'Draft',symbol:'DRF',creatorBuyAmount:'0.5',creatorBuyCurrency:'SOL'}));currency(render(f)).props.onValueChange('wXMR');
- const hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'));hydrate();assert.equal(currency(render(f)).props.value,'SOL');assert.equal(input(render(f),'creator-buy-amount').props.value,'0.5');
- currency(render(f)).props.onValueChange('wXMR');render(f);const save=f.effects.find(effect=>effect.toString().includes('localStorage.setItem("launch-lab-draft"'));save();assert.equal(JSON.parse(stored.get('launch-lab-draft')).creatorBuyCurrency,'wXMR');
- stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'wXMR'}));currency(render(f)).props.onValueChange('SOL');hydrate();assert.equal(currency(render(f)).props.value,'wXMR');
+ stored.delete('launch-lab-draft:mainnet-beta');stored.set('launch-lab-draft',JSON.stringify({name:'Draft',symbol:'DRF',creatorBuyAmount:'0.5',creatorBuyCurrency:'SOL'}));currency(render(f)).props.onValueChange('wXMR');
+ const hydrate=f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'));hydrate();await settle();assert.equal(currency(render(f)).props.value,'SOL');assert.equal(input(render(f),'creator-buy-amount').props.value,'0.5');
+ currency(render(f)).props.onValueChange('wXMR');render(f);const save=f.effects.find(effect=>effect.toString().includes('identitySaveQueue.current'));save();await settle();assert.equal(JSON.parse(stored.get('launch-lab-draft')).creatorBuyCurrency,'wXMR');
+ stored.delete('launch-lab-draft:mainnet-beta');stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'wXMR'}));currency(render(f)).props.onValueChange('SOL');hydrate();await settle();assert.equal(currency(render(f)).props.value,'wXMR');
  // A draft saved before the currency choice existed priced its buy in wXMR and must not be read as SOL.
- stored.set('launch-lab-draft',JSON.stringify({creatorBuyAmount:'5'}));currency(render(f)).props.onValueChange('SOL');hydrate();assert.equal(currency(render(f)).props.value,'wXMR');assert.equal(input(render(f),'creator-buy-amount').props.value,'5');
- stored.set('launch-lab-draft',JSON.stringify({creatorBuyAmount:'0'}));hydrate();assert.equal(currency(render(f)).props.value,'SOL');
- stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'DOGE'}));render(f);f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'))();assert.equal(currency(render(f)).props.value,'SOL');
+ stored.delete('launch-lab-draft:mainnet-beta');stored.set('launch-lab-draft',JSON.stringify({creatorBuyAmount:'5'}));currency(render(f)).props.onValueChange('SOL');hydrate();await settle();assert.equal(currency(render(f)).props.value,'wXMR');assert.equal(input(render(f),'creator-buy-amount').props.value,'5');
+ stored.delete('launch-lab-draft:mainnet-beta');stored.set('launch-lab-draft',JSON.stringify({creatorBuyAmount:'0'}));hydrate();await settle();assert.equal(currency(render(f)).props.value,'SOL');
+ stored.delete('launch-lab-draft:mainnet-beta');stored.set('launch-lab-draft',JSON.stringify({creatorBuyCurrency:'DOGE'}));render(f);f.effects.find(effect=>effect.toString().includes('launch-lab-draft')&&effect.toString().includes('getItem'))();await settle();assert.equal(currency(render(f)).props.value,'SOL');
 }));
 test('positive SOL buy is quoted, signed in metadata and handed to preparation unchanged; zero SOL buys nothing',()=>withUi(async f=>{
  currency(render(f)).props.onValueChange('SOL');input(render(f),'creator-buy-amount').props.onChange({target:{value:'0.01'}});await button(render(f),'Review launch').props.onClick();

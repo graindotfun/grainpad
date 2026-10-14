@@ -12,7 +12,7 @@ import {GrainStage,grainWord,type GrainMode} from "./grain-stage";
 import {ReceiptRows,tokenStatus} from "./grain-ui";
 import {formatMarketCap} from "@/lib/token-market";
 import {startViewerPolling} from "@/lib/viewer-polling.mjs";
-import {BRAND_CHAIN} from "@/lib/brand-presentation";
+import {LaunchNetworkHomeSelect} from "./launch-network-home-select";
 import {MONERO_NARRATIVE,moneroRecordSummary} from "@/lib/monero-record-status.mjs";
 import type {DiscoveryResult,DiscoveryToken} from "@/lib/token-discovery";
 
@@ -37,12 +37,12 @@ function Hero({overview,status}:{overview:ReturnType<typeof useSiteOverview>;sta
  const typed=name.trim();
  return <section className="gx-hero gx-wrap" id="main-content" ref={hero} aria-labelledby="hero-heading">
   <div className="gx-hero-copy">
-   <p className="gx-label">{BRAND_CHAIN.label.toLowerCase()} · ideas into existence</p>
+   <p className="gx-label">token launches · ideas into existence</p>
    <h1 id="hero-heading" className="gx-h1">ideas into existence<span className="gx-dot">.</span></h1>
-   <p className="gx-hero-sub">launch a token from your own wallet. every confirmed launch gets a public receipt, a live tape and a room.</p>
+   <p className="gx-hero-sub">choose your network. launch a token from your own wallet. follow its public receipt and market.</p>
    <form className="gx-composer" action="/launch" method="get">
     <label className="gx-composer-field"><span className="gx-mono gx-mute">name your idea</span><input name="name" value={name} maxLength={32} autoComplete="off" spellCheck={false} placeholder="grainpad" onChange={e=>{setName(e.target.value);setAuto(false);setMode(1);setKick(k=>k+1);}}/></label>
-    <button type="submit" className="gx-pill is-orange gx-composer-go">launch it <ArrowRight size={18}/></button>
+    <LaunchNetworkHomeSelect/><button type="submit" className="gx-pill is-orange gx-composer-go">launch it <ArrowRight size={18}/></button>
    </form>
    <ol className="gx-hero-steps gx-mono gx-mute"><li><span>01</span> name it</li><li><span>02</span> add an image</li><li><span>03</span> launch from your own wallet</li></ol>
    <div className="gx-hero-links"><a className="gx-ghost" href="#launches">browse launches <ArrowDown size={16}/></a><span className="gx-mono gx-mute">nothing is signed on this page</span></div>

@@ -1,0 +1,13 @@
+.rh-header .gx-header-inner{flex-wrap:wrap;height:auto;min-height:76px}
+.site-header.rh-header .gx-nav{display:flex;flex-wrap:wrap;gap:20px}
+.rh-network-label{font-size:12px;color:var(--gx-mute)}
+.gx.gx-create .transaction-review dl>div{display:flex;justify-content:space-between;gap:16px;padding:10px 0}
+.gx.gx-create .transaction-review dd{margin:0;text-align:right}
+.gx.gx-create .receipt{overflow-wrap:anywhere}
+.rh-token-identity{display:flex;align-items:flex-start;gap:24px}
+.rh-token-identity img{width:112px;height:112px;object-fit:cover;border-radius:20px}
+.rh-token-identity p{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:640px){.rh-header .gx-header-inner{gap:16px;padding-block:16px}.site-header.rh-header .gx-nav{order:3;width:100%;gap:16px;font-size:13px}.rh-network-label{display:none}.rh-token-identity{flex-direction:column}.gx.gx-create .transaction-review dl>div{font-size:13px}}
+
+.rh-directory-token{display:flex;align-items:center;gap:12px;padding:12px 0}.rh-directory-token img{border-radius:10px;object-fit:cover}
+@media(max-width:640px){.site-header.rh-header .gx-nav{flex:0 0 100%;width:100%;order:3}}

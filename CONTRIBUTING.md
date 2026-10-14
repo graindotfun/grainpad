@@ -1,6 +1,6 @@
 # Contributing
 
-This repository publishes reviewed source releases for inspection, local builds and forks. It is intentionally archived between releases to protect the public/private boundary. Product development takes place in a separate private workspace; source updates are published through a controlled maintainer release step.
+This repository publishes reviewed source releases for inspection, local builds and forks. It stays unarchived and receives reviewed incremental product updates. Product development takes place in a separate private workspace; source updates are published through a controlled maintainer release step.
 
 Useful feedback includes reproducible defects in public builders, malformed-record cases, parser compatibility, clearer verification output and improvements to the public UI. Use the project's published support channels for nonsensitive feedback. Report vulnerabilities privately as described in SECURITY.md. Do not send wallet backups, authenticated endpoints, credentials or user records.
 
