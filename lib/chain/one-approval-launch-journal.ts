@@ -129,14 +129,29 @@ export async function recoverCreationTransaction(rpc: (method: string, params: u
  * Launches this wallet created recently, found on-chain. Guards the one case a browser journal cannot: storage cleared
  * or a different browser. The caller treats a hit as "recover this first", never as permission to create again silently.
  */
-export async function recentCreatorLaunches(rpc: (method: string, params: unknown[]) => Promise<unknown>, factory: string, creator: string, topic: string, lookbackBlocks = 200_000n): Promise<Array<{launchId: string; transactionHash: string}>> {
+export async function recentCreatorLaunches(rpc: (method: string, params: unknown[]) => Promise<unknown>, factory: string, creator: string, topic: string, lookbackBlocks = 200_000n, deploymentBlock = 0n): Promise<Array<{launchId: string; transactionHash: string}>> {
   const latest = await rpc("eth_blockNumber", []);
   if (typeof latest !== "string" || !/^0x[0-9a-f]+$/i.test(latest)) throw new Error("Block number unavailable.");
-  const head = BigInt(latest), from = head > lookbackBlocks ? head - lookbackBlocks : 0n;
+  const head = BigInt(latest);
+  if (lookbackBlocks < 0n || lookbackBlocks > 200_000n || deploymentBlock < 0n || deploymentBlock > head) throw new Error("Recent launches unavailable.");
+  const lookbackStart = head > lookbackBlocks ? head - lookbackBlocks : 0n;
+  const from = deploymentBlock > lookbackStart ? deploymentBlock : lookbackStart;
   const padded = "0x" + assertAddress(creator).slice(2).padStart(64, "0");
-  const logs = await rpc("eth_getLogs", [{address: assertAddress(factory), fromBlock: "0x" + from.toString(16), toBlock: "latest", topics: [topic, null, null, padded]}]);
-  if (!Array.isArray(logs) || logs.length > 50) throw new Error("Recent launches unavailable.");
-  return logs.map(l => ({launchId: assertBytes32(String((l as {topics?: string[]}).topics?.[1])), transactionHash: assertBytes32(String((l as {transactionHash?: string}).transactionHash))}));
+  const found: Array<{launchId: string; transactionHash: string}> = [];
+  // Keep the entire prior lookback, but never ask a wallet RPC for a huge range.
+  // Pin every page to the captured head. Any failed page aborts the launch check.
+  for (let next = from; next <= head; next += 2000n) {
+    const to = next + 1999n < head ? next + 1999n : head;
+    let logs: unknown;
+    try {
+      logs = await rpc("eth_getLogs", [{address: assertAddress(factory), fromBlock: "0x" + next.toString(16), toBlock: "0x" + to.toString(16), topics: [topic, null, null, padded]}]);
+    } catch {
+      throw new Error("Recent-launch history could not be checked. No new wallet transaction was requested by this launch attempt. Keep your form and check your wallet activity before retrying.");
+    }
+    if (!Array.isArray(logs) || found.length + logs.length > 50) throw new Error("Recent launches unavailable.");
+    found.push(...logs.map(l => ({launchId: assertBytes32(String((l as {topics?: string[]}).topics?.[1])), transactionHash: assertBytes32(String((l as {transactionHash?: string}).transactionHash))})));
+  }
+  return found;
 }
 
 export type NothingSentProof = {safe: boolean; reason: string};

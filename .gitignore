@@ -20,3 +20,5 @@ dist/
 .wrangler/
 .test-output/
 coverage/
+
+contracts/trial-out/

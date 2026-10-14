@@ -94,7 +94,7 @@ test('a browser without Web Locks cannot launch (fails closed) and a lock failur
 
 test('a launch made from another browser or after storage was cleared is found on-chain', async () => {
   const calls = [];
-  const rpc = async (method, params) => { calls.push(method); if (method === 'eth_blockNumber') return '0x30d40'; return [{topics: [LAUNCH_CREATED_TOPIC, launchId, '0x' + '0'.repeat(64), '0x' + creator.slice(2).padStart(64, '0')], transactionHash: tx}]; };
+  const rpc = async (method) => { calls.push(method); if (method === 'eth_blockNumber') return '0x30d40'; return calls.length === 2 ? [{topics: [LAUNCH_CREATED_TOPIC, launchId, '0x' + '0'.repeat(64), '0x' + creator.slice(2).padStart(64, '0')], transactionHash: tx}] : []; };
   const found = await recentCreatorLaunches(rpc, '0x' + '22'.repeat(20), creator, LAUNCH_CREATED_TOPIC, 100_000n);
   assert.deepEqual(found, [{launchId, transactionHash: tx}]);
   await assert.rejects(recentCreatorLaunches(async m => m === 'eth_blockNumber' ? '0x1' : new Array(51).fill({}), '0x' + '22'.repeat(20), creator, LAUNCH_CREATED_TOPIC), /unavailable/);
@@ -226,4 +226,41 @@ test('stores that disagree about the transaction for the same launch id are a co
   b.m.set(v2JournalKey(creator), {...b.m.get(v2JournalKey(creator)), chainId: '1'});
   assert.equal((await j.read()).conflict, true);
   assert.equal(await j.clear({launchId, transactionHash: hashA}), false);
+});
+
+
+test('creator recovery scans every bounded page to an explicit pinned head', async () => {
+ const pages = [];
+ const found = await recentCreatorLaunches(async (method, params) => {
+  if (method === 'eth_blockNumber') return '0x1388';
+  const filter = params[0]; pages.push(filter);
+  assert.ok(BigInt(filter.toBlock) - BigInt(filter.fromBlock) < 2000n);
+  assert.notEqual(filter.toBlock, 'latest');
+  return filter.toBlock === '0x1388' ? [{topics:[LAUNCH_CREATED_TOPIC, launchId],transactionHash:tx}] : [];
+ }, factory, creator, LAUNCH_CREATED_TOPIC, 5000n);
+ assert.deepEqual(pages.map(p=>[BigInt(p.fromBlock),BigInt(p.toBlock)]),[[0n,1999n],[2000n,3999n],[4000n,5000n]]);
+ assert.deepEqual(found,[{launchId,transactionHash:tx}]);
+});
+
+test('a failed or malformed later history page never becomes an empty recovery result', async () => {
+ for (const failure of [{code:35,message:'provider range refused'},null]) {
+  let pages=0;
+  await assert.rejects(recentCreatorLaunches(async method => {
+   if(method==='eth_blockNumber')return '0x1388';
+   if(++pages===1)return [];
+   if(failure)throw failure;
+   return null;
+  },factory,creator,LAUNCH_CREATED_TOPIC,5000n),/history could not be checked|unavailable/);
+  assert.equal(pages,2);
+ }
+});
+
+
+test('verified factory birth limits history without dropping any possible creation block', async () => {
+ const ranges=[];
+ await recentCreatorLaunches(async(method,params)=>{
+  if(method==='eth_blockNumber')return '0x1388';ranges.push(params[0]);return [];
+ },factory,creator,LAUNCH_CREATED_TOPIC,5000n,4500n);
+ assert.deepEqual(ranges.map(p=>[BigInt(p.fromBlock),BigInt(p.toBlock)]),[[4500n,5000n]]);
+ for(const birth of [-1n,5001n])await assert.rejects(recentCreatorLaunches(async()=> '0x1388',factory,creator,LAUNCH_CREATED_TOPIC,5000n,birth),/unavailable/);
 });
