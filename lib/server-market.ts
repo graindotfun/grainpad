@@ -12,10 +12,11 @@ import {sharedMarketCache} from './server-cache';
 import {readMarketSnapshot} from './market-snapshot.mjs';
 import {creationOnly} from './trade-activity.mjs';
 import {isOwnPlatform} from './launch-identity.mjs';
+import {parseTimestamp} from './token-time.ts';
 
 export type NativeQuote={priceQuote:number|null;marketCapQuote:number|null;liquidityQuote:number|null;liquidityKind:string|null;volume24hQuote:number|null;volumeCoverage:string;change24h:number|null;changeCoverage:string;priceUsd:number|null;marketCapUsd:number|null;liquidityUsd:number|null;volume24hUsd:number|null;usd:{symbol:string;price:number;source:string;updatedAt:number;freshness:string;note:string}|null;source:'grainpad'};
 export type MarketIdentity={mint:string;name:string;symbol:string;image:string;creator:string|null;createdAt:string|null;quoteSymbol:string};
-export type MarketView={transferTaxBps?:number;quoteStats?:{price:number|null;marketCap:number|null}|null;liquidity?:{quote:number|null;kind:string|null};native?:NativeQuote;creator?:string;creatorIdentity?:{wallet:string;username:string;displayName:string;avatar:string|null;xVerified:boolean;xUsername:string|null}|null;createdAt?:string|null;lifecycle?:string;progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};links?:{gecko:string;dexscreener:string};updatedAt:number;stale:boolean;slot:number};
+export type MarketView={transferTaxBps?:number;quoteStats?:{price:number|null;marketCap:number|null}|null;liquidity?:{quote:number|null;kind:string|null};native?:NativeQuote;creator?:string;creatorIdentity?:{wallet:string;username:string;displayName:string;avatar:string|null;xVerified:boolean;xUsername:string|null}|null;createdAt?:string|null;launchedAt?:string|null;graduatedAt?:string|null;lifecycle?:string;progress?:{raised:string;target:string};stats?:MarketStats;quote:{symbol:string;mint:string;decimals:number;native:boolean};mint:string;pool:string;launchPool:string;route:string;rates:Record<string,string>;name:string;symbol:string;image:string;official:boolean;activity:'none'|'seen'|'unknown';chart:{available:boolean;pool:string;stale?:boolean;reason?:string;stats?:MarketStats};links?:{gecko:string;dexscreener:string};updatedAt:number;stale:boolean;slot:number};
 export async function serverMarket(address:string,{viewer=false}:{viewer?:boolean}={}):Promise<MarketView>{
  const mint=new PublicKey(address).toBase58(),platform=grainpadPlatformId().toBase58(),db=database();
  // Unregistered/foreign mints cannot create cache entries or spend RPC budget.
@@ -23,7 +24,7 @@ export async function serverMarket(address:string,{viewer=false}:{viewer?:boolea
  try{indexed=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',platform,mint).first<{record:string}>();}
  catch{throw new MarketReadError('unavailable','Market data is temporarily unavailable.',null);}
  if(!indexed)throw new MarketReadError('not_registered','This mint is not a registered grainpad launch.',null);
- let record:{mint:string;platformId:string;verification:string;quoteAsset?:string;name:string;symbol:string;image:string;creator?:string;createdAt?:string}|null=null;
+ let record:{mint:string;platformId:string;verification:string;quoteAsset?:string;name:string;symbol:string;image:string;creator?:string;createdAt?:string;launchedAt?:string;graduatedAt?:string}|null=null;
  try{record=JSON.parse(indexed.record);}catch{record=null;}
  const identity:MarketIdentity|null=record?{mint,name:record.name,symbol:record.symbol,image:record.image,creator:record.creator||null,createdAt:record.createdAt||null,quoteSymbol:record.quoteAsset||'SOL'}:null;
  if(!record||record.mint!==mint||record.verification!=='confirmed-on-chain'||!isOwnPlatform(record.platformId,platform))throw new MarketReadError(record?'unavailable':'not_registered',record?'Launch identity could not be read.':'This mint is not a registered grainpad launch.',record?identity:null);
@@ -57,5 +58,5 @@ export async function serverMarket(address:string,{viewer=false}:{viewer?:boolea
  const chart={available:false,pool:cached.data.pool,stale:false,reason:'grainpad-native' as const};
  const official=await db.prepare('SELECT mint FROM official_token WHERE id=1').first<{mint:string}>();
  const lifecycle=lifecycleState({route:cached.data.route,raised:cached.data.progress?.raised,target:cached.data.progress?.target});
- return {...cached.data,creator:record.creator,createdAt:record.createdAt||null,name:record.name,symbol:record.symbol,image:record.image,official:official?.mint===mint,lifecycle,chart,links:{gecko:`https://www.geckoterminal.com/solana/pools/${cached.data.pool}`,dexscreener:`https://dexscreener.com/solana/${mint}`},updatedAt:cached.updatedAt,stale:cached.stale};
+ return {...cached.data,creator:record.creator,createdAt:record.createdAt||null,launchedAt:parseTimestamp(record.launchedAt)!==null?record.launchedAt:null,graduatedAt:cached.data.route==='cpmm'&&parseTimestamp(record.graduatedAt)!==null?record.graduatedAt:null,name:record.name,symbol:record.symbol,image:record.image,official:official?.mint===mint,lifecycle,chart,links:{gecko:`https://www.geckoterminal.com/solana/pools/${cached.data.pool}`,dexscreener:`https://dexscreener.com/solana/${mint}`},updatedAt:cached.updatedAt,stale:cached.stale};
 }
