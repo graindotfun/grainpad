@@ -31,3 +31,8 @@ html[data-theme="light"] .launch-network-row,html[data-theme="light"] .launch-ne
 html[data-theme="light"] .launch-network-row{border-color:#1113}html[data-theme="light"] .launch-network-row.is-selected{border-color:var(--grain-orange)}html[data-theme="light"] .launch-network-name small,html[data-theme="light"] .launch-network-facts,html[data-theme="light"] .launch-testnet-toggle{color:#656565}html[data-theme="light"] .launch-network-environments button{border-color:#1113}html[data-theme="light"] .launch-network-environments button[aria-pressed=true]{background:#1111}
 html[data-theme="light"] .launch-network-dialog{background:#fff;color:#111;border-color:#1113}html[data-theme="light"] .launch-network-chip small{border-color:#1113;color:#555}html[data-theme="light"] .launch-network-row.is-testnet,html[data-theme="light"] .launch-network-chip.is-testnet{border-color:#a98213;background:repeating-linear-gradient(135deg,#cea93716,#cea93716 8px,transparent 8px,transparent 16px)}
 @media(max-width:700px){.launch-network-dialog{translate:none!important;animation:none!important}.launch-pending-row{flex-wrap:wrap}}
+
+/* Keep the chosen network in its brand colors, including keyboard selection. */
+.launch-network-row.is-selected .network-logo-main,.launch-network-home .network-logo-main,.launch-network-chip .network-logo-main,.launch-network-stamp .network-logo-main{opacity:0}
+.launch-network-row.is-selected .network-logo-hover,.launch-network-home .network-logo-hover,.launch-network-chip .network-logo-hover,.launch-network-stamp .network-logo-hover{opacity:1}
+.launch-network-row .launch-network-logo.is-solana img{inset:10%;width:80%;height:80%}

@@ -13,8 +13,11 @@ export const PICKER_NETWORKS:readonly PickerNetwork[]=Object.freeze([
  Object.freeze({id:'solana:devnet',label:'Solana',environment:'testnet',family:'solana',route:'/launch/solana/devnet',logoMain:logo('sol','main'),logoHover:logo('sol','hover'),available:false,recoveryOnly:true,quoteLabel:'Test funds · previous receipts only',walletLabel:'Solana browser wallet',dexLabel:'New devnet launches remain closed'} as const),
 ]);
 export function pickerNetwork(id:unknown):PickerNetwork|null{return PICKER_NETWORKS.find(n=>n.id===id)??null;}
-export function pickerDefaults(savedId:unknown,queryId:unknown,showTestnets=false):PickerNetworkId{
- for(const id of [queryId,savedId]){const n=pickerNetwork(id);if(n?.available&&!n.recoveryOnly&&(n.environment==='mainnet'||showTestnets))return n.id;}
+export function pickerDefaults(_savedId:unknown,queryId:unknown,_showTestnets?:boolean):PickerNetworkId{
+ void _showTestnets; // Legacy argument is deliberately ignored.
+ // Only an explicit mainnet choice overrides the Solana default. Stored preferences
+ // and legacy testnet receipts never change the network of a new launch.
+ const n=pickerNetwork(queryId);if(n?.available&&!n.recoveryOnly&&n.environment==='mainnet')return n.id;
  return 'solana:mainnet-beta';
 }
 const evmHash=(v:unknown):v is string=>typeof v==='string'&&/^0x[0-9a-f]{64}$/i.test(v)&&!/^0x0{64}$/i.test(v);
