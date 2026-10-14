@@ -244,7 +244,7 @@ export function RobinhoodMainnetCreate() {
     <div className="gx-wrap gx-create-wrap" id="main-content">
       <div className="gx-create-head"><div><LaunchNetworkChip networkId="robinhood:mainnet" disabled={!!busy||!hydrated} submitted={!!hash||submissionRequested} identity={draft} onError={setError}/><p className="gx-label">regular launch · Robinhood · WETH pair</p><h1 className="gx-display">launch a token<span className="gx-dot">.</span></h1></div><p className="gx-mute">give your idea a name, an image and a story. review the terms, then launch from your own wallet.</p></div>
       <div className="gx-steps" role="group" aria-label="Launch steps">{["idea","identity","on-chain"].map((label,index)=><button key={label} type="button" aria-current={shown===index?"step":undefined} data-done={shown>index||undefined} disabled={locked} onClick={()=>setStep(index)}><b>0{index+1}</b> {label}</button>)}</div>
-      <div className="launch-grid"><section className="panel form-panel launch-flow">
+      <div className="launch-grid"><section className="panel form-panel launch-flow rh-launch-flow">
         {!ready&&<p role="status">Mainnet launching is not yet available.</p>}
         <div className="gx-step" hidden={shown!==0}><div className="gx-step-title"><p className="gx-label">01 · idea</p><h3>what are we launching?</h3></div>
           <label className="gx-field">name<Input placeholder="give your token a name" value={name} disabled={locked} maxLength={32} onChange={e=>setName(e.target.value)}/></label>

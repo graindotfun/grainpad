@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "d39540a0dbf6bdc302369425283c5ed5588e4941",
+  "sourceCommit": "3f3fe65a242c4966ee1d21a85197c3a415ae52d3",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -377,7 +377,7 @@
     },
     {
       "path": "app/robinhood-launch.css",
-      "sha256": "f00bbb690422e1f5b345d6345ccd4fef346d674c65295396f126b5e45a332d01"
+      "sha256": "bd0473f8123f30e2895746e674c610e643889f466dbc3c961724e405d92df0c4"
     },
     {
       "path": "app/robots.txt/route.ts",
@@ -677,7 +677,7 @@
     },
     {
       "path": "components/robinhood-mainnet-create.tsx",
-      "sha256": "3fa63dd7a7d290c1300deb2f95aad3f6c7124c736fc2944ca8a5dec81d56bbca"
+      "sha256": "45d92a000d972e48dfbe98194e9e255c11a43eab889cc290a4a4f98ffea4ee8f"
     },
     {
       "path": "components/robinhood-mainnet-header.tsx",
