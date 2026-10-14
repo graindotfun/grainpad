@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "114133a9d95446f6a6bf859569d139adf4ceac3b",
+  "sourceCommit": "72be6cf5798e625970414ee5e3245683e0af49fe",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "path": ".gitignore",
-      "sha256": "b540edabd17339fccfa4a3a02e9d2592ae23f5a1932f32923fccebca68d5bb9f"
+      "sha256": "3122acbefdc538a44605b8d88123b46139d628f52465b06a16151779aa66482e"
     },
     {
       "path": "AGENTS.md",
@@ -717,7 +717,7 @@
     },
     {
       "path": "components/robinhood-mainnet-launch-v2.tsx",
-      "sha256": "800d0232a7cfe8c79263fdc5bbbdf039d0afef9c14e31f76c5139215ccc44f9a"
+      "sha256": "615d699858d2c78e6c7b07aad230a32c4cec31129c4efeb01f3da8c54bd4365a"
     },
     {
       "path": "components/robinhood-mainnet-market.tsx",
@@ -934,6 +934,14 @@
     {
       "path": "contracts/src/mainnet/IGraduationPositions.sol",
       "sha256": "a082ae09633635f2eba10f55a9c9fea58c1c7635d5eb30a12c257d60a5fc4ccc"
+    },
+    {
+      "path": "contracts/src/mainnet/trial/GrainMetadataDexFactory.sol",
+      "sha256": "81a299c27e9c93c13bf97b897dd3808b4e83524b2e5290577ba130b4f9867507"
+    },
+    {
+      "path": "contracts/src/mainnet/trial/GrainMetadataToken.sol",
+      "sha256": "38e829655d18f39d92750e992d819871e3bcf1d316ed6599166077525eae177d"
     },
     {
       "path": "contracts/src/mainnet/v2/GrainMainnetFactoryV2.sol",
@@ -1209,7 +1217,7 @@
     },
     {
       "path": "lib/chain/one-approval-launch-journal.ts",
-      "sha256": "a9cb2a5f7b0c530b291b6a81453ac6fa26471ce2681b936700c97a3952218529"
+      "sha256": "0d7f5c896b5441d45f8379963ac1ead031a56ab934f5bfe47d1c086a4c6437bf"
     },
     {
       "path": "lib/chain/registry.ts",
@@ -2737,7 +2745,7 @@
     },
     {
       "path": "tests/one-approval-launch-journal.test.mjs",
-      "sha256": "7d87e355c1331fb9361e5b44dd9de0c228d45c646a56a777390e336fd5c6c15a"
+      "sha256": "5dec161105b5bac9107f271f5751aa530ce2a20808c5c8736a4a942599da85e9"
     },
     {
       "path": "tests/pilot-review.test.mjs",
