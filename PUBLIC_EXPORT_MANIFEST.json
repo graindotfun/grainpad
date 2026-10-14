@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "2fc91a1359a3662d796555244fcc39054974b02b",
+  "sourceCommit": "114133a9d95446f6a6bf859569d139adf4ceac3b",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -144,6 +144,22 @@
       "sha256": "d3b84f4362b6008cafa672010438b5911934c9a76d6eb2cee53851118cbdcd7f"
     },
     {
+      "path": "app/api/robinhood/mainnet/metadata/[launchId]/route.ts",
+      "sha256": "c69ef239a931e8f2f0b57a5aaf206e049681f7155c7497430c7b3a84249530be"
+    },
+    {
+      "path": "app/api/robinhood/mainnet/prepare/route.ts",
+      "sha256": "2d84341e8e70c3d7c8ce9298c751b5090975e2aec7eaa343fb5660907aea8bb4"
+    },
+    {
+      "path": "app/api/robinhood/mainnet/tokenlist/route.ts",
+      "sha256": "c69ef239a931e8f2f0b57a5aaf206e049681f7155c7497430c7b3a84249530be"
+    },
+    {
+      "path": "app/api/robinhood/mainnet/v2/launch/route.ts",
+      "sha256": "2d84341e8e70c3d7c8ce9298c751b5090975e2aec7eaa343fb5660907aea8bb4"
+    },
+    {
       "path": "app/api/room/[mint]/funding/route.ts",
       "sha256": "490d6fae4382d3e7065f635dc7fa40758931c034fdf37738b759ff760c501460"
     },
@@ -245,7 +261,7 @@
     },
     {
       "path": "app/grains.css",
-      "sha256": "fbe23864f999645f4765ce0dc1f5e3b3334f185602809c293ea86d0262b42e4a"
+      "sha256": "e802716b2e51ebc389333cf5886deb1cc28d6cdf95236a41feeb1a25762b87e9"
     },
     {
       "path": "app/lab/layout.tsx",
@@ -277,7 +293,11 @@
     },
     {
       "path": "app/launch/robinhood/mainnet/page.tsx",
-      "sha256": "847db821e670d2e61e59f35a16d3b197d5c60681dc851f542de06eb7580839b1"
+      "sha256": "90896e144046bd94c8eb6c542761f2131c4eea28b94a91b8f72f17bbeed202ca"
+    },
+    {
+      "path": "app/launch/robinhood/mainnet/v2/page.tsx",
+      "sha256": "ed1699d692b8c867624a01575f478946716f919ac9161caff3c9dd9f979daa5b"
     },
     {
       "path": "app/launch/robinhood/page.tsx",
@@ -696,8 +716,12 @@
       "sha256": "9b3b312119bcc06ae88761e83d00d5c43fbe1a085eadd32edd9801097df1848e"
     },
     {
+      "path": "components/robinhood-mainnet-launch-v2.tsx",
+      "sha256": "800d0232a7cfe8c79263fdc5bbbdf039d0afef9c14e31f76c5139215ccc44f9a"
+    },
+    {
       "path": "components/robinhood-mainnet-market.tsx",
-      "sha256": "7b6608dd194741fe806ec096f795d068558049e55ede513a4ed58f540bc1ad5f"
+      "sha256": "d9e2157c5dc4a1b9b37c73ae7ff1798c247dc096286fd923aa9fff3065246a4d"
     },
     {
       "path": "components/robinhood-market.tsx",
@@ -912,8 +936,40 @@
       "sha256": "a082ae09633635f2eba10f55a9c9fea58c1c7635d5eb30a12c257d60a5fc4ccc"
     },
     {
+      "path": "contracts/src/mainnet/v2/GrainMainnetFactoryV2.sol",
+      "sha256": "cfc8b3a20163db15e625c6cd5f79aa30134105800d07374aedea284bb592bf7a"
+    },
+    {
+      "path": "contracts/src/mainnet/v2/GrainTokenV2.sol",
+      "sha256": "72c2686f9af6cb8c873fa165f66bfa7ab788fc9d457ce63d63c4171208f2dd90"
+    },
+    {
+      "path": "contracts/src/mainnet/v3/GrainMainnetDexFactory.sol",
+      "sha256": "a189ee134bf0e2054f358fc8439db21f5f3b5647c05c246611cea0d7d41d54ed"
+    },
+    {
+      "path": "contracts/src/mainnet/v3/GrainMainnetDexLocker.sol",
+      "sha256": "c763921e672c4d1e99ce310d66e9223b6852abe1dab918257ea96791c9d9ec75"
+    },
+    {
+      "path": "contracts/src/mainnet/v3/IUniswapV3Min.sol",
+      "sha256": "26bd571b3c1b4670f68be8c9fb5eabe24d9b05dd0c061b9caeed1e0206ce5072"
+    },
+    {
       "path": "contracts/test/GrainLaunch.t.sol",
       "sha256": "3bf48d5c24f08b9490b292938c88467b766b0a9d8ad9e03e9dfe2cc32a269c0d"
+    },
+    {
+      "path": "contracts/test/GrainMainnetDexFork.t.sol",
+      "sha256": "f60d5fc4797c0c241b06c7931f2c34b93e3c200e7fd7552a8ac050503e409da1"
+    },
+    {
+      "path": "contracts/test/GrainMainnetFactoryV2.t.sol",
+      "sha256": "2024c7b9d58875f123b96a1dd9c9a6349661d69e84f89b1f6692dc749a3a1467"
+    },
+    {
+      "path": "contracts/test/GrainMainnetFactoryV2Fork.t.sol",
+      "sha256": "3afa18c0b01607aed4617555c0497648542ce0b3bb51d48ef0041e1dc4d96b40"
     },
     {
       "path": "contracts/test/GrainMainnetLaunch.t.sol",
@@ -1080,6 +1136,10 @@
       "sha256": "5b23e499ea6d481062b83cf4d5ce943ecb812f54ce1239fc173680e48628075a"
     },
     {
+      "path": "lib/chain/evm-launch-metadata-store.ts",
+      "sha256": "7138724890c0ebd23a959dbc9d3cd757760368c9037904a06bc8bb5585a7ecd3"
+    },
+    {
       "path": "lib/chain/evm-network-contracts.ts",
       "sha256": "90ec0ebd2b7aed570e8b26a06cfb24ce979b5ec9911abee03b4dd23046570224"
     },
@@ -1090,6 +1150,18 @@
     {
       "path": "lib/chain/evm-onboarding-readiness.ts",
       "sha256": "dafaea0e93dd62cf042eca198d92d8085407e8c9efe9d49aee888a07ef2a8c45"
+    },
+    {
+      "path": "lib/chain/evm-one-approval-launch.ts",
+      "sha256": "91176cf7a658f9081f0256c73bfb3352f7dbe54d33bac74beacb479f242efd3d"
+    },
+    {
+      "path": "lib/chain/evm-prepare-metadata.ts",
+      "sha256": "bcf7a947586ecb806e06ed1468f1be6dd5e40ea3c5f27592e6119f5de6a294ba"
+    },
+    {
+      "path": "lib/chain/evm-token-list.ts",
+      "sha256": "70300b0d281f8216f102ffed20c9061bf618fdf91a40ba13e46688cf2c736b43"
     },
     {
       "path": "lib/chain/evm-transaction-safety.ts",
@@ -1116,12 +1188,28 @@
       "sha256": "c84daaa764fccf922113636483e2662613aa603a1a963aa2e7611a562a2f339a"
     },
     {
+      "path": "lib/chain/launch-progress.ts",
+      "sha256": "6cd36f66d9a69389925bf440e95fbc6302e06a7594006f2c8eaefb8cc748c689"
+    },
+    {
       "path": "lib/chain/launch-submission-journal.ts",
       "sha256": "5b73aa7eddb90cc60a21ce35e9e73fdfcd39e787d2dd16de43e74c5560e96847"
     },
     {
+      "path": "lib/chain/market-venue-state.ts",
+      "sha256": "903bab12d71d17d635849105108be3c14f0fdb1491ff49eeb844b2b634535e6d"
+    },
+    {
       "path": "lib/chain/networks.ts",
       "sha256": "4db01f4af2aa99bec76a342433c430deb21764ff02d6ab6c461bdd042db3e40f"
+    },
+    {
+      "path": "lib/chain/one-approval-launch-client.ts",
+      "sha256": "6785fa08e460d3484e4ea5265723469ceaba83774142ab84f7d5a63f0a9a0294"
+    },
+    {
+      "path": "lib/chain/one-approval-launch-journal.ts",
+      "sha256": "a9cb2a5f7b0c530b291b6a81453ac6fa26471ce2681b936700c97a3952218529"
     },
     {
       "path": "lib/chain/registry.ts",
@@ -1164,12 +1252,16 @@
       "sha256": "0bd1d9197fbffe3a92d683ee65eb73e0b563d29b3d85081823842be579a0173b"
     },
     {
+      "path": "lib/chain/robinhood-mainnet-factories.ts",
+      "sha256": "667c1d93e58418796d2e80e228ee60ed23accad62d480a4a9efe653d67edf6df"
+    },
+    {
       "path": "lib/chain/robinhood-mainnet-fees.ts",
       "sha256": "ef4fc20ea62b8cacd7c9071ee13db9d527495d6f51b74edb618bba21865199c4"
     },
     {
       "path": "lib/chain/robinhood-mainnet-history.ts",
-      "sha256": "30953b445ac6026af00764e5c20d35db9b6dbbe7a3edd9876935423739b8b0c7"
+      "sha256": "e19057ce1cafa5cf3a65abaef7b0a788b2e33635edfc689f84f92dd47aaa5402"
     },
     {
       "path": "lib/chain/robinhood-mainnet-index.ts",
@@ -1177,7 +1269,7 @@
     },
     {
       "path": "lib/chain/robinhood-mainnet-market.ts",
-      "sha256": "7ea30f1939df9417b1012ecce5835567ef9e389a73a2d0c30d1a7bb936901e0c"
+      "sha256": "c0dbf90baf05703d0b66e913539fba76b4c27da331a13cc55aef117d6f13356f"
     },
     {
       "path": "lib/chain/robinhood-mainnet-monero-authorization.ts",
@@ -1185,7 +1277,19 @@
     },
     {
       "path": "lib/chain/robinhood-mainnet-registration.ts",
-      "sha256": "59d28720ed79f7643396bfbc8b5067b3704e91f72adb729e148fe49f65c3b45a"
+      "sha256": "c12cc38e9942fe4271ede440e9b6e413114a73d1cc85fa4875634237547dd8e3"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-v2.ts",
+      "sha256": "ab39ad8a521314956385128e5cdafd3e79d05c5040de71abcfc692583b38fcaa"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-v3-market.ts",
+      "sha256": "390a967ae82d12d4fb0afbb95e3f9f3f9f1680ca36d9ef9f768ca3c26f11ca17"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-v3.ts",
+      "sha256": "47b47f3ffe4ca01575af7fe4d32efec7839156dbc8d772e6021f623740ff1359"
     },
     {
       "path": "lib/chain/robinhood-mainnet-wallet.ts",
@@ -1197,7 +1301,7 @@
     },
     {
       "path": "lib/chain/robinhood-market.ts",
-      "sha256": "c7667fcc7e306b9554497892ba7cab2c41b755eb2e2b6affb7ecb653f4c2cb2a"
+      "sha256": "ccebaf0e0fd4673ec54bc1a6d27396615c4753cf93ee4c61cddd36ee94d8a1bc"
     },
     {
       "path": "lib/chain/robinhood-provenance.ts",
@@ -1214,6 +1318,10 @@
     {
       "path": "lib/chain/solana-adapter.ts",
       "sha256": "728733ab7526be95d8d708212880d3db743c5073c02dc29f18eaeee6f559f61a"
+    },
+    {
+      "path": "lib/chain/v3-launch-preview.ts",
+      "sha256": "a49fa3acce7033c02d6a9aa0475157819dd7ef5c95fe6f3d03084045848580be"
     },
     {
       "path": "lib/chain/wallet-session.ts",
@@ -1517,7 +1625,7 @@
     },
     {
       "path": "lib/monero-evm-record.mjs",
-      "sha256": "dc35ab19fda8ae743915675b379a7ca5845bf1135a97b9b3076da154812f4cbc"
+      "sha256": "ec5ca6283bd9958f945ed5bde8e2fb83d9afbb0f1a8fe2a65aed70551d4549cd"
     },
     {
       "path": "lib/monero-index.mjs",
@@ -1753,7 +1861,7 @@
     },
     {
       "path": "lib/public-read-cache.mjs",
-      "sha256": "d7331ce1bf2c8391e59b0124bff7a8b5a93b8d4a310dde16273b4b4706cc71a1"
+      "sha256": "00b2c7e2c1e33a1af7a26d483c65e7d1b70a64b89ee7a8c8378606abbfe4ae96"
     },
     {
       "path": "lib/public-receipt.mjs",
@@ -1822,6 +1930,10 @@
     {
       "path": "lib/resource-leases.mjs",
       "sha256": "8499689f0663bad1362e52777f4fecf63a5e7e38f7b2a0b30a4ed345f253247d"
+    },
+    {
+      "path": "lib/retired-evm-launches.mjs",
+      "sha256": "7a10a4858daece01aeb3ecbaf3eed7dda261b195326e24da86423b4f81c65c52"
     },
     {
       "path": "lib/reward-credit-illustration.mjs",
@@ -1917,7 +2029,7 @@
     },
     {
       "path": "lib/scheduled-indexer.mjs",
-      "sha256": "f58388e9a6e757a44fdb83293ef6a2095a072e28ed75d8bf563b99d1e88f8817"
+      "sha256": "7bd03e6445d8e98383894839f58a375f9632ac60bf3861822962cb846e39c709"
     },
     {
       "path": "lib/security-headers.mjs",
@@ -2412,6 +2524,18 @@
       "sha256": "2376a5ac00ecbb1e947ab92c211524188ab0f12492d67cded07dc51bed769317"
     },
     {
+      "path": "tests/evm-one-approval-launch.test.mjs",
+      "sha256": "e7c021455e0958e5526e8158df98c242fec3ba834e46a8fe250c1366da19b052"
+    },
+    {
+      "path": "tests/evm-prepare-metadata.test.mjs",
+      "sha256": "f87b3a55f89236742de4211fcbfe4cd7e255c77b22c164b7304cb8b1f090199b"
+    },
+    {
+      "path": "tests/evm-token-list.test.mjs",
+      "sha256": "60c0bef7b15889a0ff6ce82cb215bfcdbad37ac3c52fa718f19634f16e7ae7fc"
+    },
+    {
       "path": "tests/evm-transaction-safety.test.mjs",
       "sha256": "a89642dd2ec50387169eda7ec6d8f6ad47d93e7c6576920d132987f5ddb48fd4"
     },
@@ -2608,6 +2732,14 @@
       "sha256": "9fc3ae8d855bdeffa0828b778815a53a3ee6fec40d266ebbd81c659d3fb126b9"
     },
     {
+      "path": "tests/one-approval-launch-client.test.mjs",
+      "sha256": "cb55caf936fb56583f483d206472b50022d0e308c41ae117a48f05957d69edc4"
+    },
+    {
+      "path": "tests/one-approval-launch-journal.test.mjs",
+      "sha256": "7d87e355c1331fb9361e5b44dd9de0c228d45c646a56a777390e336fd5c6c15a"
+    },
+    {
       "path": "tests/pilot-review.test.mjs",
       "sha256": "230b67c6969a247c8aab6d9813fa47fea530db914a9805459a16eff3c193fcae"
     },
@@ -2645,7 +2777,7 @@
     },
     {
       "path": "tests/public-read-cache.test.mjs",
-      "sha256": "81abfcf1614cd1d942f2eed597378875c2c2742bd7505c7297170927739b8623"
+      "sha256": "7720d66663e7c5c1c07a55ab7a2c1fd6b04e6c9d87a42c333a8a994557bafaf1"
     },
     {
       "path": "tests/quote-price-client-store.test.mjs",
@@ -2724,12 +2856,20 @@
       "sha256": "9fcacbfea104f0e8241baac6cb4c3b923a24cdd95f48d48a453d9e4b238c7423"
     },
     {
+      "path": "tests/robinhood-mainnet-launch-v2-ui.test.mjs",
+      "sha256": "74cd035af6b76490e89cc7e4e79f13fbbe6e1d128d42eca0c0c21f5540adc20e"
+    },
+    {
       "path": "tests/robinhood-mainnet-market.test.mjs",
       "sha256": "71df2dfdda793e760f9790bc202c1c7a1d9449b01c6f65f79e383ed6396c3382"
     },
     {
       "path": "tests/robinhood-mainnet-registration.test.mjs",
       "sha256": "191c927d50ad4a18386a98d99c359c9459fa9e8281edcf80ced56eedbde2ba6d"
+    },
+    {
+      "path": "tests/robinhood-mainnet-v3.test.mjs",
+      "sha256": "9b195f8c97a57ad6758fd09c81c284fcf32af9528d01315b28cfaa70b8a27fec"
     },
     {
       "path": "tests/robinhood-mainnet-wallet-create.test.mjs",
@@ -2941,7 +3081,7 @@
     },
     {
       "path": "worker.ts",
-      "sha256": "17450e4527a18bd33bd2fe8eb6a8dcb8c128f07a245bc80dd6d3dbf30598fb9d"
+      "sha256": "df13082b9542544f1ac930dbaeeb5c3dd80bf1e700aef5896cdea455a633101e"
     },
     {
       "path": "wrangler.jsonc",

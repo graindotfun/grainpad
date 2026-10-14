@@ -70,3 +70,13 @@ test('named cache opens lazily for public reads and failure preserves origin ava
  const unavailable=createPublicReadCache({cache:async()=>{throw Error('cache unavailable');},version:'v'});
  assert.equal((await unavailable(request(),f.load)).status,200);
 });
+
+test('chain and lifecycle responses remain isolated on hot cache hits and concurrent misses',async()=>{
+ const f=fixture();let loads=0;
+ const paths=['/api/discovery?chain=all&filter=all','/api/discovery?chain=solana&filter=all','/api/discovery?chain=robinhood&filter=all','/api/discovery?chain=robinhood&filter=graduated'];
+ const read=path=>f.read(request(path),async()=>{loads++;await new Promise(r=>setTimeout(r,2));return Response.json({path});});
+ const cold=await Promise.all(paths.map(read));
+ assert.deepEqual(await Promise.all(cold.map(r=>r.json())),paths.map(path=>({path})));
+ for(const path of paths){const response=await read(path);assert.equal(response.headers.get('X-Grainpad-Read-Cache'),'HIT');assert.deepEqual(await response.json(),{path});}
+ assert.equal(loads,paths.length);
+});
