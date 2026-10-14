@@ -2,7 +2,7 @@
 import {pickerNetwork,type PickerNetworkId} from '@/lib/chain/launch-network-picker.ts';
 export function LaunchNetworkLogo({networkId}:{networkId:PickerNetworkId}) {
  const network=pickerNetwork(networkId);if(!network)return null;
- return <span className="launch-network-logo" aria-hidden="true"><img className="network-logo-main" src={network.logoMain} alt="" width={28} height={28}/><img className="network-logo-hover" src={network.logoHover} alt="" width={28} height={28}/></span>;
+ return <span className={'launch-network-logo is-'+network.family} aria-hidden="true"><img className="network-logo-main" src={network.logoMain} alt="" width={28} height={28}/><img className="network-logo-hover" src={network.logoHover} alt="" width={28} height={28}/></span>;
 }
 export function LaunchNetworkStamp({networkId}:{networkId:PickerNetworkId}) {
  const network=pickerNetwork(networkId);if(!network)return null;

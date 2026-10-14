@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "07e67e2e3bf5026b6d48c57988081a930164efeb",
+  "sourceCommit": "a3e42ff7339e3f9eb2bb10d18f7036a475aa9c8c",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -265,7 +265,7 @@
     },
     {
       "path": "app/launch-network-picker.css",
-      "sha256": "72a0c673381504889c5bf1e67cfd0c46700a100237829af56b125afff43d9b18"
+      "sha256": "90f55801abe426328e2d588c23dc722cc11b2dd4cb6f12da24fc3fde40f83427"
     },
     {
       "path": "app/launch/layout.tsx",
@@ -577,23 +577,23 @@
     },
     {
       "path": "components/launch-network-chip.tsx",
-      "sha256": "6b5106bcff175345d1855612d70c4aa97cd7bb1f7456972d3e4659b60cea9f36"
+      "sha256": "99d18cf642185910cef9f3e177ba1b5f38767c443b4c71a1508aeeb3198166e7"
     },
     {
       "path": "components/launch-network-home-select.tsx",
-      "sha256": "7956b0d876bf9581fc53eed127f46fff804b00343d53eb424e5bfcac8fcaa6f6"
+      "sha256": "eb587ad0a535e76c1b88ae298c7829047b336c101d0920cc2ba5fccd80aeb5fb"
     },
     {
       "path": "components/launch-network-logo.tsx",
-      "sha256": "c82003e13b52d895e0961e03f04539c1d9df1f7ccf4ef476063a6d896d57bc6c"
+      "sha256": "7b27ed49a94d26b242cbf4d154e1aaddece71c0e40fc000ff9a8650ab06d64ad"
     },
     {
       "path": "components/launch-network-options.tsx",
-      "sha256": "02ae6c55d327bea2cfadd19af09f920298a2a9c20f9f835c90f7d481344e48c3"
+      "sha256": "2d89bd5cdc815696d98b29dcc6f0a81a83e4a0ff3ffa4dcc49b66e447fc3e024"
     },
     {
       "path": "components/launch-network-picker.tsx",
-      "sha256": "559c47a7dd9868df632185be767abcab9498de0ec04d3fe239088392ed4807a9"
+      "sha256": "d5764c0fa140fd63b3ff6851cfaf2823ef17f91477a60b1d8010e1392fb36f7c"
     },
     {
       "path": "components/launch-proof.tsx",
@@ -1097,7 +1097,7 @@
     },
     {
       "path": "lib/chain/launch-network-picker.ts",
-      "sha256": "662b0cbe3d5595c430092acbe35c615ca22bba1a2d17a480b21a7324eccb0e94"
+      "sha256": "c12351baacb2987f624e7ea833f893e40cda365e55f20919c2637ec7070f49b0"
     },
     {
       "path": "lib/chain/launch-submission-journal.ts",
@@ -2217,11 +2217,11 @@
     },
     {
       "path": "public/brand/networks/robinhood-hover.svg",
-      "sha256": "526b7c346f630ac94d196ec0e6041775f1dd8f406546cd55cbcbf8cb7e17d88d"
+      "sha256": "8ff4260fa4dac9a0dd40835b465f4c7220f4389da1ec67a1f762d9f63fa3f2b9"
     },
     {
       "path": "public/brand/networks/robinhood-main.svg",
-      "sha256": "d2c33026bc6d76e031201101e9b724c4528adcc8df1d0156415aa5d73675a5c8"
+      "sha256": "80829a2b52d8995d35d145c204cc10ec59d9e4ac44a0c05cf296e502a5e34655"
     },
     {
       "path": "public/brand/networks/sol-hover.svg",
@@ -2433,7 +2433,7 @@
     },
     {
       "path": "tests/launch-network-picker.test.mjs",
-      "sha256": "164a6c12f8705290ce8438b47b20d855f41bd64ec87d36504a79ceaba3f07b45"
+      "sha256": "e3387cdad5466c79fb9d1f72d65c963e27c349d69e88b3ade515a2b2f07a5990"
     },
     {
       "path": "tests/launch-pending-recovery.test.mjs",
