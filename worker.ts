@@ -1,6 +1,8 @@
+import {ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS} from './lib/chain/robinhood-mainnet-v3.ts';
 import {marketLive} from './lib/server-market-live';
 import handler from 'vinext/server/fetch-handler';
-import {runScheduledIndexer,refreshMoneroOnIndexerTick} from './lib/scheduled-indexer.mjs';
+import {runScheduledIndexer,refreshMoneroOnIndexerTick,runRobinhoodV2Discovery} from './lib/scheduled-indexer.mjs';
+import {ROBINHOOD_MAINNET_V2_FACTORY_ADDRESS} from './lib/chain/robinhood-mainnet-v2.ts';
 import {createPublicReadCache} from './lib/public-read-cache.mjs';
 import {migrationFrozen,migrationFreezeResponse} from './lib/migration-freeze.mjs';
 
@@ -32,6 +34,8 @@ const worker = {
   // The Monero reader is activated only when its daemon binding exists. A missing
   // operator service must not turn a successful Solana indexer tick into failure.
   if(env.MONERO_DAEMON_URL)jobs.push(runScheduledIndexer(handler,env,context,'monero'));
+  // Independent of the Solana indexer: a launch-discovery failure is logged and retried next tick, never failing the core run.
+  if(ROBINHOOD_MAINNET_V2_FACTORY_ADDRESS||ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS)context.waitUntil(runRobinhoodV2Discovery(handler,env,context).catch(()=>{console.error('Robinhood launch discovery failed; the next tick retries.');}));
   const results=await Promise.allSettled(jobs);
   if(results.some(result=>result.status==='rejected'))throw Error('Scheduled indexing failed. Inspect protected job health.');
  },

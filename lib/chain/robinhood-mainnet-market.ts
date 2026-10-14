@@ -1,14 +1,17 @@
+import {ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS} from './robinhood-mainnet-v3.ts';
+import {readContinuousMainnetMarket} from './robinhood-mainnet-v3-market.ts';
 import {address, bytes32, assertRobinhoodChain, readMarket, prepareTrade, uintWord, type Rpc, type Market, type LaunchIdentity, type Transaction, type TradePlan} from "./robinhood-market.ts";
 import {ROBINHOOD_CHAIN_MAINNET} from "./robinhood-mainnet.ts";
 export const MAINNET_V3_ROUTER = "0xcaf681a66d020601342297493863e78c959e5cb2";
 export const MAINNET_V3_QUOTER = "0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7";
-export type MainnetMarket = Market & {networkId: "robinhood:mainnet"; graduated: boolean; graduationPending: boolean; locker: string | null; pool: string | null; maxBuy: bigint; lockedTokens: bigint};
+export type MainnetMarket = Market & {networkId: "robinhood:mainnet"; continuous?: boolean; graduated: boolean; graduationPending: boolean; locker: string | null; pool: string | null; maxBuy: bigint; lockedTokens: bigint};
 const aWord = (value: string) => address(value).slice(2).padStart(64, "0");
 function decode(value: unknown, count: number): bigint[] {
   if (typeof value !== "string" || !new RegExp("^0x[0-9a-f]{" + count * 64 + "}$", "i").test(value)) throw new Error("Invalid mainnet contract response.");
   return Array.from({length: count}, (_, i) => BigInt("0x" + value.slice(2 + i * 64, 66 + i * 64)));
 }
 export async function readMainnetMarket(rpc: Rpc, identity: LaunchIdentity): Promise<MainnetMarket> {
+  if (ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS && address(identity.factory) === ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS.toLowerCase()) return readContinuousMainnetMarket(rpc,identity);
   const base = await readMarket(rpc, identity, ROBINHOOD_CHAIN_MAINNET.wethAddress, "robinhood:mainnet");
   const read = async (selector: string) => decode(await rpc("eth_call", [{to: base.curve, data: selector + bytes32(base.launchId).slice(2)}, base.block]), 1)[0];
   const done = await read("0xbce1cd0d"), pending = await read("0x4338af94");
@@ -22,7 +25,7 @@ export async function readMainnetMarket(rpc: Rpc, identity: LaunchIdentity): Pro
 export type MainnetTradePlan = TradePlan & {venue: "curve" | "uniswap-v3"};
 /** Exact-input quotes use the pinned RH router and quoter. No fees are added by the frontend. */
 export async function prepareMainnetTrade(rpc: Rpc, market: MainnetMarket, owner: string, side: "buy" | "sell", amount: bigint, slippageBps: number): Promise<MainnetTradePlan> {
-  if (!market.graduated) return {...await prepareTrade(rpc, market, owner, side, amount, slippageBps), venue: "curve"};
+  if (!market.graduated && !market.continuous) return {...await prepareTrade(rpc, market, owner, side, amount, slippageBps), venue: "curve"};
   await assertRobinhoodChain(rpc, "robinhood:mainnet");
   if (market.networkId !== "robinhood:mainnet" || market.quote !== ROBINHOOD_CHAIN_MAINNET.wethAddress || !market.pool || !market.locker) throw new Error("Wrong graduated market identity.");
   if (side !== "buy" && side !== "sell") throw new Error("Unknown trade side.");
