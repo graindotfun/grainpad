@@ -3,7 +3,7 @@ import type {Network} from "./site-config";
 
 export type LaunchRecord = {
   creator?:string; mint: string; pool: string; name: string; symbol: string; image: string;
-  network: Network; createdAt: string; verification: "confirmed-on-chain";
+  network: Network; createdAt: string; /** On-chain launch time (ISO). Absent on older records; createdAt is registration time and never stands in for it. */ launchedAt?: string; verification: "confirmed-on-chain";
   quoteAsset?:string;quoteMint?:string;quoteDecimals?:number;platformName?: string; platformId: string; official?: boolean;
 };
 

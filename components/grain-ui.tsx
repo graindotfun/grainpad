@@ -4,13 +4,13 @@ import type {DiscoveryToken} from '@/lib/token-discovery';
 /** Shared pieces of the D "grains" layout. Presentation only: every value comes from the caller. */
 export type StatusKind='new'|'graduating'|'graduated'|'unknown';
 
-/** Lifecycle chip: new = active curve, graduating = curve complete, migrating or within 80% of the target, graduated = Raydium pool. */
+/** Lifecycle chip: graduating = curve complete, migrating or within 80% of the target, graduated = Raydium pool. NEW is not a lifecycle state: it is the shared 12-hour launch window (`isNewLaunch`) and renders independently. */
 export function tokenStatus(token:Pick<DiscoveryToken,'state'|'lifecycle'|'progress'>):{kind:StatusKind;label:string}|null{
  if(token.lifecycle==='raydium_live'||token.state==='graduated')return {kind:'graduated',label:'graduated'};
  if(token.lifecycle==='migration_pending')return {kind:'graduating',label:'migrating'};
  if(token.lifecycle==='curve_complete')return {kind:'graduating',label:'curve complete'};
  if(token.state==='graduating')return {kind:'graduating',label:'graduating'};
- if(token.state==='curve')return token.progress!==null&&token.progress>=80?{kind:'graduating',label:'graduating'}:{kind:'new',label:'new'};
+ if(token.state==='curve')return token.progress!==null&&token.progress>=80?{kind:'graduating',label:'graduating'}:null;
  return {kind:'unknown',label:'not read yet'};
 }
 
