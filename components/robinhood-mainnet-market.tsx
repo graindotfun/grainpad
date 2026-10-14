@@ -2,7 +2,8 @@
 import {useEffect, useRef, useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
-import {ROBINHOOD_CHAIN_MAINNET, ROBINHOOD_MAINNET_FACTORY_ADDRESS} from "@/lib/chain/robinhood-mainnet.ts";
+import {ROBINHOOD_CHAIN_MAINNET} from "@/lib/chain/robinhood-mainnet.ts";
+import {isReviewedMainnetFactory} from "@/lib/chain/robinhood-mainnet-factories.ts";
 import {address, bytes32, formatUnits18, parseUnits18, prepareWrap, prepareClaim, readFees, submitTransaction, transactionStatus, uintWord, type Rpc, type Transaction} from "@/lib/chain/robinhood-market.ts";
 import {readMainnetMarket, prepareMainnetTrade, prepareMainnetGraduationRetry, assertMainnetTradeFresh, type MainnetMarket, type MainnetTradePlan} from "@/lib/chain/robinhood-mainnet-market.ts";
 import {discoverRobinhoodMainnetWallets, watchRobinhoodMainnetWallet, type MainnetWalletSession, type MainnetWalletChoice} from "@/lib/chain/robinhood-mainnet-wallet.ts";
@@ -13,7 +14,8 @@ type Balances = {platform: bigint; creator: bigint; trade: bigint; poolPlatformW
 type History = {trades: (StoredTrade & {venue?: string})[]; nextCursor: string | null};
 const scalar = (value: unknown): bigint => {if (typeof value !== "string" || !/^0x[0-9a-f]{64}$/i.test(value)) throw new Error("Invalid fee balance.");return BigInt(value);};
 export function RobinhoodMainnetMarket({record}: {record: MainnetLaunchRecord}) {
-  const enabled = !!ROBINHOOD_MAINNET_FACTORY_ADDRESS && record.factory === ROBINHOOD_MAINNET_FACTORY_ADDRESS.toLowerCase();
+  // A token trades through its own factory's curve and vault (derived and cross-checked on-chain by the market reader).
+  const enabled = isReviewedMainnetFactory(record.factory);
   const [wallets, setWallets] = useState<MainnetWalletChoice[]>([]); const [selection, setSelection] = useState(0);
   const [session, setSession] = useState<MainnetWalletSession | null>(null); const current = useRef<MainnetWalletSession | null>(null);
   const [market, setMarket] = useState<MainnetMarket | null>(null); const [balances, setBalances] = useState<Balances | null>(null);
@@ -40,7 +42,7 @@ export function RobinhoodMainnetMarket({record}: {record: MainnetLaunchRecord}) 
   }, [enabled, record.tokenAddress]);
   async function refresh(active = current.current) {
     if (!active) return;
-    const rpc = walletRpc(active); const next = await readMainnetMarket(rpc, record); const fees = await readFees(rpc, next);
+    const rpc = walletRpc(active); const next = await readMainnetMarket(rpc, record); const fees = next.continuous ? {platform:0n,creator:0n,trade:0n} : await readFees(rpc, next);
     const readPool = async (selector: string, asset: string) => next.locker ? scalar(await rpc("eth_call", [{to: next.locker, data: selector + uintWord(BigInt(address(asset)))}, "latest"])) : 0n;
     const values = await Promise.all([readPool("0x240b9586", next.quote), readPool("0x68eb4512", next.quote), readPool("0x240b9586", next.tokenAddress), readPool("0x68eb4512", next.tokenAddress)]);
     if (current.current?.account !== active.account || current.current.provider !== active.provider) return;
@@ -101,14 +103,14 @@ export function RobinhoodMainnetMarket({record}: {record: MainnetLaunchRecord}) 
       <label>Wallet<select value={selection} disabled={!!busy} onChange={e => {setSelection(Number(e.target.value));current.current = null;setSession(null);setPlan(null);setMarket(null);setBalances(null);}}>{wallets.map((choice,index) => <option key={index} value={index}>{choice.name}</option>)}</select></label>
       <Button variant="outline" disabled={!!busy} onClick={() => void run("Connecting wallet", connect)}>{session ? "Change wallet / refresh" : "Connect mainnet wallet"}</Button>
       {session && <p className="address-line">{session.account}</p>}
-      {market && <><p>{market.graduated ? "Trading on Uniswap · permanently locked launch liquidity." : market.graduationPending ? "DEX migration is pending. The curve still holds reserves; selling and migration retry remain available." : "Trading on the WETH curve."}</p>
-        <dl><div><dt>Curve WETH reserve</dt><dd>{formatUnits18(market.realQuote)}</dd></div><div><dt>Curve sale inventory</dt><dd>{formatUnits18(market.inventory)}</dd></div></dl>
-        <p>{market.graduated ? "The pool charges 1%; realized net LP fees are split 35% grainpad / 65% creator. Protocol deductions and other liquidity can reduce earnings." : "1% total fee: 0.35% grainpad / 0.65% creator."}</p>
+      {market && <><p>{(market.graduated || market.continuous) ? "Trading on Uniswap · permanently locked launch liquidity." : market.graduationPending ? "DEX migration is pending. The curve still holds reserves; selling and migration retry remain available." : "Trading on the WETH curve."}</p>
+        <dl><div><dt>{market.continuous ? "Pool WETH balance" : "Curve WETH reserve"}</dt><dd>{formatUnits18(market.realQuote)}</dd></div><div><dt>{market.continuous ? "Pool token balance" : "Curve sale inventory"}</dt><dd>{formatUnits18(market.inventory)}</dd></div></dl>
+        <p>{(market.graduated || market.continuous) ? "The pool charges 1%; realized net LP fees are split 35% grainpad / 65% creator. Protocol deductions and other liquidity can reduce earnings." : "1% total fee: 0.35% grainpad / 0.65% creator."}</p>
         {market.pool && <a href={ROBINHOOD_CHAIN_MAINNET.blockExplorerUrl + "/address/" + market.pool} target="_blank" rel="noreferrer">View pool</a>}
-        {market.locker && <p><a href={ROBINHOOD_CHAIN_MAINNET.blockExplorerUrl + "/address/" + market.locker} target="_blank" rel="noreferrer">View liquidity lock</a> · {formatUnits18(market.lockedTokens)} tokens remain locked in the curve.</p>}
+        {market.locker && <p><a href={ROBINHOOD_CHAIN_MAINNET.blockExplorerUrl + "/address/" + market.locker} target="_blank" rel="noreferrer">View liquidity lock</a> · {formatUnits18(market.lockedTokens)} {market.continuous ? "token rounding dust remains locked; the liquidity position is permanently held by this contract." : "tokens remain locked in the curve."}</p>}
         <label>Direction<select value={side} disabled={!!busy} onChange={e => {setSide(e.target.value as "buy" | "sell");setPlan(null);}}><option value="buy">Buy with WETH</option><option value="sell">Sell for WETH</option></select></label>
         <label>Amount ({side === "buy" ? "WETH" : record.symbol})<Input value={amount} disabled={!!busy} onChange={e => {setAmount(e.target.value);setPlan(null);}}/></label>
-        {!market.graduated && side === "buy" && market.maxBuy > 0n && <Button variant="outline" disabled={!!busy} onClick={() => {setAmount(formatUnits18(market.maxBuy));setPlan(null);}}>Fill remaining curve</Button>}
+        {!(market.graduated || market.continuous) && side === "buy" && market.maxBuy > 0n && <Button variant="outline" disabled={!!busy} onClick={() => {setAmount(formatUnits18(market.maxBuy));setPlan(null);}}>Fill remaining curve</Button>}
         {side === "buy" && <Button variant="outline" disabled={!!busy} onClick={() => void run("Review wrap in wallet", () => send(prepareWrap(session!.account, parseUnits18(amount), "robinhood:mainnet")))}>Wrap entered ETH into WETH</Button>}
         <p>Keep ETH for gas. Wrapping, approval and trading are separate transactions.</p>
         <Button disabled={!!busy} onClick={() => void run("Preparing quote", review)}>Review quote (1% slippage)</Button>
@@ -120,7 +122,7 @@ export function RobinhoodMainnetMarket({record}: {record: MainnetLaunchRecord}) 
         {balances && session && <>
           {session.account === market.creator && <Button variant="outline" disabled={!!busy || balances.creator === 0n} onClick={() => void run("Claiming creator curve fees", async () => send(await prepareClaim(walletRpc(session), market, session.account, 1)))}>Claim creator curve fees ({formatUnits18(balances.creator)} WETH)</Button>}
           {session.account === market.platform && <Button variant="outline" disabled={!!busy || balances.platform === 0n} onClick={() => void run("Claiming platform curve fees", async () => send(await prepareClaim(walletRpc(session), market, session.account, 0)))}>Claim grainpad curve fees ({formatUnits18(balances.platform)} WETH)</Button>}
-          {market.graduated && market.locker && feePayee && <div className="receipt"><h3>Locked pool fees</h3>
+          {(market.graduated || market.continuous) && market.locker && feePayee && <div className="receipt"><h3>Locked pool fees</h3>
             <Button variant="outline" disabled={!!busy} onClick={() => void run("Collecting new pool fees", () => send({from: session.account, to: market.locker!, data: "0xe5225381", value: "0x0", chainId: "0x1237"}))}>Collect new pool fees</Button>
             {([true,false] as const).filter(creatorBucket => session.account === (creatorBucket ? market.creator : market.platform)).map(creatorBucket => <div key={String(creatorBucket)}>
               <p>{creatorBucket ? "Creator" : "Grainpad"}: {formatUnits18(creatorBucket ? balances.poolCreatorWeth : balances.poolPlatformWeth)} WETH and {formatUnits18(creatorBucket ? balances.poolCreatorToken : balances.poolPlatformToken)} {record.symbol}. Token fees are unconverted assets.</p>
@@ -132,7 +134,7 @@ export function RobinhoodMainnetMarket({record}: {record: MainnetLaunchRecord}) 
       </>}
       {hash && <div className="receipt"><p role="status">Transaction: {status === "success" ? "Mined successfully. Finalized history can arrive later." : status}</p><a href={ROBINHOOD_CHAIN_MAINNET.blockExplorerUrl + "/tx/" + hash} target="_blank" rel="noreferrer">View transaction</a><Button variant="outline" disabled={!!busy || !session} onClick={() => void run("Checking transaction", () => check())}>Check transaction and refresh</Button></div>}
       {session && <><label>Recover a transaction<Input value={recovery} disabled={!!busy} onChange={e => setRecovery(e.target.value)} placeholder="0x transaction hash"/></label><Button variant="outline" disabled={!!busy || !recovery} onClick={() => void run("Checking earlier transaction", () => check(recovery))}>Recover transaction</Button></>}
-      <h3>Trade history</h3><p>Finalized curve trades and pool swaps. Pool recipients can be routers or aggregators rather than the original trader.</p>
+      <h3>Trade history</h3><p>Finalized on-chain trades. Pool recipients can be routers or aggregators rather than the original trader.</p>
       {history && <><p>{history.nextCursor ? "Load earlier history to continue back to creation." : "History checked back to creation."}</p><ul>{history.trades.map(event => <li key={event.transactionHash + ":" + event.logIndex}><a href={ROBINHOOD_CHAIN_MAINNET.blockExplorerUrl + "/tx/" + event.transactionHash} target="_blank" rel="noreferrer">{event.venue ?? "curve"} · {event.side}: {formatUnits18(BigInt(event.amountIn))} → {formatUnits18(BigInt(event.amountOut))}</a></li>)}</ul>{history.nextCursor && <Button variant="outline" disabled={!!busy} onClick={() => void run("Loading earlier history", () => readHistory(history.nextCursor!))}>Load earlier history</Button>}</>}
       <Button variant="outline" disabled={!!busy} onClick={() => void run("Refreshing history", readHistory)}>Refresh history</Button>
       {historyError && <p role="status">{historyError}</p>}

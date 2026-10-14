@@ -2,6 +2,7 @@ import {mainnetCoreRecord,verifyMainnetDisplay,canonicalMainnetDisplayJSON,type 
 import {describeRobinhoodReceipt, type RobinhoodRecordStore} from "./robinhood-registration.ts";
 import {address, bytes32, type Rpc} from "./robinhood-market.ts";
 import {ROBINHOOD_CHAIN_MAINNET} from "./robinhood-mainnet.ts";
+import {assertNotRetiredEvmLaunch, isRetiredEvmLaunch} from "../retired-evm-launches.mjs";
 
 export type MainnetLaunchRecord = {
   networkId: "robinhood:mainnet"; chainId: 4663; tokenAddress: string; launchId: string;
@@ -29,6 +30,7 @@ export async function registerRobinhoodMainnetLaunch(input: {transactionHash: st
   await assertMainnetRpc(deps.rpc);
   const receipt = await deps.rpc("eth_getTransactionReceipt", [hash]) as {blockNumber?: unknown; blockHash?: unknown} | null;
   const record = describeMainnetReceipt(receipt, factory, hash);
+  assertNotRetiredEvmLaunch("robinhood:mainnet", record.tokenAddress);
   const number = quantity(receipt?.blockNumber), blockHash = bytes32(receipt?.blockHash);
   const finalized = await deps.rpc("eth_getBlockByNumber", ["finalized", false]) as {number?: unknown} | null;
   if (quantity(finalized?.number) < number) throw new Error("Wait for mainnet finalization, then retry registration.");
@@ -46,6 +48,8 @@ export async function registerRobinhoodMainnetLaunch(input: {transactionHash: st
 }
 
 export async function readRobinhoodMainnetLaunch(storage: RobinhoodRecordStore, token: string, factory: string): Promise<MainnetLaunchRecord | null> {
+  // A retired launch is invisible here even if a record is re-created: every public read path goes through this function.
+  if (isRetiredEvmLaunch("robinhood:mainnet", token)) return null;
   const key = mainnetLaunchRecordKey(token), object = await storage.get(key);
   if (!object) return null;
   const record = JSON.parse(await object.text()) as MainnetLaunchRecord;
@@ -67,6 +71,7 @@ export const mainnetDisplayRecordKey=(token:string)=>`robinhood-display/4663/${a
 export type MainnetDisplayStore=RobinhoodRecordStore & {put(key:string,value:string,options:{onlyIf:{etagDoesNotMatch:'*'}}):Promise<unknown>};
 /** Separately stored creator authorization, first writer immutable; never rewrites the financial identity. */
 export async function attachRobinhoodMainnetDisplay(record:MainnetLaunchRecord,display:unknown,signature:unknown,storage:MainnetDisplayStore):Promise<MainnetLaunchRecord>{
+ assertNotRetiredEvmLaunch('robinhood:mainnet',record.tokenAddress);
  const metadata=verifyMainnetDisplay(record,display,signature),key=mainnetDisplayRecordKey(record.tokenAddress);
  const compare=async()=>{const existing=await readRobinhoodMainnetLaunch(storage,record.tokenAddress,record.factory);if(!existing||JSON.stringify(mainnetCoreRecord(existing))!==JSON.stringify(mainnetCoreRecord(record)))throw Error('Registered source identity changed.');if(existing.display?.metadata){if(canonicalMainnetDisplayJSON(existing.display?.metadata)!==canonicalMainnetDisplayJSON(metadata))throw Error('This launch already has different creator-signed display details.');return existing;}return null;};
  const prior=await compare();if(prior)return prior;
@@ -74,12 +79,15 @@ export async function attachRobinhoodMainnetDisplay(record:MainnetLaunchRecord,d
  const winner=await compare();if(!winner)throw Error('Display publication unavailable. Retry the same signature and draft.');return winner;
 }
 
-export async function listRobinhoodMainnetLaunches(storage: RobinhoodRecordStore & {list(options: {prefix: string; limit: number; cursor?: string}): Promise<{objects: {key: string}[]; truncated: boolean; cursor?: string}>}, factory: string, cursor?: string) {
+export async function listRobinhoodMainnetLaunches(storage: RobinhoodRecordStore & {list(options: {prefix: string; limit: number; cursor?: string}): Promise<{objects: {key: string}[]; truncated: boolean; cursor?: string}>}, factory: string | readonly string[], cursor?: string) {
   if (cursor !== undefined && (!cursor || cursor.length > 2000)) throw new Error("Invalid token directory cursor.");
   const prefix = "robinhood-launches/4663/";
   const page = await storage.list({prefix, limit: 10, ...(cursor ? {cursor} : {})});
   const records = await Promise.all(page.objects.filter(object => object.key.startsWith(prefix)).map(async object => {
-    try { return await readRobinhoodMainnetLaunch(storage, object.key.slice(prefix.length), factory); } catch { return null; }
+    for (const f of typeof factory === "string" ? [factory] : factory) {
+      try { const record = await readRobinhoodMainnetLaunch(storage, object.key.slice(prefix.length), f); if (record) return record; } catch { /* try the next reviewed factory */ }
+    }
+    return null;
   }));
   return {records: records.filter((record): record is MainnetLaunchRecord => !!record), nextCursor: page.truncated ? page.cursor ?? null : null};
 }
