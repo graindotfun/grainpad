@@ -1,5 +1,7 @@
+import {ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS} from './robinhood-mainnet-v3.ts';
 import {ROBINHOOD_CHAIN_TESTNET, robinhoodChainIdHex} from "./robinhood-testnet.ts";
 import {ROBINHOOD_CHAIN_MAINNET, ROBINHOOD_MAINNET_FACTORY_ADDRESS} from "./robinhood-mainnet.ts";
+import {ROBINHOOD_MAINNET_V2_FACTORY_ADDRESS} from "./robinhood-mainnet-v2.ts";
 import {assertRobinhoodMainnetFees, splitRobinhoodMainnetFees} from "./robinhood-mainnet-fees.ts";
 import type {EvmRequest} from "./robinhood-create.ts";
 
@@ -165,7 +167,7 @@ export function prepareWrap(owner: string, amount: bigint, networkId: RobinhoodM
 export async function submitTransaction(provider: EvmRequest, tx: Transaction): Promise<string> {
   const networkId: RobinhoodMarketNetwork = tx.chainId === "0x1237" ? "robinhood:mainnet" : "robinhood:testnet";
   if (tx.chainId !== robinhoodChainIdHex() && tx.chainId !== "0x1237") throw new Error("Wrong transaction chain.");
-  if (networkId === "robinhood:mainnet" && !ROBINHOOD_MAINNET_FACTORY_ADDRESS) throw new Error("Reviewed mainnet factory is not configured.");
+  if (networkId === "robinhood:mainnet" && !ROBINHOOD_MAINNET_FACTORY_ADDRESS && !ROBINHOOD_MAINNET_V2_FACTORY_ADDRESS && !ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS) throw new Error("Reviewed mainnet factory is not configured.");
   address(tx.to); address(tx.from);
   await assertRobinhoodChain((method, params) => provider.request({method, params}), networkId);
   const accounts = await provider.request({method: "eth_accounts"});

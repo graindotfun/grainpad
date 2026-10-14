@@ -49,7 +49,7 @@ export async function readRobinhoodMainnetHistory(storage: RobinhoodRecordStore,
     let events: StoredTrade[];
     if (cached?.endHash === endHash) events = cached.trades;
     else {
-      const curveEvents = (await readTradeRange(rpc, market, start, end)).map(event => ({...storeTrade(event), venue: "curve" as const}));
+      const curveEvents = (market.continuous ? [] : await readTradeRange(rpc, market, start, end)).map(event => ({...storeTrade(event), venue: "curve" as const}));
       const poolEvents = market.pool ? await readMainnetPoolRange(rpc, market, start, end) : [];
       events = [...curveEvents, ...poolEvents].sort((a,b) => BigInt(a.blockNumber) === BigInt(b.blockNumber) ? (BigInt(a.logIndex) > BigInt(b.logIndex) ? -1 : 1) : (BigInt(a.blockNumber) > BigInt(b.blockNumber) ? -1 : 1));
       if (await canonical(rpc, end) !== endHash) throw new Error("History changed during indexing. Retry.");
