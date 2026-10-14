@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "a3e42ff7339e3f9eb2bb10d18f7036a475aa9c8c",
+  "sourceCommit": "d39540a0dbf6bdc302369425283c5ed5588e4941",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -265,7 +265,7 @@
     },
     {
       "path": "app/launch-network-picker.css",
-      "sha256": "90f55801abe426328e2d588c23dc722cc11b2dd4cb6f12da24fc3fde40f83427"
+      "sha256": "f0c181664f7eeda7c53d69bb7b531e631cd7180939e0165b1b83d44d14fd205e"
     },
     {
       "path": "app/launch/layout.tsx",
@@ -589,7 +589,7 @@
     },
     {
       "path": "components/launch-network-options.tsx",
-      "sha256": "2d89bd5cdc815696d98b29dcc6f0a81a83e4a0ff3ffa4dcc49b66e447fc3e024"
+      "sha256": "72c316f276e4a3e918565e6be9bbdd7d91ac668cc9905a7b95c9501a24fe4ad2"
     },
     {
       "path": "components/launch-network-picker.tsx",
@@ -1097,7 +1097,7 @@
     },
     {
       "path": "lib/chain/launch-network-picker.ts",
-      "sha256": "c12351baacb2987f624e7ea833f893e40cda365e55f20919c2637ec7070f49b0"
+      "sha256": "c84daaa764fccf922113636483e2662613aa603a1a963aa2e7611a562a2f339a"
     },
     {
       "path": "lib/chain/launch-submission-journal.ts",
@@ -2433,7 +2433,7 @@
     },
     {
       "path": "tests/launch-network-picker.test.mjs",
-      "sha256": "e3387cdad5466c79fb9d1f72d65c963e27c349d69e88b3ade515a2b2f07a5990"
+      "sha256": "b702ddab05fcef3f20577c7cb7a49376475988b8ef178becc52ecd6a96c89a3a"
     },
     {
       "path": "tests/launch-pending-recovery.test.mjs",
