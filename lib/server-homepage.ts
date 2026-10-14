@@ -1,14 +1,16 @@
+import {ROBINHOOD_MAINNET_FACTORY_ADDRESS} from '@/lib/chain/robinhood-mainnet.ts';
 import 'server-only';
 import {database} from './server-owner';
 import {grainpadPlatformId} from './platform-policy';
 import {isPreviousOfficialMint} from './previous-official-mints.mjs';
 import {queryDiscovery} from './discovery-index.mjs';
+import {ROBINHOOD_FACTORY_ADDRESS} from './chain/robinhood-factory.ts';
 import {discoveryRecords,enrichDiscovery,type DiscoveryResult} from './token-discovery';
 
 /** Read the first indexed page and persisted market snapshots; no viewer RPC or writes. */
 export async function readHomepageDiscovery():Promise<DiscoveryResult>{
  const platform=grainpadPlatformId().toBase58(),now=Date.now();
- const result=await queryDiscovery(database(),{platform,now});
+ const result=await queryDiscovery(database(),{platform,robinhoodFactory:ROBINHOOD_FACTORY_ADDRESS?.toLowerCase()??null,robinhoodMainnetFactory:ROBINHOOD_MAINNET_FACTORY_ADDRESS?.toLowerCase()??null,now});
  const enrich=(rows:Parameters<typeof discoveryRecords>[0])=>{const data=discoveryRecords(rows,platform);return enrichDiscovery(data.records,data.cache,platform,result.officialMint,now);};
  const summary={...result};delete summary.selected;
  return {...summary,tokens:enrich(result.selected),featured:enrich(result.featured),updatedAt:now,stale:false,totalIndexed:result.total,coverage:'Indexed launches; historical completeness not yet verified.'};

@@ -10,6 +10,7 @@ import {useLaunchStatus} from "@/components/use-launch-status";
 import {LaunchDesk} from "@/components/launch-desk";
 import {GrainStage,grainWord,type GrainMode} from "./grain-stage";
 import {ReceiptRows,tokenStatus} from "./grain-ui";
+import {isNewLaunch} from "@/lib/token-time";
 import {formatMarketCap} from "@/lib/token-market";
 import {startViewerPolling} from "@/lib/viewer-polling.mjs";
 import {LaunchNetworkHomeSelect} from "./launch-network-home-select";
@@ -75,7 +76,7 @@ function LaunchBand({data:initial}:{data:DiscoveryResult|null}){
  const seen=new Set<string>(),tokens:DiscoveryToken[]=[];
  for(const token of [...(data?.tokens??[]),...(data?.featured??[])])if(!seen.has(token.mint)&&tokens.length<14){seen.add(token.mint);tokens.push(token);}
  if(!tokens.length)return <div className="gx-band gx-onor is-empty" role="status"><div className="gx-wrap gx-mono"><span><i/>{data?"no launches on the board yet · the first one could be yours":failed?"the launch board is unavailable right now":"the launch board is loading"}</span><a href="/launch">launch yours <ArrowRight size={13}/></a></div></div>;
- const items=tokens.map(token=>{const status=tokenStatus(token);return <a key={token.mint} href={`/token/${token.mint}`}><i/>{token.official?"official":status?.label??"launch"} <b>${token.symbol}</b> {ago(token.createdAt,now||data!.updatedAt)} · mc {formatMarketCap(token.marketCapUsd)}{token.marketStale?" · delayed":""}</a>;});
+ const items=tokens.map(token=>{const status=tokenStatus(token);return <a key={token.mint} href={token.chain==='robinhood'?`/network/robinhood/${token.networkId==='robinhood:mainnet'?'mainnet/':''}token/${token.mint}`:`/token/${token.mint}`}><i/>{token.official?"official":isNewLaunch(token.launchedAt,now||data!.updatedAt)?"new":status?.label??"launch"} <b>${token.symbol}</b> {ago(token.createdAt,now||data!.updatedAt)} · mc {formatMarketCap(token.marketCapUsd)}{token.marketStale?" · delayed":""}</a>;});
  return <section className="gx-band gx-onor" aria-label="Latest grainpad launches">{delayed&&<span className="gx-band-delayed gx-mono" role="status">delayed · {ago(new Date(data!.updatedAt).toISOString(),now)}</span>}<div className="gx-band-track"><div className="gx-band-set">{items}</div><div className="gx-band-set" aria-hidden="true" inert>{items}</div></div></section>;
 }
 
