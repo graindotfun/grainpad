@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "46ec02a475aa331802172f30d86f2297a02b54ff",
+  "sourceCommit": "07e67e2e3bf5026b6d48c57988081a930164efeb",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -938,6 +938,10 @@
     {
       "path": "docs/GRN1.md",
       "sha256": "2f4ee891f97e138038cc0297143a230cd76ced1011e760b0b55887bc7c45e137"
+    },
+    {
+      "path": "docs/SOURCE_UPDATES.md",
+      "sha256": "c2edfe5808732a684a083a82a3fa0b64c40e21a0469a2116af381c06e1dd6591"
     },
     {
       "path": "docs/VERIFICATION.md",
