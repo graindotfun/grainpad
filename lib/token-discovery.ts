@@ -1,12 +1,15 @@
 import type {LaunchRecord} from './launch-records';
-export type DiscoveryToken=LaunchRecord&{state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;marketStale:boolean;figuresSource:'grainpad'|'geckoterminal'|null};
+import {CHAIN_RECORD_NETWORKS,chainOfNetwork,recordNetworkId,type ChainFilter,type ChainKey} from './chain-display.ts';
+import type {DisplayNetworkId} from './chain-display.ts';
+import {isNewLaunch,parseTimestamp} from './token-time.ts';
+export type DiscoveryToken=Omit<LaunchRecord,'launchedAt'>&{networkId:DisplayNetworkId|null;chain:ChainKey|null;launchedAt:string|null;graduatedAt:string|null;state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;marketStale:boolean;figuresSource:'grainpad'|'geckoterminal'|null};
 export type DiscoveryFilter='all'|'new'|'near'|'graduated';
 export type DiscoverySort='newest'|'oldest'|'market-cap'|'volume';
-export type DiscoveryResult={coverage?:string;totalIndexed?:number;tokens:DiscoveryToken[];featured:DiscoveryToken[];total:number;filteredTotal:number;page:number;pages:number;pageSize:number;counts:{all:number;new:number;near:number;graduated:number;unknown:number};officialMint:string|null;updatedAt:number;stale:boolean};
+export type DiscoveryResult={chainCounts:{all:number;solana:number;robinhood:number};coverage?:string;totalIndexed?:number;tokens:DiscoveryToken[];featured:DiscoveryToken[];total:number;filteredTotal:number;page:number;pages:number;pageSize:number;counts:{all:number;new:number;near:number;graduated:number;unknown:number};officialMint:string|null;updatedAt:number;stale:boolean};
 export type CacheRow={key:string;value:string;updated_at:number};
 const number=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)?v:null;
 const nonnegative=(v:unknown)=>{const n=number(v);return n!==null&&n>=0?n:null;};
-type DisplaySnapshot={mint?:string;launchPool?:string;quote?:{mint?:string;symbol?:string};route?:string;pool?:string;available?:boolean;native?:{marketCapUsd?:number|null;volume24hUsd?:number|null;volumeCoverage?:string;change24h?:number|null;changeCoverage?:string};stats?:{marketCap?:number;volume?:number;change?:number};progress?:{raised:string;target:string}};
+type DisplaySnapshot={mint?:string;launchPool?:string;quote?:{mint?:string;symbol?:string};route?:string;pool?:string;available?:boolean;native?:{marketCapUsd?:number|null;volume24hUsd?:number|null;volumeCoverage?:string;change24h?:number|null;changeCoverage?:string};stats?:{marketCap?:number;volume?:number;change?:number};progress?:{raised:string;target:string};};
 function parse(row:CacheRow|undefined,now:number):DisplaySnapshot|null {
  if(!row||row.updated_at<=0||row.updated_at>now)return null;
  try{const v=JSON.parse(row.value);return v&&typeof v==='object'&&!Array.isArray(v)?v:null;}catch{return null;}
@@ -35,7 +38,9 @@ export function enrichDiscovery(records:LaunchRecord[],cache:CacheRow[],platform
   const marketStale=Boolean(own&&now-snapshotRow!.updated_at>300_000||marketUpdatedAt!==null&&now-marketUpdatedAt>300_000);
   const shown=state==='graduated'?100:progress;
   const lifecycle=state==='graduated'?'raydium_live':state==='graduating'?'migration_pending':state==='curve'&&shown!==null&&shown>=100?'curve_complete':state==='curve'?'curve_live':'unavailable';
-  return {...record,official:Boolean(officialMint&&record.mint===officialMint),state,lifecycle,progress:shown,
+  const networkId=recordNetworkId(record),launchedAt=parseTimestamp(record.launchedAt)!==null?record.launchedAt as string:null;
+  const recorded=(record as {graduatedAt?:unknown}).graduatedAt,graduatedAt=state==='graduated'&&parseTimestamp(recorded)!==null?recorded as string:null;
+  return {...record,networkId,chain:chainOfNetwork(networkId),launchedAt,graduatedAt,official:Boolean(officialMint&&record.mint===officialMint),state,lifecycle,progress:shown,
    marketCapUsd,volume24h,change24h,figuresSource,marketUpdatedAt,marketStale};
  });
 }
@@ -52,12 +57,16 @@ export function discoveryRecords(rows:{record:string;market?:string|null;chart?:
  }
  return {records,cache};
 }
-export function discoveryPage(rows:DiscoveryToken[],query:{search?:string;filter?:DiscoveryFilter;sort?:DiscoverySort;page?:number},officialMint:string|null,updatedAt:number,stale=false):DiscoveryResult{
- const filter=query.filter||'all',sort=query.sort||'newest',search=(query.search||'').trim().normalize('NFKC').toLowerCase();
- if(!['all','new','near','graduated'].includes(filter)||!['newest','oldest','market-cap','volume'].includes(sort))throw Error('Invalid directory filter.');
+export function discoveryPage(allRows:DiscoveryToken[],query:{search?:string;filter?:DiscoveryFilter;sort?:DiscoverySort;page?:number;chain?:ChainFilter},officialMint:string|null,updatedAt:number,stale=false):DiscoveryResult{
+ const filter=query.filter||'all',sort=query.sort||'newest',chain=query.chain||'all',search=(query.search||'').trim().normalize('NFKC').toLowerCase();
+ if(!['all','new','near','graduated'].includes(filter)||!['newest','oldest','market-cap','volume'].includes(sort)||!['all',...Object.keys(CHAIN_RECORD_NETWORKS)].includes(chain))throw Error('Invalid directory filter.');
+ // Chain scopes the status counts, so "Solana + Graduated" and its pill count always agree. NEW is the shared 12-hour launch rule.
+ const rows=chain==='all'?allRows:allRows.filter(r=>r.chain===chain);
  const isNear=(r:DiscoveryToken)=>r.state==='curve'&&r.progress!==null&&r.progress>=80;
- const counts={all:rows.length,new:rows.filter(r=>r.state==='curve'||r.state==='graduating').length,near:rows.filter(isNear).length,graduated:rows.filter(r=>r.state==='graduated').length,unknown:rows.filter(r=>r.state==='unknown').length};
- const selected=rows.filter(r=>(!search||[r.name,r.symbol,r.mint].some(v=>v.normalize('NFKC').toLowerCase().includes(search)))&&(filter==='all'||filter==='new'&&(r.state==='curve'||r.state==='graduating')||filter==='near'&&isNear(r)||filter==='graduated'&&r.state==='graduated'));
+ const isNew=(r:DiscoveryToken)=>isNewLaunch(r.launchedAt,updatedAt);
+ const counts={all:rows.length,new:rows.filter(isNew).length,near:rows.filter(isNear).length,graduated:rows.filter(r=>r.state==='graduated').length,unknown:rows.filter(r=>r.state==='unknown').length};
+ const chainCounts={all:allRows.length,solana:allRows.filter(r=>r.chain==='solana').length,robinhood:allRows.filter(r=>r.chain==='robinhood').length};
+ const selected=rows.filter(r=>(!search||[r.name,r.symbol,r.mint].some(v=>v.normalize('NFKC').toLowerCase().includes(search)))&&(filter==='all'||filter==='new'&&isNew(r)||filter==='near'&&isNear(r)||filter==='graduated'&&r.state==='graduated'));
  const newest=(a:DiscoveryToken,b:DiscoveryToken)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||a.mint.localeCompare(b.mint);
  selected.sort((a,b)=>{
   if(a.official!==b.official)return a.official?-1:1;
@@ -67,5 +76,5 @@ export function discoveryPage(rows:DiscoveryToken[],query:{search?:string;filter
  });
  const pageSize=20,pages=Math.max(1,Math.ceil(selected.length/pageSize)),page=Math.max(1,Math.min(pages,Math.floor(query.page||1)));
  const featured=rows.filter(r=>r.state==='graduated').sort((a,b)=>Number(b.official)-Number(a.official)||newest(a,b)).slice(0,5);
- return {tokens:selected.slice((page-1)*pageSize,page*pageSize),featured,total:rows.length,filteredTotal:selected.length,page,pages,pageSize,counts,officialMint,updatedAt,stale};
+ return {tokens:selected.slice((page-1)*pageSize,page*pageSize),featured,total:rows.length,filteredTotal:selected.length,page,pages,pageSize,counts,chainCounts,officialMint,updatedAt,stale};
 }
