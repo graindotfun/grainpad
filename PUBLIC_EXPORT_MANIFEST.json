@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "72be6cf5798e625970414ee5e3245683e0af49fe",
+  "sourceCommit": "5b587d61933ffb8d7bdbbc7d2eb9c7c0eecee8e2",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -273,7 +273,7 @@
     },
     {
       "path": "app/launch-desk.css",
-      "sha256": "337e0243315a6b91718bfa1498ee0c83cc2884cea5417106784f441a5be0970a"
+      "sha256": "99d15fedd474e9407534cce5a2c29eee0f22b7f2fa2f8c814c78190b28906465"
     },
     {
       "path": "app/launch-modes.css",
@@ -597,7 +597,7 @@
     },
     {
       "path": "components/launch-desk.tsx",
-      "sha256": "734e7955e3c4346c3913b2051988b90787eb423bad0bb8489a3a7afe8bb5cefd"
+      "sha256": "e14e2da0cdfaa8d65507b9534c8f5f994e04f731d3444447f2d4d4f545ff1a47"
     },
     {
       "path": "components/launch-disclosure.tsx",
