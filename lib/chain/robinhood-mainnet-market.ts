@@ -1,4 +1,5 @@
 import {ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS} from './robinhood-mainnet-v3.ts';
+import {ROBINHOOD_MAINNET_METADATA_FACTORY_ADDRESS} from './robinhood-mainnet-v3-metadata.ts';
 import {readContinuousMainnetMarket} from './robinhood-mainnet-v3-market.ts';
 import {address, bytes32, assertRobinhoodChain, readMarket, prepareTrade, uintWord, type Rpc, type Market, type LaunchIdentity, type Transaction, type TradePlan} from "./robinhood-market.ts";
 import {ROBINHOOD_CHAIN_MAINNET} from "./robinhood-mainnet.ts";
@@ -11,7 +12,7 @@ function decode(value: unknown, count: number): bigint[] {
   return Array.from({length: count}, (_, i) => BigInt("0x" + value.slice(2 + i * 64, 66 + i * 64)));
 }
 export async function readMainnetMarket(rpc: Rpc, identity: LaunchIdentity): Promise<MainnetMarket> {
-  if (ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS && address(identity.factory) === ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS.toLowerCase()) return readContinuousMainnetMarket(rpc,identity);
+  if ([ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS, ROBINHOOD_MAINNET_METADATA_FACTORY_ADDRESS].some(f => f && address(identity.factory) === f.toLowerCase())) return readContinuousMainnetMarket(rpc,identity);
   const base = await readMarket(rpc, identity, ROBINHOOD_CHAIN_MAINNET.wethAddress, "robinhood:mainnet");
   const read = async (selector: string) => decode(await rpc("eth_call", [{to: base.curve, data: selector + bytes32(base.launchId).slice(2)}, base.block]), 1)[0];
   const done = await read("0xbce1cd0d"), pending = await read("0x4338af94");

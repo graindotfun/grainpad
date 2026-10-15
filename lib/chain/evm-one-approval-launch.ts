@@ -1,4 +1,5 @@
 import {previewContinuousCreatorBuy} from './v3-launch-preview.ts';
+import {directMetadataDisplay, directMetadataSelector, inlineMetadataURI, encodeDirectMetadataCreate} from './evm-direct-metadata.ts';
 /**
  * Chain-agnostic one-approval EVM launch foundation.
  * Pure functions only: no wallet, RPC, signing or storage access. Nothing here broadcasts a transaction.
@@ -35,6 +36,8 @@ export function assertBytes32(value: string): string {
 /** Everything a chain contributes. Adding a chain adds a profile, never new flow logic. */
 export type EvmLaunchProfile = {
   marketModel?: "uniswap-v3-continuous";
+  /** Exact factory ABI exercised by GMETA; never inferred from request fields. */
+  metadataMode?: "inline-direct";
   networkId: string;
   chainId: number;
   /** Exact deployed factory implementing `createAndLaunch`. */
@@ -75,7 +78,7 @@ export function buildTokenMetadata(profile: EvmLaunchProfile, launchId: string, 
   if (input.imageSha256 !== null && !/^[a-f0-9]{64}$/.test(input.imageSha256)) throw new Error("Invalid image hash.");
   const website = metadataLink(input.website, "website"), twitter = metadataLink(input.twitter, "twitter"), telegram = metadataLink(input.telegram, "telegram");
   const id = assertBytes32(launchId);
-  return {
+  const document: TokenMetadataDocument = {
     schema: "grainpad.token-metadata.v1",
     name: input.name, symbol: input.symbol, description,
     image: input.imageSha256 ? profile.assetOrigin + "/api/assets/" + input.imageSha256 : null,
@@ -83,6 +86,8 @@ export function buildTokenMetadata(profile: EvmLaunchProfile, launchId: string, 
     links: {website, twitter, telegram},
     chain: {networkId: profile.networkId, chainId: profile.chainId, factory: assertAddress(profile.factory), launchId: id},
   };
+  if (profile.metadataMode === "inline-direct") directMetadataDisplay(document);
+  return document;
 }
 
 /** Fixed key order, no whitespace: the byte string that is hashed is the byte string that is served. */
@@ -95,7 +100,13 @@ export function canonicalTokenMetadataBytes(doc: TokenMetadataDocument): Uint8Ar
   return encoder.encode(JSON.stringify(ordered));
 }
 export const tokenMetadataHash = (doc: TokenMetadataDocument) => keccakHex(canonicalTokenMetadataBytes(doc));
-export function tokenMetadataURI(profile: EvmLaunchProfile, launchId: string): string {
+export function tokenMetadataURI(profile: EvmLaunchProfile, launchId: string, document?: TokenMetadataDocument): string {
+  if (profile.metadataMode === "inline-direct") {
+    if (!document || document.chain.launchId !== assertBytes32(launchId) || document.chain.factory !== assertAddress(profile.factory) ||
+        document.chain.chainId !== profile.chainId || document.chain.networkId !== profile.networkId) throw Error("Direct metadata document identity is required.");
+    directMetadataDisplay(document);
+    return inlineMetadataURI(canonicalTokenMetadataBytes(document));
+  }
   const uri = profile.metadataOrigin + profile.metadataPath.replace("{launchId}", assertBytes32(launchId));
   if (!uri.startsWith("https://") || encoder.encode(uri).length > 256) throw new Error("Metadata URI must be HTTPS and at most 256 bytes.");
   return uri;
@@ -140,7 +151,8 @@ const abiString = (s: string) => {
 export function decodeCreateAndLaunchHeader(data: string): {launchId: string; metadataHash: string; registrationExpiresAt: bigint; minTokensOut: bigint; deadline: bigint} | null {
   if (typeof data !== "string" || !/^0x([0-9a-f]{2})+$/i.test(data)) return null;
   const lower = data.toLowerCase();
-  if (lower.length < 2 + 2 * (4 + 32 + 8 * 32) || lower.slice(0, 10) !== createAndLaunchSelector()) return null;
+  const direct = lower.slice(0, 10) === directMetadataSelector();
+  if (lower.length < 2 + 2 * (4 + 32 + (direct ? 9 : 8) * 32) || !direct && lower.slice(0, 10) !== createAndLaunchSelector()) return null;
   const w = (i: number) => "0x" + lower.slice(10 + i * 64, 10 + (i + 1) * 64);
   if (BigInt(w(0)) !== 32n) return null;
   return {launchId: w(3), metadataHash: w(5), registrationExpiresAt: BigInt(w(6)), minTokensOut: BigInt(w(7)), deadline: BigInt(w(8))};
@@ -216,16 +228,17 @@ export function planOneApprovalLaunch(profile: EvmLaunchProfile, input: {
   const creator = assertAddress(input.creator), launchId = assertBytes32(input.launchId);
   if (launchId.slice(0, 42) !== creator) throw new Error("Launch id is bound to a different creator.");
   const metadata = buildTokenMetadata(profile, launchId, input.metadata);
-  const metadataHash = tokenMetadataHash(metadata), metadataURI = tokenMetadataURI(profile, launchId);
+  const metadataHash = tokenMetadataHash(metadata), metadataURI = tokenMetadataURI(profile, launchId, metadata);
   const expiresAt = BigInt(input.nowSeconds + profile.registrationWindowSeconds);
   const buy = input.buyWei > 0n ? (profile.marketModel === "uniswap-v3-continuous" ? previewContinuousCreatorBuy(input.buyWei, input.slippageBps) : previewCreatorBuy(input.buyWei, input.slippageBps)) : null;
   const deadline = BigInt(input.nowSeconds + (input.deadlineSeconds ?? 600));
-  const data = encodeCreateAndLaunch({name: input.metadata.name, symbol: input.metadata.symbol, launchId, metadataURI, metadataHash,
-    registrationExpiresAt: expiresAt, minTokensOut: buy ? buy.minTokensOut : 0n, deadline});
+  const args = {name: input.metadata.name, symbol: input.metadata.symbol, launchId, metadataURI, metadataHash,
+    registrationExpiresAt: expiresAt, minTokensOut: buy ? buy.minTokensOut : 0n, deadline};
+  const data = profile.metadataMode === "inline-direct" ? encodeDirectMetadataCreate(args, metadata) : encodeCreateAndLaunch(args);
   const digest = registrationDigest({chainId: profile.chainId, factory: profile.factory, creator, launchId, name: input.metadata.name, symbol: input.metadata.symbol, metadataHash, expiresAt});
   const review = [
     `Create ${input.metadata.name} (${input.metadata.symbol}) on chain ${profile.chainId}`,
-    `Bind metadata ${metadataURI} (keccak256 ${metadataHash})`,
+    profile.metadataMode === "inline-direct" ? `Bind image, description and project links on-chain (keccak256 ${metadataHash})` : `Bind metadata ${metadataURI} (keccak256 ${metadataHash})`,
     `Authorize Monero registration of this launch until ${new Date(Number(expiresAt) * 1000).toISOString()}`,
     ...(buy ? [
       `Creator buy: ${buy.quoteIn} wei in, fees ${buy.totalFee} wei (${buy.effectiveFeeBps / 100}%), net to ${profile.marketModel ? "pool" : "curve"} ${buy.net} wei`,

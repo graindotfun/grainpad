@@ -18,6 +18,7 @@ import "@/app/launch-modes.css";
 import "@/app/robinhood-launch.css";
 import {ROBINHOOD_CHAIN_MAINNET} from "@/lib/chain/robinhood-mainnet.ts";
 import {robinhoodMainnetV2Profile} from "@/lib/chain/robinhood-mainnet-v2.ts";
+import {configuredMainnetLaunchProfiles, mainnetLaunchProfileForFactory} from "@/lib/chain/robinhood-mainnet-launch-profiles.ts";
 import {newRobinhoodMainnetLaunchId} from "@/lib/chain/robinhood-mainnet-create.ts";
 import {discoverRobinhoodMainnetWallets, watchRobinhoodMainnetWallet, type MainnetWalletSession, type MainnetWalletChoice} from "@/lib/chain/robinhood-mainnet-wallet.ts";
 import {planOneApprovalLaunch, previewCreatorBuy, type LaunchPlan} from "@/lib/chain/evm-one-approval-launch.ts";
@@ -82,7 +83,7 @@ export function RobinhoodMainnetLaunchV2() {
   /** Take the journal as truth. A different launch or hash (below) drops every progress fact held for the previous one. */
   const applyJournal = useCallback((read: {entry: V2JournalEntry | null; conflict: boolean}) => { setEntry(read.entry); setConflict(read.conflict); }, []);
 
-  // Reset during render (not in an effect) when the wallet account, or the journal's launch or transaction, changes: progress,
+  // Reset during render (not in an effect) when the wallet account, or the journal launch or transaction, changes: progress,
   // typed hashes and errors belong to what they were collected for and must never be shown against anything else.
   const account = session?.account ?? null;
   const [seenAccount, setSeenAccount] = useState(account);
@@ -122,14 +123,22 @@ export function RobinhoodMainnetLaunchV2() {
   const resolveHash = useCallback(async (active: MainnetWalletSession, current: V2JournalEntry): Promise<string | null> => {
     if (current.transactionHash) return current.transactionHash;
     if (!profile) return null;
-    // Unknown outcome: the factory's launch-id mapping answers whether it was created, even without a hash.
+    // A legacy unknown outcome must be searched against every retained generation; the current default is not evidence.
     const rpc = (method: string, params: unknown[]) => active.provider.request({method, params});
-    await assertChain(rpc, BigInt(profile.chainId));
-    if (!(await probeLaunchId(rpc, profile.factory, current.launchId))) return null;
-    const hash = await recoverCreationTransaction(rpc, profile.factory, current.launchId, LAUNCH_CREATED_TOPIC, current.startBlock);
+    const profiles = current.factory ? [mainnetLaunchProfileForFactory(current.factory)].filter(p => !!p) : configuredMainnetLaunchProfiles().map(p => p.profile);
+    if (!profiles.length) throw new Error("The original launch contract is unavailable. Preserve this launch and recover by transaction hash.");
+    let hash: string | null = null;
+    for (const saved of profiles) {
+      await assertChain(rpc, BigInt(saved.chainId));
+      if (!(await probeLaunchId(rpc, saved.factory, current.launchId))) continue;
+      const found = await recoverCreationTransaction(rpc, saved.factory, current.launchId, LAUNCH_CREATED_TOPIC, current.startBlock);
+      if (!found) throw new Error("The existing launch transaction is unavailable. Its saved record is preserved.");
+      const verdict = await verifyCreationTransaction(rpc, {hash: found, creator: active.account, factory: saved.factory, launchId: current.launchId, chainId: BigInt(saved.chainId), dataHash: current.dataHash});
+      if (!verdict.ok) throw new Error(verdict.reason);
+      if (hash && hash !== found) throw new Error("More than one launch contract has this identity. Both records are preserved.");
+      hash = found;
+    }
     if (!hash) return null;
-    const verdict = await verifyCreationTransaction(rpc, {hash, creator: active.account, factory: profile.factory, launchId: current.launchId, chainId: BigInt(profile.chainId), dataHash: current.dataHash});
-    if (!verdict.ok) throw new Error(verdict.reason);
     const journal = journalFor(active.account, active.provider);
     await journal.markSent({launchId: current.launchId, transactionHash: hash});
     applyJournal(await journal.read());
@@ -176,7 +185,7 @@ export function RobinhoodMainnetLaunchV2() {
   async function run(label: string, job: () => Promise<void>) {
     if (working.current) return;
     working.current = true; setBusy(label); setError("");
-    try { await job(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Please retry."); }
+    try { await job(); } catch (cause) { setError(cause instanceof Error ? cause.message : "The wallet or network request could not finish. Keep this form and check wallet activity before retrying."); }
     finally { working.current = false; setBusy(""); }
   }
 
@@ -208,7 +217,9 @@ export function RobinhoodMainnetLaunchV2() {
     const imageSha256 = imageBase64 ? await sha256Hex(Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0))) : null;
     // A browser journal cannot see a launch made from another browser or before storage was cleared: ask the chain.
     if (!another) {
-      const found = await recentCreatorLaunches((method, params) => wallet.provider.request({method, params}), profile.factory, wallet.account, LAUNCH_CREATED_TOPIC);
+      const generations = configuredMainnetLaunchProfiles();
+      const birth = generations.reduce((min, p) => p.deploymentBlock < min ? p.deploymentBlock : min, generations[0]?.deploymentBlock ?? 0n);
+      const found = await recentCreatorLaunches((method, params) => wallet.provider.request({method, params}), generations.map(p => p.profile.factory), wallet.account, LAUNCH_CREATED_TOPIC, 200_000n, birth);
       if (found.length) { setRecent(found); throw new Error("This wallet created a launch recently. Recover it below, or tick \"launch another token\" to continue."); }
     }
     const launchId = newRobinhoodMainnetLaunchId(wallet.account);
@@ -236,7 +247,9 @@ export function RobinhoodMainnetLaunchV2() {
     if (!session || !entry || entry.transactionHash || !profile) return;
     const rpc = (method: string, params: unknown[]) => session.provider.request({method, params});
     if (conflict) throw new Error("Conflicting launch records are preserved. Nothing was cleared.");
-    const proof = await proveNothingSent(rpc, entry, profile.factory, LAUNCH_CREATED_TOPIC, BigInt(profile.chainId));
+    const saved = entry.factory ? mainnetLaunchProfileForFactory(entry.factory) : null;
+    if (!saved) throw new Error("This older launch has no original contract recorded. Recover it by transaction hash; nothing was cleared.");
+    const proof = await proveNothingSent(rpc, entry, saved.factory, LAUNCH_CREATED_TOPIC, BigInt(saved.chainId));
     if (!proof.safe) throw new Error(proof.reason);
     // The wallet may have been switched to another account or network while the proof was running: re-check before deleting.
     await assertChain(rpc, BigInt(profile.chainId));
@@ -252,7 +265,10 @@ export function RobinhoodMainnetLaunchV2() {
     const hash = manualHash.trim().toLowerCase();
     if (!/^0x[0-9a-f]{64}$/.test(hash)) throw new Error("Enter the 66-character transaction hash from your wallet.");
     const rpc = (method: string, params: unknown[]) => session.provider.request({method, params});
-    const verdict = await verifyCreationTransaction(rpc, {hash, creator: session.account, factory: profile.factory, launchId: entry.launchId, chainId: BigInt(profile.chainId), dataHash: entry.dataHash});
+    const tx = await rpc("eth_getTransactionByHash", [hash]) as {to?: string} | null;
+    const saved = mainnetLaunchProfileForFactory(entry.factory ?? tx?.to);
+    if (!saved || (entry.factory && tx?.to?.toLowerCase() !== entry.factory.toLowerCase())) throw new Error("That transaction does not match the original launch contract.");
+    const verdict = await verifyCreationTransaction(rpc, {hash, creator: session.account, factory: saved.factory, launchId: entry.launchId, chainId: BigInt(saved.chainId), dataHash: entry.dataHash});
     if (!verdict.ok) throw new Error(verdict.reason);
     const verified = await poll(hash, entry.launchId);     // the server also binds it to THIS launch id
     const journal = journalFor(session.account, session.provider);
@@ -261,7 +277,7 @@ export function RobinhoodMainnetLaunchV2() {
     channel.current?.postMessage("journal");
   }
 
-  /** A finalized revert, bound to this journal's transaction and launch id by the server, proves nothing was created. */
+  /** A finalized revert, bound to this journal transaction and launch id by the server, proves nothing was created. */
   async function clearReverted() {
     if (conflict) throw new Error("Conflicting launch records are preserved. Nothing was cleared.");
     if (!session || !entry || !status || status.facts.receipt !== "reverted" || !status.progress.mayCreateAgain || !entry.transactionHash || status.facts.transactionHash !== entry.transactionHash) return;
@@ -275,16 +291,19 @@ export function RobinhoodMainnetLaunchV2() {
   async function adopt(found: {launchId: string; transactionHash: string}) {
     if (!session || !profile) return;
     const rpc = (method: string, params: unknown[]) => session.provider.request({method, params});
-    const verdict = await verifyCreationTransaction(rpc, {hash: found.transactionHash, creator: session.account, factory: profile.factory, launchId: found.launchId, chainId: BigInt(profile.chainId)});
+    const tx = await rpc("eth_getTransactionByHash", [found.transactionHash]) as {to?: string} | null;
+    const saved = mainnetLaunchProfileForFactory(tx?.to);
+    if (!saved) throw new Error("This transaction does not belong to a retained launch contract.");
+    const verdict = await verifyCreationTransaction(rpc, {hash: found.transactionHash, creator: session.account, factory: saved.factory, launchId: found.launchId, chainId: BigInt(saved.chainId)});
     if (!verdict.ok) throw new Error(verdict.reason);
     const journal = journalFor(session.account, session.provider);
-    await journal.markStarted({launchId: found.launchId, creator: session.account, digest: "0x" + "00".repeat(32)});
+    await journal.markStarted({launchId: found.launchId, creator: session.account, digest: "0x" + "00".repeat(32), factory: saved.factory, chainId: BigInt(saved.chainId)});
     await journal.markSent({launchId: found.launchId, transactionHash: found.transactionHash});
     applyJournal(await journal.read()); setRecent([]);
     channel.current?.postMessage("journal");
   }
 
-  /** Dismiss a completed launch: only when it is trading and this tab's journal still holds that exact launch and transaction. */
+  /** Dismiss a completed launch: only when it is trading and this tab journal still holds that exact launch and transaction. */
   async function finish() {
     if (conflict) throw new Error("Conflicting launch records are preserved. Nothing was cleared.");
     if (!session || !entry || !entry.transactionHash || status?.progress.stage !== "trading_available" || status.facts.transactionHash !== entry.transactionHash) return;
