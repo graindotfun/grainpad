@@ -38,3 +38,24 @@ test('admitted index is complete across pages, ordered, and continues with a cur
   const list = buildTokenList(all.tokens, opts);
   assert.equal(list.tokens.length, 25);
 });
+
+
+test('aggregate admission preserves legacy cursor and continues across old and new factories', async()=>{
+ const {collectAdmittedFactoryTokens,admittedPrefix}=await import('../lib/chain/evm-token-list.ts');
+ const old='0x'+'11'.repeat(20), next='0x'+'22'.repeat(20);
+ const pages=[];
+ const store={list:async({prefix,cursor,limit})=>{
+  pages.push({prefix,cursor,limit});
+  const i=cursor==='legacy-page'?1:cursor?Number(cursor):0;
+  const all=[0,1].map(n=>({key:prefix+'0x'+(prefix.includes(old)?'a':'b').repeat(39)+n,customMetadata:{name:'Test',symbol:'T',image:'https://example.org/i.png'}}));
+  return {objects:all.slice(i,i+limit),truncated:i+limit<2,cursor:String(i+limit)};
+ }};
+ const first=await collectAdmittedFactoryTokens(store,4663,[old,next],{maxTokens:2});
+ assert.equal(first.tokens.length,2);assert.equal(first.truncated,true);
+ const second=await collectAdmittedFactoryTokens(store,4663,[old,next],{maxTokens:2,cursor:first.cursor});
+ assert.equal(second.tokens.length,2);assert.equal(second.truncated,false);
+ assert(first.tokens.every(t=>t.address.startsWith('0xa')));assert(second.tokens.every(t=>t.address.startsWith('0xb')));
+ const legacy=await collectAdmittedFactoryTokens(store,4663,[old,next],{maxTokens:2,cursor:'legacy-page'});
+ assert.equal(legacy.tokens[0].address.at(-1),'1');assert.equal(pages.find(p=>p.cursor==='legacy-page').prefix,admittedPrefix(4663,old));
+ await assert.rejects(collectAdmittedFactoryTokens(store,4663,[old,next],{cursor:'gp2.'+btoa(JSON.stringify({factory:'untrusted'}))}),/cursor/);
+});

@@ -55,3 +55,34 @@ export async function collectAdmittedTokens(store: AdmittedStore, chainId: numbe
   } while (cursor);
   return {tokens, truncated, cursor: truncated ? cursor : undefined};
 }
+
+/** A bounded page across retained generations. Old raw R2 cursors continue in the first (legacy) factory. */
+export async function collectAdmittedFactoryTokens(store: AdmittedStore, chainId: number, factories: string[], opts: {maxTokens?: number; cursor?: string} = {}) {
+  const unique = [...new Set(factories.map(f => f.toLowerCase()))];
+  if (!unique.length || unique.length > 8 || unique.some(f => !/^0x[0-9a-f]{40}$/.test(f))) throw Error("Invalid factory registry.");
+  let index = 0, cursor = opts.cursor;
+  if (cursor?.startsWith("gp2.")) {
+    let value: {factory: string; cursor?: string};
+    try { value = JSON.parse(atob(cursor.slice(4))); } catch { throw Error("Invalid cursor."); }
+    index = unique.indexOf(value.factory);
+    if (index < 0 || (value.cursor !== undefined && typeof value.cursor !== "string")) throw Error("Invalid cursor.");
+    cursor = value.cursor;
+  }
+  const maxTokens = opts.maxTokens ?? 5000, tokens: TokenListInput[] = [];
+  if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > 5000) throw Error("Invalid page size.");
+  let reads = 0;
+  const bounded = {...store, list: async (options: Parameters<AdmittedStore["list"]>[0]) => {
+    if (++reads > 12) throw Error("Token-list read budget exceeded.");
+    return store.list(options);
+  }};
+  for (; index < unique.length; index++) {
+    const page = await collectAdmittedTokens(bounded, chainId, unique[index], {maxTokens: maxTokens - tokens.length, cursor});
+    tokens.push(...page.tokens);
+    cursor = undefined;
+    if (page.truncated || (tokens.length >= maxTokens && index + 1 < unique.length)) {
+      const next = page.truncated ? {factory: unique[index], cursor: page.cursor} : {factory: unique[index + 1]};
+      return {tokens, truncated: true, cursor: "gp2." + btoa(JSON.stringify(next))};
+    }
+  }
+  return {tokens, truncated: false, cursor: undefined};
+}

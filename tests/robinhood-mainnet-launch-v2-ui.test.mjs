@@ -50,7 +50,7 @@ test('recovery controls follow the safety rules (source-level guards; behavior i
   assert.ok(!ui.includes('eth_getTransactionCount') && !journal.includes('startNonce'), 'a node-local pending nonce is never used as proof');
   assert.ok(ui.includes('verifyCreationTransaction') && (ui.match(/verifyCreationTransaction\(/g) ?? []).length >= 3, 'recovered, pasted and adopted hashes are verified');
   assert.ok((ui.match(/\.clear\(\{launchId: entry\.launchId, transactionHash/g) ?? []).length >= 3, 'every clear is compare-and-delete on launch id and hash');
-  assert.ok(ui.includes('assertChain(rpc, BigInt(profile.chainId))') && ui.includes('proveNothingSent(rpc, entry, profile.factory, LAUNCH_CREATED_TOPIC, BigInt(profile.chainId))') && ui.includes('sessionRef.current?.account !== session.account'), 'clearing re-checks chain and account');
+  assert.ok(ui.includes('assertChain(rpc, BigInt(profile.chainId))') && ui.includes('proveNothingSent(rpc, entry, saved.factory, LAUNCH_CREATED_TOPIC, BigInt(saved.chainId))') && ui.includes('sessionRef.current?.account !== session.account'), 'clearing re-checks chain and account');
   assert.ok(ui.includes('!entry.transactionHash && !conflict'), 'no recovery or clear controls while records conflict');
   assert.ok(ui.includes('applyJournal') && ui.includes('seenAccount'), 'progress resets on journal and wallet change');
   assert.ok(!/probeLaunchId\([^)]*\)\s*\)\s*\{?\s*await createLaunchJournal/.test(ui), 'a null probe alone never clears');

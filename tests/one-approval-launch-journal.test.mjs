@@ -94,7 +94,7 @@ test('a browser without Web Locks cannot launch (fails closed) and a lock failur
 
 test('a launch made from another browser or after storage was cleared is found on-chain', async () => {
   const calls = [];
-  const rpc = async (method, params) => { calls.push(method); if (method === 'eth_blockNumber') return '0x30d40'; return [{topics: [LAUNCH_CREATED_TOPIC, launchId, '0x' + '0'.repeat(64), '0x' + creator.slice(2).padStart(64, '0')], transactionHash: tx}]; };
+  const rpc = async (method) => { calls.push(method); if (method === 'eth_blockNumber') return '0x30d40'; return calls.length === 2 ? [{topics: [LAUNCH_CREATED_TOPIC, launchId, '0x' + '0'.repeat(64), '0x' + creator.slice(2).padStart(64, '0')], transactionHash: tx}] : []; };
   const found = await recentCreatorLaunches(rpc, '0x' + '22'.repeat(20), creator, LAUNCH_CREATED_TOPIC, 100_000n);
   assert.deepEqual(found, [{launchId, transactionHash: tx}]);
   await assert.rejects(recentCreatorLaunches(async m => m === 'eth_blockNumber' ? '0x1' : new Array(51).fill({}), '0x' + '22'.repeat(20), creator, LAUNCH_CREATED_TOPIC), /unavailable/);
@@ -107,7 +107,7 @@ const calldata = (id = launchId, deadline = 1_000n) => encodeCreateAndLaunch({na
 const dataBytes = d => Uint8Array.from(d.slice(2).match(/../g), b => parseInt(b, 16));
 
 test('a hash-less entry is released only by a finalized deadline with no creation, never by a nonce, tokenOf == 0 or text', async () => {
-  const entry = {version: 1, launchId, creator, digest, startBlock: '5', startedAt: 1, transactionHash: null, deadline: '1000', dataHash: null, chainId: '4663'};
+  const entry = {version: 1, launchId, creator, digest, startBlock: '5', startedAt: 1, transactionHash: null, deadline: '1000', dataHash: null, chainId: '4663', factory};
   const chain = ({finalizedTime, logs = [], nonce = '0x7', chainId = '0x1237'}) => async (method, params) => {
     if (method === 'eth_chainId') return chainId;
     if (method === 'eth_getBlockByNumber') { assert.equal(params[0], 'finalized'); return {number: '0x64', timestamp: '0x' + finalizedTime.toString(16)}; }
@@ -186,7 +186,7 @@ test('clear runs under the journal lock, so a concurrent writer cannot interleav
 });
 
 test('the deadline proof is bound to the launch chain: another network cannot release an unresolved launch', async () => {
-  const entry = {version: 1, launchId, creator, digest, startBlock: '5', startedAt: 1, transactionHash: null, deadline: '1000', dataHash: null, chainId: '4663'};
+  const entry = {version: 1, launchId, creator, digest, startBlock: '5', startedAt: 1, transactionHash: null, deadline: '1000', dataHash: null, chainId: '4663', factory};
   const rpcOn = (id, flip) => { let calls = 0; return async (method) => {
     if (method === 'eth_chainId') return flip && ++calls > 1 ? flip : id;
     if (method === 'eth_getBlockByNumber') return {number: '0x64', timestamp: '0xffffff'};     // expired on every chain
@@ -226,4 +226,73 @@ test('stores that disagree about the transaction for the same launch id are a co
   b.m.set(v2JournalKey(creator), {...b.m.get(v2JournalKey(creator)), chainId: '1'});
   assert.equal((await j.read()).conflict, true);
   assert.equal(await j.clear({launchId, transactionHash: hashA}), false);
+});
+
+
+test('creator recovery scans every bounded page to an explicit pinned head', async () => {
+ const pages = [];
+ const found = await recentCreatorLaunches(async (method, params) => {
+  if (method === 'eth_blockNumber') return '0x1388';
+  const filter = params[0]; pages.push(filter);
+  assert.ok(BigInt(filter.toBlock) - BigInt(filter.fromBlock) < 2000n);
+  assert.notEqual(filter.toBlock, 'latest');
+  return filter.toBlock === '0x1388' ? [{topics:[LAUNCH_CREATED_TOPIC, launchId],transactionHash:tx}] : [];
+ }, factory, creator, LAUNCH_CREATED_TOPIC, 5000n);
+ assert.deepEqual(pages.map(p=>[BigInt(p.fromBlock),BigInt(p.toBlock)]),[[0n,1999n],[2000n,3999n],[4000n,5000n]]);
+ assert.deepEqual(found,[{launchId,transactionHash:tx}]);
+});
+
+test('a failed or malformed later history page never becomes an empty recovery result', async () => {
+ for (const failure of [{code:35,message:'provider range refused'},null]) {
+  let pages=0;
+  await assert.rejects(recentCreatorLaunches(async method => {
+   if(method==='eth_blockNumber')return '0x1388';
+   if(++pages===1)return [];
+   if(failure)throw failure;
+   return null;
+  },factory,creator,LAUNCH_CREATED_TOPIC,5000n),/history could not be checked|unavailable/);
+  assert.equal(pages,2);
+ }
+});
+
+
+test('verified factory birth limits history without dropping any possible creation block', async () => {
+ const ranges=[];
+ await recentCreatorLaunches(async(method,params)=>{
+  if(method==='eth_blockNumber')return '0x1388';ranges.push(params[0]);return [];
+ },factory,creator,LAUNCH_CREATED_TOPIC,5000n,4500n);
+ assert.deepEqual(ranges.map(p=>[BigInt(p.fromBlock),BigInt(p.toBlock)]),[[4500n,5000n]]);
+ for(const birth of [-1n,5001n])await assert.rejects(recentCreatorLaunches(async()=> '0x1388',factory,creator,LAUNCH_CREATED_TOPIC,5000n,birth),/unavailable/);
+});
+
+
+test('a factory migration never clears an unknown legacy or old-factory launch against the new factory', async () => {
+ const old='0x'+'22'.repeat(20), next='0x'+'33'.repeat(20), a=mem(), b=mem();
+ const journal=createLaunchJournal([a,b],creator);
+ await journal.markStarted({launchId,creator,digest,factory:old,deadline:1000n,chainId:4663n});
+ const entry=(await journal.read()).entry;
+ assert.equal(entry.factory,old);
+ const never=async()=>{throw Error('must refuse before evidence from another factory');};
+ assert.equal((await proveNothingSent(never,entry,next,LAUNCH_CREATED_TOPIC,4663n)).safe,false);
+ assert.equal((await proveNothingSent(never,{...entry,factory:null},next,LAUNCH_CREATED_TOPIC,4663n)).safe,false);
+ assert.equal((await journal.read()).entry.launchId,launchId);
+ b.m.set(v2JournalKey(creator),{...entry,factory:next});
+ const before=JSON.stringify([a.m.get(v2JournalKey(creator)),b.m.get(v2JournalKey(creator))]);
+ assert.equal((await journal.read()).conflict,true);
+ assert.equal(await journal.clear(entry),false);
+ await assert.rejects(journal.markSent({launchId,transactionHash:tx}),/Conflicting/);
+ assert.equal(JSON.stringify([a.m.get(v2JournalKey(creator)),b.m.get(v2JournalKey(creator))]),before);
+});
+
+
+test('a missing browser journal searches retained factories together without multiplying the page budget',async()=>{
+ const old='0x'+'22'.repeat(20), next='0x'+'33'.repeat(20);let reads=0;
+ const found=await recentCreatorLaunches(async(method,params)=>{
+  if(method==='eth_blockNumber')return '0x1388';
+  reads++;assert.deepEqual(params[0].address,[old,next]);
+  assert(BigInt(params[0].toBlock)-BigInt(params[0].fromBlock)<2000n);
+  return reads===1?[{address:old,topics:[LAUNCH_CREATED_TOPIC,launchId],transactionHash:tx}]:[];
+ },[old,next],creator,LAUNCH_CREATED_TOPIC,5000n,0n);
+ assert.equal(reads,3);assert.deepEqual(found,[{launchId,transactionHash:tx}]);
+ await assert.rejects(recentCreatorLaunches(async m=>m==='eth_blockNumber'?'0x1':[{address:creator}], [old,next],creator,LAUNCH_CREATED_TOPIC),/unavailable/);
 });

@@ -9,7 +9,7 @@ import {tokenOfCalldata} from "./launch-progress.ts";
 export type Eip1193 = {request(args: {method: string; params?: unknown[]}): Promise<unknown>};
 /** Durable write-ahead journal (localStorage + IndexedDB in the browser). Must resolve before the wallet is asked. */
 export type SubmissionJournal = {
-  markStarted(entry: {launchId: string; creator: string; digest: string; deadline?: bigint; dataHash?: string; chainId?: bigint}): Promise<void>;
+  markStarted(entry: {launchId: string; creator: string; digest: string; deadline?: bigint; dataHash?: string; chainId?: bigint; factory?: string}): Promise<void>;
   markSent(entry: {launchId: string; transactionHash: string}): Promise<void>;
   /** The wallet explicitly refused (EIP-1193 4001): nothing was sent, so the write-ahead entry is released. */
   markRejected?(entry: {launchId: string}): Promise<void>;
@@ -32,7 +32,7 @@ export async function submitOneApprovalLaunch(provider: Eip1193, plan: LaunchPla
   // A reverting launch (slippage, curve limit, duplicate id) is refused before the wallet shows a prompt.
   await provider.request({method: "eth_call", params: [call, "latest"]});
   await check();
-  await journal.markStarted({launchId: plan.launchId, creator: from, digest: plan.registrationDigest, deadline: plan.deadline, dataHash: plan.dataHash, chainId: BigInt(plan.chainId)});
+  await journal.markStarted({launchId: plan.launchId, creator: from, digest: plan.registrationDigest, deadline: plan.deadline, dataHash: plan.dataHash, chainId: BigInt(plan.chainId), factory: plan.to});
   // The durable write can wait on IndexedDB or another tab. Recheck after it;
   // a failed session check preserves the intent and is not a wallet rejection.
   await check();

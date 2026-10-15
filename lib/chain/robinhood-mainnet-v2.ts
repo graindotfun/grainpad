@@ -1,4 +1,5 @@
 import {ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS, robinhoodMainnetV3Profile} from './robinhood-mainnet-v3.ts';
+import {ROBINHOOD_MAINNET_METADATA_FACTORY_ADDRESS, robinhoodMainnetMetadataProfile} from './robinhood-mainnet-v3-metadata.ts';
 import {ROBINHOOD_CHAIN_MAINNET} from "./robinhood-mainnet.ts";
 import type {EvmLaunchProfile} from "./evm-one-approval-launch.ts";
 
@@ -12,8 +13,9 @@ export const ROBINHOOD_MAINNET_V2_FACTORY_ADDRESS: string | null = null;
 /** First block of the owner-verified V2 deployment. Discovery never scans earlier. null while undeployed. */
 export const ROBINHOOD_MAINNET_V2_DEPLOYMENT_BLOCK: bigint | null = null;
 
-export function robinhoodMainnetV2Profile(factory: string | null = ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS ?? ROBINHOOD_MAINNET_V2_FACTORY_ADDRESS): EvmLaunchProfile | null {
+export function robinhoodMainnetV2Profile(factory: string | null = ROBINHOOD_MAINNET_METADATA_FACTORY_ADDRESS ?? ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS ?? ROBINHOOD_MAINNET_V2_FACTORY_ADDRESS): EvmLaunchProfile | null {
   if (!factory) return null;
+  if (ROBINHOOD_MAINNET_METADATA_FACTORY_ADDRESS && factory.toLowerCase() === ROBINHOOD_MAINNET_METADATA_FACTORY_ADDRESS) return robinhoodMainnetMetadataProfile(factory);
   if (ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS && factory.toLowerCase() === ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS.toLowerCase()) return robinhoodMainnetV3Profile(factory);
   return {
     networkId: "robinhood:mainnet", chainId: ROBINHOOD_CHAIN_MAINNET.chainId, factory,

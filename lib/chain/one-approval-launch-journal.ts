@@ -16,6 +16,8 @@ export type V2JournalEntry = {
   version: 1; launchId: string; creator: string; digest: string; startBlock: string | null; startedAt: number;
   /** The chain this launch was submitted on; recovery and clearing are only ever evaluated against it. */
   chainId: string | null;
+  /** Absent on legacy entries; absence never authorizes a factory-specific clear. */
+  factory?: string | null;
   transactionHash: string | null;
   /** Latest block timestamp (seconds) at which this launch's transaction can still execute; null for entries that predate it. */
   deadline: string | null;
@@ -32,6 +34,7 @@ function parse(value: unknown): V2JournalEntry | null {
     return {version: 1, launchId: assertBytes32(String(v.launchId)), creator: assertAddress(String(v.creator)), digest: assertBytes32(String(v.digest)),
       startBlock: typeof v.startBlock === "string" && /^\d+$/.test(v.startBlock) ? v.startBlock : null, startedAt: v.startedAt,
       chainId: typeof v.chainId === "string" && /^\d+$/.test(v.chainId) ? v.chainId : null,
+      factory: v.factory ? assertAddress(String(v.factory)) : null,
       transactionHash: v.transactionHash ? assertBytes32(String(v.transactionHash)) : null,
       deadline: typeof v.deadline === "string" && /^\d+$/.test(v.deadline) ? v.deadline : null,
       dataHash: typeof v.dataHash === "string" && /^0x[0-9a-f]{64}$/.test(v.dataHash) ? v.dataHash : null};
@@ -71,16 +74,17 @@ export function createLaunchJournal(stores: readonly KeyValueStore[], account: s
     const ids = new Set(entries.map(e => e.launchId));
     const hashes = new Set(entries.map(e => e.transactionHash).filter((h): h is string => !!h));
     const chains = new Set(entries.map(e => e.chainId).filter((c): c is string => !!c));
+    const factories = new Set(entries.map(e => e.factory ?? "legacy"));
     const best = entries.find(e => e.transactionHash) ?? entries[0];
-    return {entry: best, conflict: ids.size > 1 || hashes.size > 1 || chains.size > 1};
+    return {entry: best, conflict: ids.size > 1 || hashes.size > 1 || chains.size > 1 || factories.size > 1};
   }
   const journal: SubmissionJournal & {read: typeof read; clear: (entry: {launchId: string; transactionHash: string | null}) => Promise<boolean>; markRejected: (entry: {launchId: string}) => Promise<void>} = {
-    markStarted: ({launchId, creator, digest, deadline, dataHash, chainId}) => lock(key, async () => {
+    markStarted: ({launchId, creator, digest, deadline, dataHash, chainId, factory}) => lock(key, async () => {
       const existing = await read();
       if (existing.entry) throw new Error("A launch from this wallet is already in progress or unresolved. Recover it; do not create again.");
       let startBlock: string | null = null;
       try { startBlock = (await options.startBlock?.()) ?? null; } catch { startBlock = null; }
-      await writeAll({version: 1, launchId: assertBytes32(launchId), creator: assertAddress(creator), digest: assertBytes32(digest), startBlock, startedAt: (options.now ?? Date.now)(), transactionHash: null, chainId: chainId === undefined ? null : chainId.toString(),
+      await writeAll({version: 1, launchId: assertBytes32(launchId), creator: assertAddress(creator), digest: assertBytes32(digest), startBlock, startedAt: (options.now ?? Date.now)(), transactionHash: null, factory: factory ? assertAddress(factory) : null, chainId: chainId === undefined ? null : chainId.toString(),
         deadline: deadline === undefined ? null : deadline.toString(), dataHash: dataHash ? assertBytes32(dataHash) : null});
       // Defense in depth behind the lock: verify our own write; a rival's entry is never removed.
       const check = await read();
@@ -129,14 +133,33 @@ export async function recoverCreationTransaction(rpc: (method: string, params: u
  * Launches this wallet created recently, found on-chain. Guards the one case a browser journal cannot: storage cleared
  * or a different browser. The caller treats a hit as "recover this first", never as permission to create again silently.
  */
-export async function recentCreatorLaunches(rpc: (method: string, params: unknown[]) => Promise<unknown>, factory: string, creator: string, topic: string, lookbackBlocks = 200_000n): Promise<Array<{launchId: string; transactionHash: string}>> {
+export async function recentCreatorLaunches(rpc: (method: string, params: unknown[]) => Promise<unknown>, factory: string | readonly string[], creator: string, topic: string, lookbackBlocks = 200_000n, deploymentBlock = 0n): Promise<Array<{launchId: string; transactionHash: string}>> {
+  const factories = typeof factory === "string" ? [assertAddress(factory)] : [...new Set(factory.map(assertAddress))];
+  if (!factories.length || factories.length > 8) throw Error("Recent launches unavailable.");
+  const filterAddress = typeof factory === "string" ? factories[0] : factories;
   const latest = await rpc("eth_blockNumber", []);
   if (typeof latest !== "string" || !/^0x[0-9a-f]+$/i.test(latest)) throw new Error("Block number unavailable.");
-  const head = BigInt(latest), from = head > lookbackBlocks ? head - lookbackBlocks : 0n;
+  const head = BigInt(latest);
+  if (lookbackBlocks < 0n || lookbackBlocks > 200_000n || deploymentBlock < 0n || deploymentBlock > head) throw new Error("Recent launches unavailable.");
+  const lookbackStart = head > lookbackBlocks ? head - lookbackBlocks : 0n;
+  const from = deploymentBlock > lookbackStart ? deploymentBlock : lookbackStart;
   const padded = "0x" + assertAddress(creator).slice(2).padStart(64, "0");
-  const logs = await rpc("eth_getLogs", [{address: assertAddress(factory), fromBlock: "0x" + from.toString(16), toBlock: "latest", topics: [topic, null, null, padded]}]);
-  if (!Array.isArray(logs) || logs.length > 50) throw new Error("Recent launches unavailable.");
-  return logs.map(l => ({launchId: assertBytes32(String((l as {topics?: string[]}).topics?.[1])), transactionHash: assertBytes32(String((l as {transactionHash?: string}).transactionHash))}));
+  const found: Array<{launchId: string; transactionHash: string}> = [];
+  // Keep the entire prior lookback, but never ask a wallet RPC for a huge range.
+  // Pin every page to the captured head. Any failed page aborts the launch check.
+  for (let next = from; next <= head; next += 2000n) {
+    const to = next + 1999n < head ? next + 1999n : head;
+    let logs: unknown;
+    try {
+      logs = await rpc("eth_getLogs", [{address: filterAddress, fromBlock: "0x" + next.toString(16), toBlock: "0x" + to.toString(16), topics: [topic, null, null, padded]}]);
+    } catch {
+      throw new Error("Recent-launch history could not be checked. No new wallet transaction was requested by this launch attempt. Keep your form and check your wallet activity before retrying.");
+    }
+    if (!Array.isArray(logs) || found.length + logs.length > 50) throw new Error("Recent launches unavailable.");
+    if (typeof factory !== "string" && logs.some(l => !factories.includes(assertAddress(String((l as {address?: string}).address))))) throw Error("Recent launches unavailable.");
+    found.push(...logs.map(l => ({launchId: assertBytes32(String((l as {topics?: string[]}).topics?.[1])), transactionHash: assertBytes32(String((l as {transactionHash?: string}).transactionHash))})));
+  }
+  return found;
 }
 
 export type NothingSentProof = {safe: boolean; reason: string};
@@ -161,6 +184,7 @@ const hexNumber = (value: unknown, what: string): bigint => {
  * recorded deadline, or whose deadline has not finalized, are preserved.
  */
 export async function proveNothingSent(rpc: Rpc, entry: V2JournalEntry, factory: string, creationTopic: string, expectedChainId: bigint): Promise<NothingSentProof> {
+  if (!entry.factory || assertAddress(entry.factory) !== assertAddress(factory)) return {safe: false, reason: "The original launch contract is not bound to this proof. Preserve this launch and recover by transaction hash."};
   if (entry.transactionHash) return {safe: false, reason: "This launch has a transaction hash; it cannot be cleared as unsent."};
   if (entry.deadline === null) return {safe: false, reason: "This launch has no recorded deadline, so Grainpad cannot prove nothing was sent. Recover it by transaction hash."};
   if (entry.chainId !== null && BigInt(entry.chainId) !== expectedChainId) return {safe: false, reason: "This launch belongs to a different network than the one being checked. Nothing was cleared."};

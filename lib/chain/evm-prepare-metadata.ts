@@ -39,7 +39,8 @@ export async function runPrepare(readBody: () => Promise<Record<string, unknown>
   const doc = buildTokenMetadata(d.profile, assertBytes32(body.launchId as string), {name: body.name as string, symbol: body.symbol as string, description: body.description as string,
     website: body.website as string, twitter: body.twitter as string, telegram: body.telegram as string, imageSha256});
   const hash = tokenMetadataHash(doc), launchId = doc.chain.launchId;
-  const ok = (): PrepareResult => ({status: 200, body: {metadataURI: tokenMetadataURI(d.profile, launchId), metadataHash: hash, image: doc.image}});
+  const metadataURI = tokenMetadataURI(d.profile, launchId, doc);
+  const ok = (): PrepareResult => ({status: 200, body: {metadataURI, metadataHash: hash, image: doc.image}});
   // 2. A retried request whose bytes are already stored costs nothing further (a lost response must stay recoverable).
   const haveDoc = await d.store.get(tokenMetadataKey(d.profile, launchId, hash)), haveImage = imageSha256 ? await d.store.get("assets/" + imageSha256) : true;
   if (haveDoc && haveImage) return ok();
