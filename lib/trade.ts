@@ -1,4 +1,5 @@
 import './browser-buffer.mjs';
+import {SOL_PAYMENT_ASSETS} from './sol-payment-assets.mjs';
 import {publicPriorityPolicy} from './priority-fee.mjs';
 import {Buffer} from 'buffer';
 import {getAssociatedTokenAddressSync,unpackAccount,TOKEN_PROGRAM_ID} from '@solana/spl-token';
@@ -27,9 +28,9 @@ export async function prepareTrade(ownerAddress:string,mintAddress:string,side:'
 export async function readTradeBalances(ownerAddress:string,mintAddress:string){
  const connection=rpc('mainnet-beta'),owner=new PublicKey(ownerAddress),mint=new PublicKey(mintAddress);
  await assertNetwork(connection,'mainnet-beta');const market=await readMarket(connection,mint,grainpadPlatformId()),quoteMint=new PublicKey(market.quote.mint);
- const tokenProgram=baseTokenProgram(market.pool),baseAta=getAssociatedTokenAddressSync(mint,owner,false,tokenProgram),quoteAta=getAssociatedTokenAddressSync(quoteMint,owner);
- const [sol,accounts]=await Promise.all([connection.getBalance(owner,'confirmed'),connection.getMultipleAccountsInfo([baseAta,quoteAta],'confirmed')]);
- return {owner:ownerAddress,mint:mintAddress,base:(accounts[0]?unpackAccount(baseAta,accounts[0],tokenProgram).amount:0n).toString(),quote:market.quote.native?String(sol):(accounts[1]?unpackAccount(quoteAta,accounts[1],TOKEN_PROGRAM_ID).amount:0n).toString(),sol:String(sol),quoteSymbol:market.quote.symbol};
+ const tokenProgram=baseTokenProgram(market.pool),baseAta=getAssociatedTokenAddressSync(mint,owner,false,tokenProgram),quoteAta=getAssociatedTokenAddressSync(quoteMint,owner),usdcAta=getAssociatedTokenAddressSync(new PublicKey(SOL_PAYMENT_ASSETS.USDC.mint),owner);
+ const [sol,accounts]=await Promise.all([connection.getBalance(owner,'confirmed'),connection.getMultipleAccountsInfo([baseAta,quoteAta,usdcAta],'confirmed')]);
+ return {owner:ownerAddress,mint:mintAddress,base:(accounts[0]?unpackAccount(baseAta,accounts[0],tokenProgram).amount:0n).toString(),quote:market.quote.native?String(sol):(accounts[1]?unpackAccount(quoteAta,accounts[1],TOKEN_PROGRAM_ID).amount:0n).toString(),sol:String(sol),usdc:(accounts[2]?unpackAccount(usdcAta,accounts[2],TOKEN_PROGRAM_ID).amount:0n).toString(),quoteSymbol:market.quote.symbol};
 }
 
 /** Read-only market estimate. It cannot be submitted or signed. */
