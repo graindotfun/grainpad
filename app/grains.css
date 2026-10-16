@@ -1015,3 +1015,13 @@ html[data-theme] .rh-launch-flow button.primary-action{background:var(--grain-or
 html[data-theme] .rh-launch-flow button.primary-action:hover{background:color-mix(in srgb,var(--grain-orange) 90%,white);color:#101010}
 .rh-launch-flow .receipt{display:grid;gap:12px;overflow-wrap:anywhere}
 .rh-launch-flow .transaction-review dl>div{padding-block:8px}
+
+/* Shared trade spacing: the direction control has its own row between the amount fields. */
+.gx.gx-token .token-swap .swap-direction{margin:12px auto;width:36px;height:36px;flex:none}
+.gx.gx-token .token-swap .swap-amount-row{margin:8px 0}
+.gx.gx-token .token-swap .swap-asset small{margin-top:8px;line-height:1.55}
+.gx.gx-token .token-swap .swap-trade-note{margin:16px 0 20px;line-height:1.55;font-size:12px}
+
+.gx.gx-token .token-swap .swap-asset:not(.swap-receive){border-bottom:0}
+.gx.gx-token .token-swap .swap-direction{transition:background-color .15s,border-color .15s,color .15s}
+.gx.gx-token .token-swap .swap-direction:is(:hover,:focus-visible):not(:disabled){background:var(--grain-orange);border-color:var(--grain-orange);color:#111}
