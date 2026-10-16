@@ -11,6 +11,8 @@ import type {MainnetLaunchRecord} from "@/lib/chain/robinhood-mainnet-registrati
 import {RobinhoodMainnetHistory} from "./robinhood-mainnet-history";
 import type {RobinhoodDisplayMarket} from "@/lib/chain/robinhood-market-display.ts";
 import {robinhoodDisplayUnits} from "@/lib/chain/robinhood-market-display.ts";
+import {startIndicativeQuote} from '@/lib/trade-indicative-polling.mjs';
+import {readMainnetPaymentEstimate} from '@/lib/chain/robinhood-mainnet-indicative.ts';
 import {TradeFields} from './trade-fields';
 import {TradeWalletNotice} from './trade-wallet-notice';
 import {useSharedMainnetWallet} from './use-site-wallet';
@@ -32,6 +34,7 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
   const [market, setMarket] = useState<MainnetMarket | null>(null); const [balances, setBalances] = useState<Balances | null>(null);
   const [paymentAsset,setPaymentAsset]=useState<MainnetPaymentAsset>("USDG");
   const [side, setSide] = useState<"buy" | "sell">("buy"); const [amount, setAmount] = useState("");
+  const [indicative,setIndicative]=useState<{key:string;status:string;quote:{output:bigint;outputDecimals:number;expiresAt:number}|null;error:string}>({key:'',status:'idle',quote:null,error:''});
   const [plan, setPlan] = useState<MainnetPaymentPlan | null>(null); const [hash, setHash] = useState(""); const [status, setStatus] = useState("pending");
   const [recovery, setRecovery] = useState(""); const [busy, setBusy] = useState(""); const working = useRef(false);
   const [notice,setNotice]=useState("");
@@ -186,6 +189,16 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
     const active = current.current;if (!active || !market?.locker) throw new Error("No locked pool position.");
     await send({from: active.account, to: market.locker, data: "0x92fd2daf" + uintWord(BigInt(address(asset))) + uintWord(creatorBucket ? 1n : 0n), value: "0x0", chainId: "0x1237"});
   }
+  const estimateKey=JSON.stringify([record.factory,record.tokenAddress,session?.account,session?.chainId,side,amount,paymentAsset,market?.pool,market?.quote,market?.tokenAddress,market?.continuous,market?.graduated]);
+  const reviewing=!!plan;
+  useEffect(()=>{
+    if(!session||!market||market.tokenAddress!==record.tokenAddress||!amount||pending||busy||reviewing){let live=true;void Promise.resolve().then(()=>{if(live)setIndicative({key:"",status:"idle",quote:null,error:""});});return()=>{live=false;};}
+    const active=session;
+    return startIndicativeQuote({read:(signal:AbortSignal)=>readMainnetPaymentEstimate(walletRpc(active),market,side,amount,paymentAsset,signal),publish:(value:{status:string;quote:{output:bigint;outputDecimals:number;expiresAt:number}|null;error:string})=>{if(current.current===active)setIndicative({...value,key:estimateKey});}});
+  // The display quote is bound to immutable route/input values; balance/statistics refreshes must not restart it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[session,estimateKey,pending,busy,reviewing]);
+  const estimateCurrent=indicative.key===estimateKey,estimateReady=estimateCurrent&&indicative.status==="ready"&&!!indicative.quote&&!pending&&!busy;
   const feeExplanation=market?(market.continuous||market.graduated?"Grainpad: 35% of collected net LP fees. Creator: 65%. Protocol deductions and liquidity share affect earnings.":"Grainpad: 0.35% of the trade. Creator: 0.65%. Both are included in the 1% trading fee."):"Grainpad and creator shares are verified with the quote.";
   const disabled=!!busy||pending;
   const compact=(value:bigint,decimals=18)=>robinhoodDisplayUnits((value*10n**BigInt(18-decimals)).toString());
@@ -197,7 +210,7 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
     <div className="corner-head"><span className="corner-label">Swap</span><span className="corner-label is-right">Robinhood Chain</span>{embedded&&<button className="sheet-close" aria-label="Close swap" onClick={onClose}><X size={18}/></button>}</div>
     <TradeWalletNotice network="robinhood"/>
     {!enabled?<p role="status">Mainnet launching is not yet available.</p>:<>
-      <TradeFields symbol={record.symbol} paymentSymbol={paymentAsset} side={side} setSide={switchSide} amount={amount} setAmount={value=>{setAmount(value);setPlan(null);setNotice("");}} inputId="rh-swap-amount" disabled={disabled} balanceLabel={balances?side==="sell"?`Balance: ${compact(balances.token)} ${record.symbol}`:paymentBalance===null?"USDG balance unavailable":`Balance: ${compact(paymentBalance,mainnetPaymentDecimals(paymentAsset))} ${paymentAsset}`:session?"Reading wallet balance…":"Connect to see your balance"} output={plan?compact(plan.output,plan.outputDecimals):"—"} outputHint={plan?"Estimated · final amounts in wallet":session?"Enter an amount, then review the quote":"Connect your Robinhood Chain wallet to review a quote"} paymentOptions={<div className="swap-tabs" role="group" aria-label="Payment asset">{(["USDG","ETH"] as const).map(asset=><Button key={asset} aria-pressed={paymentAsset===asset} variant={paymentAsset===asset?"default":"outline"} disabled={disabled} onClick={()=>switchPayment(asset)}>{asset}</Button>)}</div>} onReverse={()=>switchSide(side==="buy"?"sell":"buy")}/>
+      <TradeFields symbol={record.symbol} paymentSymbol={paymentAsset} side={side} setSide={switchSide} amount={amount} setAmount={value=>{setAmount(value);setPlan(null);setNotice("");}} inputId="rh-swap-amount" disabled={disabled} balanceLabel={balances?side==="sell"?`Balance: ${compact(balances.token)} ${record.symbol}`:paymentBalance===null?"USDG balance unavailable":`Balance: ${compact(paymentBalance,mainnetPaymentDecimals(paymentAsset))} ${paymentAsset}`:session?"Reading wallet balance…":"Connect to see your balance"} output={plan?compact(plan.output,plan.outputDecimals):estimateReady&&indicative.quote?compact(indicative.quote.output,indicative.quote.outputDecimals):"—"} outputHint={plan?"Estimated · final amounts in wallet":!session?"Connect your Robinhood Chain wallet to review a quote":!amount?"Enter an amount to see an estimate":!estimateCurrent||indicative.status==="loading"?"Updating estimate…":indicative.status==="ready"?"Estimated · trading and conversion fees included · network gas extra":indicative.error||"Estimate unavailable"} paymentOptions={<div className="swap-tabs" role="group" aria-label="Payment asset">{(["USDG","ETH"] as const).map(asset=><Button key={asset} aria-pressed={paymentAsset===asset} variant={paymentAsset===asset?"default":"outline"} disabled={disabled} onClick={()=>switchPayment(asset)}>{asset}</Button>)}</div>} onReverse={()=>switchSide(side==="buy"?"sell":"buy")}/>
       <div className="small muted swap-trade-note"><p>Trading fee: 1%, included in the quote.</p><p>{feeExplanation}</p><p>Slippage: 1%. Network gas is paid in ETH. {paymentAsset==="ETH"?"ETH wrapping and unwrapping happen within the trade.":"USDG conversion fees are included in the estimate."}</p></div>
       {notice&&<p className="feedback" role="status">{notice}</p>}
       {pending&&<p className="small muted" role="status">{hash?"Confirmation is checked automatically. You can also check the receipt below.":"Do not repeat the request while its outcome is unknown."}</p>}
