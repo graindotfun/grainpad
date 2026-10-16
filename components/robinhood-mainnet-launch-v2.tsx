@@ -6,7 +6,7 @@ import {previewContinuousCreatorBuy} from '@/lib/chain/v3-launch-preview.ts';
  * Separate from the existing two-signature screen: it shares no state with it and imports no stylesheet of its own,
  * so the button/CSS work on that screen is unaffected. The only wallet prompt it can raise is the single launch transaction.
  */
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
@@ -60,7 +60,7 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 }
 
 export function RobinhoodMainnetLaunchV2() {
-  const profile = robinhoodMainnetV2Profile();
+  const profile = useMemo(() => robinhoodMainnetV2Profile(), []);
   const ready = !!profile;
   const [wallets, setWallets] = useState<MainnetWalletChoice[]>([]);
   const [selected, setSelected] = useState(0);
@@ -85,7 +85,9 @@ export function RobinhoodMainnetLaunchV2() {
 
   // Reset during render (not in an effect) when the wallet account, or the journal launch or transaction, changes: progress,
   // typed hashes and errors belong to what they were collected for and must never be shown against anything else.
-  const account = session?.account ?? null;
+  // A submitted hash can be observed without a wallet. Keep its journal and visible
+  // progress on disconnect; a newly connected different account still resets both.
+  const account = session?.account ?? (entry?.transactionHash ? entry.creator : null);
   const [seenAccount, setSeenAccount] = useState(account);
   if (seenAccount !== account) {
     setSeenAccount(account);
@@ -167,12 +169,12 @@ export function RobinhoodMainnetLaunchV2() {
   }, [session, journalFor, applyJournal]);
 
   useEffect(() => {
-    if (!session || !entry || conflict) return;
+    if (!entry || conflict || (!session && !entry.transactionHash)) return;
     let active = true, timer: ReturnType<typeof setTimeout> | undefined;
     finished.current = false;
     const tick = async () => {
       try {
-        const hash = await resolveHash(session, entry);
+        const hash = entry.transactionHash ?? (session ? await resolveHash(session, entry) : null);
         if (hash && active) { const next = await poll(hash, entry.launchId); if (active) { finished.current = next.progress?.stage === "trading_available"; setStatus(next); } }
         else if (active) setStatus({token: null, facts: {moneroConfirmations: null}, authorizationExpired: false, note: null, progress: {stage: "submitted", status: "working", detail: "Wallet request outcome unknown. Checking the chain for this launch before anything can be repeated.", mayCreateAgain: false}});
       } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : "Status unavailable. Retrying."); }
@@ -354,6 +356,7 @@ export function RobinhoodMainnetLaunchV2() {
         <label>Wallet<select value={selected} disabled={locked || !ready} onChange={e => { setSelected(Number(e.target.value)); sessionRef.current = null; setSession(null); }}>{wallets.map((wallet, index) => <option key={index} value={index}>{wallet.name}</option>)}</select></label>
         <Button variant="outline" disabled={!ready || !!busy} onClick={() => void run("Connecting", connect)}>{session ? "Change wallet / recover" : "Connect wallet"}</Button>
         {session && <p className="address-line">{session.account}</p>}
+        {!session && entry?.transactionHash && <p role="status">Wallet disconnected. Tracking your submitted launch continues. Reconnect the same wallet to manage it; do not launch again.</p>}
         {!entry && recent.length > 0 && <section className="receipt" aria-label="Recent launches from this wallet"><p role="status">Found on-chain:</p>
           {recent.map(found => <p key={found.transactionHash}><span className="address-line">{found.transactionHash}</span> <Button variant="outline" disabled={!!busy} onClick={() => void run("Recovering", () => adopt(found))}>Recover this launch</Button></p>)}
           <label><input type="checkbox" checked={another} onChange={e => setAnother(e.target.checked)}/> launch another token anyway</label></section>}
@@ -372,9 +375,9 @@ export function RobinhoodMainnetLaunchV2() {
             <label>Transaction hash from your wallet activity<Input value={manualHash} placeholder="0x…" onChange={e => setManualHash(e.target.value)}/></label>
             <Button variant="outline" disabled={!!busy || !manualHash} onClick={() => void run("Checking that transaction", recoverByHash)}>Recover by transaction hash</Button></div>}
           {!conflict && status?.facts.receipt === "reverted" && status.progress.mayCreateAgain && entry.transactionHash && status.facts.transactionHash === entry.transactionHash &&
-            <Button variant="outline" disabled={!!busy} onClick={() => void run("Clearing", clearReverted)}>This launch reverted on-chain and nothing was created: clear and start again</Button>}
+            <Button variant="outline" disabled={!!busy || !session} onClick={() => void run("Clearing", clearReverted)}>This launch reverted on-chain and nothing was created: clear and start again</Button>}
           {done && status?.token && <p><a href={"/network/robinhood/mainnet/token/" + status.token}>Open token market</a></p>}
-          {done && !conflict && <Button variant="outline" disabled={!!busy} onClick={() => void run("Preparing a new launch", finish)}>Start a new launch</Button>}
+          {done && !conflict && <Button variant="outline" disabled={!!busy || !session} onClick={() => void run("Preparing a new launch", finish)}>Start a new launch</Button>}
         </section>}
         {busy && <p role="status">{busy}</p>}{error && <p className="feedback error" role="alert">{error}</p>}
       </section>
