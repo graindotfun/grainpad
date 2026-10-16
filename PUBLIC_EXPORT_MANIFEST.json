@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "5067fcdb5bfd938dfb738073399a13111b54ac2b",
+  "sourceCommit": "d74803892e793dbfcd2158d56fb27189e19cdbce",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -725,7 +725,7 @@
     },
     {
       "path": "components/robinhood-mainnet-market.tsx",
-      "sha256": "6ef530a7e5d38dc9f7dd6494e88d01f7e0f939744ff7fa314a8cfc3c16e6a8c5"
+      "sha256": "092c6f37a6a9275258fac000bf43091726b36983f64edf171434e9efe6d62318"
     },
     {
       "path": "components/robinhood-market-module.tsx",
@@ -1330,6 +1330,10 @@
     {
       "path": "lib/chain/robinhood-mainnet-monero-authorization.ts",
       "sha256": "fa81fbb6d4bac8bd79ff23f93220d4fdb28569da61ba78e217b985c2bdd7ba71"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-payments.ts",
+      "sha256": "d870ab683a51bd0e551098210c58dd74062f9b187992f83f7d96e68740149c8d"
     },
     {
       "path": "lib/chain/robinhood-mainnet-registration.ts",
@@ -2958,6 +2962,10 @@
     {
       "path": "tests/robinhood-mainnet-market.test.mjs",
       "sha256": "71df2dfdda793e760f9790bc202c1c7a1d9449b01c6f65f79e383ed6396c3382"
+    },
+    {
+      "path": "tests/robinhood-mainnet-payments.test.mjs",
+      "sha256": "3b62fc60098922f57787fec2b769cf67b119d8a863952a4f19300a86f957d69b"
     },
     {
       "path": "tests/robinhood-mainnet-registration.test.mjs",
