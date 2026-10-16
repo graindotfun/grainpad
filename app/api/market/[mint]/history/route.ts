@@ -95,6 +95,14 @@ async function pagedBars(mint:string,url:URL,request:Request,headers:Record<stri
  const viewer=request.headers.get('X-Grainpad-Viewer')==='visible';
  const market=await serverMarket(mint,{viewer});
  const db=database();
+ // The pan/zoom chart must run the same bounded verified recovery as fixed-window charts.
+ // Older pages only read the index; the visible newest page owns recovery work.
+ let recovery:{processed:number;trades:number;remaining:number;tailOpen?:boolean}|undefined;
+ if(viewer&&before===null){
+  try{const saved=await db.prepare('SELECT record FROM launch_index WHERE network=? AND platform_id=? AND mint=?').bind('mainnet-beta',grainpadPlatformId().toBase58(),mint).first<{record:string}>();
+   if(saved)recovery=(await backfillChartTrades(db,chartHistoryRead,JSON.parse(saved.record),POLICY.cpConfig,{recentPool:market.pool})).data;
+  }catch{recovery={processed:0,trades:0,remaining:0,tailOpen:true};}
+ }
  let page;
  try{page=await readBars(db,mint,{seconds,limit,end:before===null?null:Math.min(before,now),activity:market.activity,now});}
  catch{return Response.json({error:'Unsupported chart range.'},{status:400,headers});}
@@ -112,5 +120,6 @@ async function pagedBars(mint:string,url:URL,request:Request,headers:Record<stri
    if(result.data.length)return Response.json({rows:result.data,available:true,stale:result.stale,updatedAt:result.updatedAt,pool:market.pool,source:'geckoterminal',unit:'usd',first:result.data[0].time,window:{start:result.data[0].time,end:now,resolution:seconds},coverage:{status:'external-fallback',notice:'Grainpad has not indexed these trades. This external series is a fallback, not the Grainpad record.'}},{headers});
   }catch{/* A failed external fallback is not indexed history, and it is not zero trades. */}
  }
- return Response.json({rows:page.rows,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source:'grainpad',unit:'quote',quote:market.quote.symbol,coverage:page.coverage,anchor:page.anchor,first:page.first,window:{start:page.start,end:page.end,resolution:seconds}},{headers});
+ if((recovery?.remaining||recovery?.tailOpen)&&page.coverage.status!=='no-trades')page.coverage={...page.coverage,status:'partial',notice:'Recent finalized trades are still being recovered. The chart includes only verified executions.'};
+ return Response.json({rows:page.rows,recovery,available:true,stale:market.stale,updatedAt:market.updatedAt,pool:market.pool,source:'grainpad',unit:'quote',quote:market.quote.symbol,coverage:page.coverage,anchor:page.anchor,first:page.first,window:{start:page.start,end:page.end,resolution:seconds}},{headers});
 }

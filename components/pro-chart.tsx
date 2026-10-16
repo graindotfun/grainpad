@@ -2,16 +2,16 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Camera,Maximize2,Minimize2,RotateCcw,ZoomIn,ZoomOut} from 'lucide-react';
 import type {IChartApi,ISeriesApi,MouseEventParams,SeriesType,Time,LogicalRange} from 'lightweight-charts';
-import {BAR_OPTIONS,RANGE_OPTIONS,mergeBars,minMoveFor,pageCursor,seriesRows,utcLabel,withAlpha,withLiveTrades} from '@/lib/pro-chart-data.mjs';
+import {BAR_OPTIONS,RANGE_OPTIONS,chartLifetimeBar,mergeBars,minMoveFor,pageCursor,seriesRows,utcLabel,withAlpha,withLiveTrades} from '@/lib/pro-chart-data.mjs';
 import {formatNumber,formatPercent} from '@/lib/price-format';
 import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import {KeepCase} from './keep-case';
 import type {LiveTrade} from './use-live-market';
 
 type Bar={time:number;open:number;high:number;low:number;close:number;volume?:number;lastTime?:number;live?:boolean};
-type Page={rows:Bar[];first?:number|null;unit?:string;source?:string;coverage?:{status:string;notice:string};window?:{start?:number;end?:number;resolution?:number};error?:string};
+type Page={rows:Bar[];generation?:string;market?:unknown;updatedAt?:number;stale?:boolean;first?:number|null;unit?:string;source?:string;coverage?:{status:string;notice:string};window?:{start?:number;end?:number;resolution?:number};error?:string};
 type Legend={time:number;open:number;high:number;low:number;close:number;volume:number}|null;
-export type ProChartProps={mint:string;pool?:string;symbol:string;style:'line'|'candles';metric:'price'|'market-cap';setMetric:(m:'price'|'market-cap')=>void;
+export type ProChartProps={network?:'solana'|'robinhood';onMarket?:(market:unknown,updatedAt:number,stale:boolean)=>void;mint:string;pool?:string;symbol:string;style:'line'|'candles';metric:'price'|'market-cap';setMetric:(m:'price'|'market-cap')=>void;
  quote:string;supply:number|null;usdRate:number|null;colors:{up:string;down:string;hollow:boolean};live:LiveTrade[];onSource?:(source:{unit:string;source:string}|null)=>void};
 const PAGE=300;
 /** The viewer's clock offset in seconds; the engine draws UTC, so bar times are shifted for display (never sent back). */
@@ -21,23 +21,26 @@ const viewerShift=()=>typeof window==='undefined'?0:-new Date().getTimezoneOffse
  * cursor, drag pans back through history (older bars load as you reach them), pinch on touch, crosshair with axis
  * labels, OHLC legend, volume, last-price tag, auto / log / % scales. Display only: the indexed bars are read-only
  * and nothing here signs or sends anything. */
-export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,usdRate,colors,live,onSource}:ProChartProps){
+export function ProChart({network='solana',onMarket,mint,pool,symbol,style,metric,setMetric,quote,supply,usdRate,colors,live,onSource}:ProChartProps){
  const host=useRef<HTMLDivElement>(null),frame=useRef<HTMLDivElement>(null),chart=useRef<IChartApi|null>(null),main=useRef<ISeriesApi<SeriesType>|null>(null),engine=useRef<typeof import('lightweight-charts')|null>(null),mainStyle=useRef(''),volume=useRef<ISeriesApi<'Histogram'>|null>(null);
- const [ready,setReady]=useState(0),[bar,setBar]=useState(300),[range,setRange]=useState<string|null>('1D'),[mode,setMode]=useState<0|1|2>(0),[auto,setAuto]=useState(true),[full,setFull]=useState(false);
+ const [ready,setReady]=useState(0),[bar,setBar]=useState(300),[range,setRange]=useState<string|null>('All'),[mode,setMode]=useState<0|1|2>(0),[auto,setAuto]=useState(true),[full,setFull]=useState(false);
  const [bars,setBars]=useState<Bar[]>([]),[meta,setMeta]=useState<{key:string;first:number|null;unit:string;source:string;coverage?:Page['coverage'];error?:string;loading:boolean;exhausted:boolean;cursor:number|null}>({key:'',first:null,unit:'quote',source:'grainpad',loading:true,exhausted:false,cursor:null});
  const [legend,setLegend]=useState<Legend>(null),[clock,setClock]=useState<number|null>(null),shift=useMemo(viewerShift,[]);
  const [currency,setCurrency]=useState<'usd'|'quote'>('usd');
- const key=`${mint}:${pool}:${bar}`,loadingOlder=useRef(false),pendingRange=useRef<string|null>('1D');
+ const key=`${network}:${mint}:${pool}:${bar}`,loadingOlder=useRef(false),pendingRange=useRef<string|null>('All');
+ const generation=useRef<string|undefined>(undefined);
+ const currentKey=useRef(key);currentKey.current=key;
  const usdSeries=meta.unit==='usd',useUsd=!usdSeries&&currency==='usd'&&usdRate!=null;
- // Market cap needs supply; a USD-only external series can only show price in USD.
- const canMarketCap=supply!=null&&!usdSeries,activeMetric=canMarketCap?metric:'price';
- const multiplier=(activeMetric==='market-cap'?supply??1:1)*(useUsd?usdRate??1:1),volumeMultiplier=useUsd?usdRate??1:1;
+ // Verified current supply scales either native quote prices or an identified external USD series.
+ const canMarketCap=supply!=null,activeMetric=metric;
+ const multiplier=(activeMetric==='market-cap'?(canMarketCap?supply??0:0):1)*(useUsd?usdRate??1:1),volumeMultiplier=useUsd?usdRate??1:1;
  const unit=usdSeries||useUsd?'usd':quote;
  const fmt=useCallback((v:number)=>unit==='usd'?formatNumber(v,{sig:4,prefix:'$',compactFrom:1_000_000}):formatNumber(v,{sig:4,compactFrom:1_000_000}),[unit]);
  const fetchPage=useCallback(async(before:number|null,signal?:AbortSignal)=>{
-  const r=await fetch(`/api/market/${encodeURIComponent(mint)}/history?kind=candles&bar=${bar}&limit=${PAGE}${before!==null?`&before=${before}`:''}`,{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
-  const body=await r.json() as Page;if(!r.ok)throw Error(body.error||'Price history unavailable.');return body;
- },[mint,bar]);
+  const endpoint=network==='robinhood'?`/api/robinhood/mainnet/chart?token=${encodeURIComponent(mint)}&bar=${bar}&limit=${PAGE}`:`/api/market/${encodeURIComponent(mint)}/history?kind=candles&bar=${bar}&limit=${PAGE}`;
+  const r=await fetch(endpoint+(before!==null?`&before=${before}`:''),{signal,cache:'no-store',headers:{'X-Grainpad-Viewer':'visible'}});
+  const body=await r.json() as Page;if(!r.ok)throw Error(body.error||'Price history unavailable.');if(currentKey.current===key&&!signal?.aborted&&before===null&&body.market)onMarket?.(body.market,body.updatedAt??0,!!body.stale);return body;
+ },[mint,bar,network,onMarket,key]);
 
  // Engine: created once, client-only (dynamic import keeps it out of the server render and the first bundle).
  useEffect(()=>{
@@ -78,27 +81,30 @@ export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,u
    const ink=getComputedStyle(frame.current||document.body).getPropertyValue('--gx-ink').trim()||'#101010';
    main.current=style==='candles'
     ?instance.addSeries(lib.CandlestickSeries,{upColor:colors.up,borderUpColor:colors.up,wickUpColor:colors.up,downColor:colors.hollow?'rgba(0,0,0,0)':colors.down,borderDownColor:colors.hollow?ink:colors.down,wickDownColor:colors.hollow?ink:colors.down,priceLineStyle:lib.LineStyle.Dotted})
-    :instance.addSeries(lib.AreaSeries,{lineColor:colors.up,lineWidth:2,topColor:withAlpha(colors.up,.18),bottomColor:'rgba(0,0,0,0)',priceLineStyle:lib.LineStyle.Dotted,crosshairMarkerRadius:4,crosshairMarkerBorderColor:colors.up,crosshairMarkerBackgroundColor:colors.up});
+    :instance.addSeries(lib.AreaSeries,{lineColor:colors.up,lineWidth:2,pointMarkersVisible:true,topColor:withAlpha(colors.up,.18),bottomColor:'rgba(0,0,0,0)',priceLineStyle:lib.LineStyle.Dotted,crosshairMarkerRadius:4,crosshairMarkerBorderColor:colors.up,crosshairMarkerBackgroundColor:colors.up});
    mainStyle.current=style;drawn.current={first:null,length:0,multiplier:1,key:'',style:''};
   }
  },[style,colors.up,colors.down,colors.hollow,ready>0]);// eslint-disable-line react-hooks/exhaustive-deps -- recreate only when the engine first exists or the look changes.
 
  // Latest page for the bar size, then a poll that merges the newest bars; older pages load as the view reaches them.
  useEffect(()=>{
-  setBars([]);setMeta({key,first:null,unit:'quote',source:'grainpad',loading:true,exhausted:false,cursor:null});
+  generation.current=undefined;setBars([]);setMeta({key,first:null,unit:'quote',source:'grainpad',loading:true,exhausted:false,cursor:null});
   return startViewerPolling(async(signal:AbortSignal)=>{
    try{const page=await fetchPage(null,signal);if(signal.aborted)return;
-    setBars(previous=>mergeBars(previous,page.rows));
-    setMeta(previous=>({key,first:page.first??null,unit:page.unit||'quote',source:page.source||'grainpad',coverage:page.coverage,loading:false,...pageCursor(previous.key===key?previous.cursor:null,page)}));
+    if(pendingRange.current==='All'&&page.first!=null){const next=chartLifetimeBar(page.first,bar,Date.now()/1000,PAGE);if(next>bar){setBar(next);return;}}
+    const changed=page.generation!==generation.current;generation.current=page.generation;
+    if(changed){drawn.current={first:null,length:0,multiplier:1,key:'',style:''};pendingRange.current=range;}
+    setBars(previous=>changed?page.rows:mergeBars(previous,page.rows));
+    setMeta(previous=>({key,first:page.first??null,unit:page.unit||'quote',source:page.source||'grainpad',coverage:page.coverage,loading:false,...pageCursor(!changed&&previous.key===key?previous.cursor:null,page)}));
    }catch(e){if(!signal.aborted)setMeta(previous=>({...previous,key,loading:false,error:e instanceof Error?e.message:'Price history unavailable.'}));}
-  },{intervalMs:15_000});
+  },{intervalMs:network==='robinhood'?60_000:15_000});
  },[key,fetchPage]);
  useEffect(()=>{onSource?.(meta.key===key?{unit:meta.unit,source:meta.source}:null);},[meta.unit,meta.source,meta.key,key,onSource]);
  const loadOlder=useCallback(async()=>{
   // Step back one time window at a time from the oldest window read, even when a window had few or no trades.
   if(loadingOlder.current||meta.exhausted||meta.cursor==null)return;
-  loadingOlder.current=true;
-  try{const page=await fetchPage(meta.cursor-1);setBars(previous=>mergeBars(page.rows,previous));setMeta(previous=>previous.key!==key?previous:{...previous,...pageCursor(previous.cursor,page)});}
+  loadingOlder.current=true;const requestedGeneration=generation.current;
+  try{const page=await fetchPage(meta.cursor-1);if(currentKey.current!==key||generation.current!==requestedGeneration||page.generation!==requestedGeneration)return;setBars(previous=>mergeBars(page.rows,previous));setMeta(previous=>previous.key!==key?previous:{...previous,...pageCursor(previous.cursor,page)});}
   catch{/* Older history stays where it is; the next pan retries. */}finally{loadingOlder.current=false;}
  },[meta.exhausted,meta.cursor,key,fetchPage]);
 
@@ -180,6 +186,7 @@ export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,u
     <button type="button" className="pro-icon" aria-label="Save chart image" title="Save chart image" onClick={screenshot}><Camera size={16}/></button>
    </div>
   </div>
+  {meta.error&&rows.candles.length>0&&<p className="feedback error" role="status">Chart refresh is unavailable. Showing the last verified history.</p>}
   <div className="pro-stage">
    <div ref={host} className="pro-canvas" role="img" aria-label={`${activeMetric==='market-cap'?'Market cap':'Price'} chart in ${unit==='usd'?'USD':quote}, ${barLabel} bars. Scroll to zoom, drag to pan.`}/>
    {shown&&<div className="pro-legend" aria-live="off">
@@ -189,7 +196,7 @@ export function ProChart({mint,pool,symbol,style,metric,setMetric,quote,supply,u
     <p><span>Vol <b>{unit==='usd'?formatNumber(shown.volume,{sig:3,prefix:'$'}):formatNumber(shown.volume,{sig:3})}</b>{unit!=='usd'&&<> <KeepCase>{quote}</KeepCase></>}</span></p>
    </div>}
    {meta.key===key&&meta.loading&&!rows.candles.length&&<div className="pro-empty" role="status">Reading the index…</div>}
-   {empty&&<div className="pro-empty" role="status"><strong>{meta.error?'Price history unavailable':meta.coverage?.status==='no-trades'?'No trades yet':'No indexed trades for these bars'}</strong><span>{meta.error||meta.coverage?.notice||'Try a larger bar size. Missing history is never drawn as zero.'}</span></div>}
+   {empty&&<div className="pro-empty" role="status"><strong>{activeMetric==='market-cap'&&!canMarketCap?'Market cap unavailable':meta.error?'Price history unavailable':meta.coverage?.status==='no-trades'?'No trades yet':'No indexed trades for these bars'}</strong><span>{activeMetric==='market-cap'&&!canMarketCap?'Current supply is unavailable. Choose Price to view verified execution history.':meta.error||meta.coverage?.notice||'Try a larger bar size. Missing history is never drawn as zero.'}</span></div>}
   </div>
   <div className="pro-foot">
    <div className="pro-group" role="group" aria-label="Range">{RANGE_OPTIONS.map(([label])=><button key={label} type="button" aria-pressed={range===label} onClick={()=>chooseRange(label)}>{label.toLowerCase()==='all'?'All':label.toLowerCase()}</button>)}</div>

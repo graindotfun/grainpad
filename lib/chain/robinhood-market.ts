@@ -202,7 +202,7 @@ export async function readRecentTrades(rpc: Rpc, market: Market): Promise<TradeE
 }
 
 /** Strict decoder shared by browser reads and durable server history. */
-export async function readTradeRange(rpc: Rpc, market: Market, start: bigint, end: bigint, limit = 10000): Promise<TradeEvent[]> {
+export async function readTradeRange(rpc: Rpc, market: Pick<Market,"curve"|"launchId"|"tokenAddress">, start: bigint, end: bigint, limit = 10000): Promise<TradeEvent[]> {
   if (start < 0n || end < start || end - start > 999n) throw new Error("Trade range must span at most 1,000 blocks.");
   const logs = await rpc("eth_getLogs", [{
     address: market.curve, fromBlock: "0x" + start.toString(16), toBlock: "0x" + end.toString(16),

@@ -28,3 +28,9 @@ test('wXMR has no XMR substitute when Jupiter does not price the mint',async()=>
  const fallback=await fetchQuoteUsd(async url=>String(url).includes('coinbase')?Response.json({data:{amount:'90',base:'SOL',currency:'USD'}}):new Response('{}',{status:503}));
  assert.equal(fallback.SOL.source,'coinbase-sol-usd');assert.equal(fallback.wXMR,null);
 });
+
+test('wXMR fallback prices only the exact Solana mint; it never substitutes XMR spot',async()=>{
+ const prices=await fetchQuoteUsd(async url=>String(url).includes('geckoterminal')?Response.json({data:{attributes:{token_prices:{[QUOTES.wXMR.mint]:'555.25',XMR:'999'}}}}):String(url).includes('coinbase')?Response.json({data:{amount:'105',base:'SOL',currency:'USD'}}):new Response('{}',{status:503}),1000000);
+ assert.equal(prices.wXMR.price,555.25);assert.equal(prices.wXMR.source,'geckoterminal-mint-usd');assert.equal(prices.wXMR.mint,QUOTES.wXMR.mint);assert.equal(prices.SOL.source,'coinbase-sol-usd');
+});
+test('updating another quote asset cannot refresh an older quote timestamp',()=>{const prices=applyQuoteFreshness({SOL:{price:100,updatedAt:100000},wXMR:{price:500,updatedAt:1}},100000,100002);assert.equal(prices.SOL.freshness,'fresh');assert.equal(prices.wXMR.freshness,'stale');assert.equal(prices.wXMR.updatedAt,1);});

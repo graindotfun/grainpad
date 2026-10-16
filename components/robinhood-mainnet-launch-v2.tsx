@@ -20,7 +20,10 @@ import {ROBINHOOD_CHAIN_MAINNET} from "@/lib/chain/robinhood-mainnet.ts";
 import {robinhoodMainnetV2Profile} from "@/lib/chain/robinhood-mainnet-v2.ts";
 import {configuredMainnetLaunchProfiles, mainnetLaunchProfileForFactory} from "@/lib/chain/robinhood-mainnet-launch-profiles.ts";
 import {newRobinhoodMainnetLaunchId} from "@/lib/chain/robinhood-mainnet-create.ts";
-import {discoverRobinhoodMainnetWallets, watchRobinhoodMainnetWallet, type MainnetWalletSession, type MainnetWalletChoice} from "@/lib/chain/robinhood-mainnet-wallet.ts";
+import {type MainnetWalletSession} from "@/lib/chain/robinhood-mainnet-wallet.ts";
+import {useSharedMainnetWallet} from './use-site-wallet';
+import {TradeWalletNotice} from './trade-wallet-notice';
+import {openSiteWallet} from '@/lib/site-wallet-session.mjs';
 import {planOneApprovalLaunch, previewCreatorBuy, type LaunchPlan} from "@/lib/chain/evm-one-approval-launch.ts";
 import {submitOneApprovalLaunch, probeLaunchId} from "@/lib/chain/one-approval-launch-client.ts";
 import {createLaunchJournal, recoverCreationTransaction, recentCreatorLaunches, proveNothingSent, verifyCreationTransaction, assertChain, browserJournalLock, type KeyValueStore, type V2JournalEntry} from "@/lib/chain/one-approval-launch-journal.ts";
@@ -62,8 +65,6 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 export function RobinhoodMainnetLaunchV2() {
   const profile = useMemo(() => robinhoodMainnetV2Profile(), []);
   const ready = !!profile;
-  const [wallets, setWallets] = useState<MainnetWalletChoice[]>([]);
-  const [selected, setSelected] = useState(0);
   const [session, setSession] = useState<MainnetWalletSession | null>(null);
   const sessionRef = useRef<MainnetWalletSession | null>(null);
   const [name, setName] = useState(""); const [symbol, setSymbol] = useState(""); const [description, setDescription] = useState("");
@@ -97,17 +98,7 @@ export function RobinhoodMainnetLaunchV2() {
   const [seenProgressKey, setSeenProgressKey] = useState(progressKey);
   if (seenProgressKey !== progressKey) { setSeenProgressKey(progressKey); setStatus(null); }
 
-  useEffect(() => {
-    if (!ready) return;
-    let active = true;
-    void discoverRobinhoodMainnetWallets().then(next => { if (active) setWallets(next); });
-    return () => { active = false; };
-  }, [ready]);
-
-  useEffect(() => {
-    if (!session) return;
-    return watchRobinhoodMainnetWallet(session, next => { sessionRef.current = next; setSession(next); if (!next) setError("Wallet disconnected. Reconnect to continue; any submitted launch is preserved."); });
-  }, [session]);
+  useSharedMainnetWallet(sessionRef,next=>{setSession(next);if(!next)setError("Wallet disconnected or on another network. Any submitted launch is preserved.");});
 
   const journalFor = useCallback((account: string, provider: MainnetWalletSession["provider"]) => createLaunchJournal(browserStores(), account, {
     lock: browserJournalLock,
@@ -191,11 +182,7 @@ export function RobinhoodMainnetLaunchV2() {
     finally { working.current = false; setBusy(""); }
   }
 
-  async function connect() {
-    const choices = wallets.length ? wallets : await discoverRobinhoodMainnetWallets(); setWallets(choices);
-    const choice = choices[selected]; if (!choice) throw new Error("Install or unlock an EVM browser wallet.");
-    const next = await choice.connect(true); sessionRef.current = next; setSession(next);
-  }
+  async function connect(){openSiteWallet("robinhood");}
 
   function pickImage(file?: File) {
     if (!file || entry) return;
@@ -233,6 +220,7 @@ export function RobinhoodMainnetLaunchV2() {
     const prepared = await response.json() as {error?: string; metadataHash?: string; metadataURI?: string};
     if (!response.ok) throw new Error(prepared?.error ?? "Metadata could not be saved. Nothing was sent to your wallet.");
     if (prepared.metadataHash !== plan.metadataHash || prepared.metadataURI !== plan.metadataURI) throw new Error("Saved metadata differs from this review. Nothing was sent to your wallet.");
+    if(sessionRef.current!==wallet)throw Error("Wallet changed. Review this launch again before opening your wallet.");
     const journal = journalFor(wallet.account, wallet.provider);
     setStatus({token: null, facts: {moneroConfirmations: null}, authorizationExpired: false, note: null, progress: {stage: "submitted", status: "working", detail: "Approve the single request in your wallet.", mayCreateAgain: false}});
     try { await submitOneApprovalLaunch(wallet.provider, plan as LaunchPlan, wallet.account, journal); }
@@ -319,7 +307,7 @@ export function RobinhoodMainnetLaunchV2() {
   const locked = !!busy || !!entry;
   const stage = status?.progress.stage ?? null;
   const done = stage === "trading_available";
-  return <main className="gx gx-create rh-launch-flow"><SiteHeader showWallet={false}/>
+  return <main className="gx gx-create rh-launch-flow"><SiteHeader/>
     <div className="gx-wrap gx-create-wrap" id="main-content">
       <div className="gx-create-head"><div><LaunchNetworkChip networkId="robinhood:mainnet" disabled={!!busy} submitted={!!entry} identity={() => ({name, symbol, description, picture, pictureName: "", twitter, telegram, website})} onError={setError}/><p className="gx-label">regular launch · Robinhood · one approval</p><h1 className="gx-display">launch a token<span className="gx-dot">.</span></h1></div>
         <p className="gx-mute">One wallet approval creates the token, binds its image and links, authorizes its Monero launch record and makes your optional first purchase. The rest continues automatically.</p></div>
@@ -353,7 +341,7 @@ export function RobinhoodMainnetLaunchV2() {
               : <div><dt>First purchase</dt><dd>None</dd></div>}
             <div><dt>Grainpad listing</dt><dd>After Monero registration has ten confirmations</dd></div>
             {profile?.marketModel && <div><dt>Market</dt><dd>Uniswap V3 from launch. 1 billion tokens; permanently locked liquidity; no graduation. Buys pay WETH fees; sells pay token fees. Other LPs and protocol deductions can reduce earnings.</dd></div>}</dl></div>
-        <label>Wallet<select value={selected} disabled={locked || !ready} onChange={e => { setSelected(Number(e.target.value)); sessionRef.current = null; setSession(null); }}>{wallets.map((wallet, index) => <option key={index} value={index}>{wallet.name}</option>)}</select></label>
+        <TradeWalletNotice network="robinhood"/>
         <Button variant="outline" disabled={!ready || !!busy} onClick={() => void run("Connecting", connect)}>{session ? "Change wallet / recover" : "Connect wallet"}</Button>
         {session && <p className="address-line">{session.account}</p>}
         {!session && entry?.transactionHash && <p role="status">Wallet disconnected. Tracking your submitted launch continues. Reconnect the same wallet to manage it; do not launch again.</p>}

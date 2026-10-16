@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mergeBars,withLiveTrades,seriesRows,minMoveFor,utcLabel,withAlpha,pageCursor,BAR_OPTIONS,RANGE_OPTIONS} from '../lib/pro-chart-data.mjs';
+import {mergeBars,withLiveTrades,seriesRows,minMoveFor,utcLabel,withAlpha,pageCursor,chartLifetimeBar,BAR_OPTIONS,RANGE_OPTIONS} from '../lib/pro-chart-data.mjs';
 const bar=(time,close,extra={})=>({time,open:close,high:close,low:close,close,volume:1,...extra});
 test('pages merge by bar time, newest read wins, invalid bars are dropped',()=>{
  const merged=mergeBars([bar(60,1),bar(120,2)],[bar(120,3),bar(180,4),{time:240,open:0,high:1,low:1,close:1}]);
@@ -31,3 +31,5 @@ test('history pages by time window: a short or empty page is not the end, only r
  assert.equal(pageCursor(null,{first:null,window:{start:5}}).exhausted,true,'no trades at all');
  assert.deepEqual(pageCursor(7,{first:1}),{cursor:7,exhausted:true},'a page without a window cannot be continued');
 });
+
+test('default whole-life bars show quiet pre-migration tokens instead of an empty last day',()=>{const now=2000000,first=now-5*86400;const seconds=chartLifetimeBar(first,300,now);assert.equal(seconds,3600);assert.ok(now-first<seconds*300);assert.equal(chartLifetimeBar(now-60,300,now),300);assert.equal(chartLifetimeBar(null,300,now),300);});

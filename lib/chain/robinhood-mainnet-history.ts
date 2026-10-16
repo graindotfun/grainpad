@@ -1,7 +1,8 @@
 import {address, bytes32, readTradeRange, type Rpc, type TradeEvent} from "./robinhood-market.ts";
 import type {RobinhoodRecordStore} from "./robinhood-registration.ts";
 import {describeMainnetReceipt, type MainnetLaunchRecord} from "./robinhood-mainnet-registration.ts";
-import {readMainnetMarket, type MainnetMarket} from "./robinhood-mainnet-market.ts";
+import {readMainnetMarket} from "./robinhood-mainnet-market.ts";
+import type {RobinhoodHistoryMarket} from "./robinhood-chart-identity.ts";
 
 export type StoredTrade = Omit<TradeEvent, "blockNumber" | "logIndex" | "amountIn" | "amountOut"> & {
   blockNumber: string; logIndex: string; amountIn: string; amountOut: string;
@@ -67,7 +68,7 @@ export async function readRobinhoodMainnetHistory(storage: RobinhoodRecordStore,
 
 const SWAP_TOPIC = "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67";
 /** Pool event recipient is recorded, not assumed to be the original wallet behind an aggregator. */
-export async function readMainnetPoolRange(rpc: Rpc, market: MainnetMarket, start: bigint, end: bigint): Promise<(StoredTrade & {venue: "uniswap-v3"})[]> {
+export async function readMainnetPoolRange(rpc: Rpc, market: Pick<RobinhoodHistoryMarket,"pool"|"quote"|"tokenAddress">, start: bigint, end: bigint): Promise<(StoredTrade & {venue: "uniswap-v3"})[]> {
   if (!market.pool || start < 0n || end < start || end - start > 999n) throw new Error("Invalid mainnet pool history range.");
   const logs = await rpc("eth_getLogs", [{address: market.pool, fromBlock: hex(start), toBlock: hex(end), topics: [SWAP_TOPIC]}]);
   if (!Array.isArray(logs) || logs.length > 10000) throw new Error("Pool history unavailable.");

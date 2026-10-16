@@ -14,6 +14,7 @@ const hash = '0x' + '33'.repeat(32);
 const entry = {creator, launchId: creator + '44'.repeat(12), transactionHash: hash};
 function harness({defer = false} = {}) {
  const slots = [], timers = new Map(), exports = {}, calls = [];
+ let publishSession;
  let index = 0, dirty = true, tree, watch, confirmations = 2, resolveResponse, rendering = false, scheduled = false, renders = 0;
  const session = account => ({account, provider: {request() { throw Error('Unexpected wallet RPC'); }}});
  const equal = (a, b) => a && b && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
@@ -30,7 +31,8 @@ function harness({defer = false} = {}) {
   react,
   'react/jsx-runtime': {jsx, jsxs: jsx},
   '@/lib/chain/robinhood-mainnet-v2.ts': {robinhoodMainnetV2Profile: () => ({factory: '0x' + '66'.repeat(20), chainId: 4663})},
-  '@/lib/chain/robinhood-mainnet-wallet.ts': {discoverRobinhoodMainnetWallets: async () => [{name: 'Local wallet', connect: async () => session(creator)}], watchRobinhoodMainnetWallet: (_s, cb) => {watch = cb; return () => {watch = null;};}},
+  './use-site-wallet': {useSharedMainnetWallet:(ref,changed)=>{publishSession=changed;react.useEffect(()=>{watch=next=>{ref.current=next;publishSession(next);};return()=>{watch=null;};},[ref]);}},
+  '@/lib/site-wallet-session.mjs':{openSiteWallet:()=>watch(session(creator))},
   '@/lib/chain/one-approval-launch-journal.ts': {createLaunchJournal: (_stores, account) => ({read: async () => ({entry: account === creator ? entry : null, conflict: false})})},
   '@/lib/chain/launch-progress.ts': {LAUNCH_STAGES: ['submitted', 'created', 'metadata_verified', 'awaiting_monero', 'trading_available']},
   '@/lib/chain/robinhood-mainnet.ts': {ROBINHOOD_CHAIN_MAINNET: {blockExplorerUrl: 'https://example.invalid'}},

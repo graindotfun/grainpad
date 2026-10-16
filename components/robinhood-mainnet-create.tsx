@@ -15,19 +15,21 @@ import {readLaunchHandoff,validateLaunchDraftArtwork} from "@/lib/chain/launch-n
 import {journalCreateProvider,chooseLaunchSubmissionRecord,launchSubmissionLocked,bindLaunchSubmissionRecords,conflictingLaunchSubmissionBindings,canClearLaunchSubmission,type LaunchSubmissionBinding} from "@/lib/chain/launch-submission-journal.ts";
 import {ROBINHOOD_CHAIN_MAINNET, ROBINHOOD_MAINNET_FACTORY_ADDRESS} from "@/lib/chain/robinhood-mainnet.ts";
 import {buildRobinhoodMainnetCreateTransaction, newRobinhoodMainnetLaunchId, readRobinhoodMainnetCreateReceipt, submitRobinhoodMainnetCreate, type MainnetCreateOutcome} from "@/lib/chain/robinhood-mainnet-create.ts";
-import {discoverRobinhoodMainnetWallets, watchRobinhoodMainnetWallet, type MainnetWalletSession, type MainnetWalletChoice} from "@/lib/chain/robinhood-mainnet-wallet.ts";
+import {type MainnetWalletSession} from "@/lib/chain/robinhood-mainnet-wallet.ts";
 
 import {saveMainnetDraft,readMainnetDraft} from "@/lib/chain/robinhood-mainnet-draft.ts";
 import {assertMainnetDisplayText,canonicalMainnetDisplay, signMainnetDisplay, mainnetDisplayImage} from "@/lib/chain/robinhood-mainnet-display.ts";
 import {signMainnetMoneroChallenge} from "@/lib/chain/robinhood-mainnet-monero-authorization.ts";
 import {type MainnetLaunchRecord} from "@/lib/chain/robinhood-mainnet-registration.ts";
 
+import {useSharedMainnetWallet} from './use-site-wallet';
+import {TradeWalletNotice} from './trade-wallet-notice';
+import {openSiteWallet} from '@/lib/site-wallet-session.mjs';
+
 const draftKey = "grainpad:4663:launch-draft";
 const receiptKey = (account: string) => "grainpad:4663:create:" + account;
 export function RobinhoodMainnetCreate() {
   const ready = ROBINHOOD_MAINNET_FACTORY_ADDRESS !== null;
-  const [wallets, setWallets] = useState<MainnetWalletChoice[]>([]);
-  const [selected, setSelected] = useState(0);
   const [connected, setConnected] = useState<MainnetWalletSession | null>(null);
   const current = useRef<MainnetWalletSession | null>(null);
   const [step,setStep] = useState(0);
@@ -53,21 +55,12 @@ export function RobinhoodMainnetCreate() {
   const originalJournal=useRef<{account:string;bindings:readonly LaunchSubmissionBinding[]}|null>(null);
   const [journalConflict,setJournalConflict]=useState(false);
   const [originalBindings,setOriginalBindings]=useState<readonly LaunchSubmissionBinding[]>([]);
-  useEffect(() => {
-    if (!ready) return;
-    let active = true;
-    void discoverRobinhoodMainnetWallets().then(next => {if (active) setWallets(next);});
-    return () => {active = false;};
-  }, [ready]);
-  useEffect(() => {
-    if (!connected) return;
-    return watchRobinhoodMainnetWallet(connected, next => {
-      current.current = next; setConnected(next);
-      setRegistered("");setSource(null);setMonero(null);setIdentitySaved(false);
-      if(!hash&&!submission.current)setId(next ? newRobinhoodMainnetLaunchId(next.account) : "");
-      setError("Wallet changed. Check any submitted transaction before creating again.");
-    });
-  }, [connected,hash]);
+  const loadedSession=useRef<MainnetWalletSession|null>(null);
+  useSharedMainnetWallet(current,next=>{setConnected(next);setRegistered("");setSource(null);setMonero(null);setIdentitySaved(false);if(!next)setError("Connect a Robinhood Chain wallet. Existing launch receipts are preserved.");});
+  useEffect(()=>{if(!connected||!hydrated||busy||working.current||loadedSession.current===connected)return;loadedSession.current=connected;void run("Reading saved launch",()=>loadConnectedSession(connected));
+  // Restore the account-bound journals; this does not create or submit a launch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[connected,hydrated,busy]);
   function draft() {return {name,symbol,description,picture,pictureName,twitter,telegram,website};}
   function restoreDraft(value: Record<string,unknown>) {
     for (const [key,set] of [["name",setName],["symbol",setSymbol],["description",setDescription],["picture",setPicture],["pictureName",setPictureName],["twitter",setTwitter],["telegram",setTelegram],["website",setWebsite]] as const) if(typeof value[key]==="string")set(value[key]);
@@ -111,10 +104,8 @@ export function RobinhoodMainnetCreate() {
     try { await job(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Please retry."); }
     finally { working.current = false; setBusy(""); }
   }
-  async function connect() {
-    const choices = wallets.length ? wallets : await discoverRobinhoodMainnetWallets(); setWallets(choices);
-    const choice = choices[selected]; if (!choice) throw new Error("Install or unlock an EVM browser wallet.");
-    const session = await choice.connect(true); current.current = session; setConnected(session);
+  async function connect(){openSiteWallet("robinhood");}
+  async function loadConnectedSession(session:MainnetWalletSession){
     setRegistered("");setSource(null);setMonero(null);setIdentitySaved(false);
     setId(newRobinhoodMainnetLaunchId(session.account));
     const savedHash = new URLSearchParams(window.location.search).get("recover");
@@ -240,7 +231,7 @@ export function RobinhoodMainnetCreate() {
   }
   const locked=!!busy||!!hash||submissionRequested||!hydrated;
   const shown=hash||submissionRequested?2:step;
-  return <main className="gx gx-create"><SiteHeader showWallet={false}/>
+  return <main className="gx gx-create"><SiteHeader/>
     <div className="gx-wrap gx-create-wrap" id="main-content">
       <div className="gx-create-head"><div><LaunchNetworkChip networkId="robinhood:mainnet" disabled={!!busy||!hydrated} submitted={!!hash||submissionRequested} identity={draft} onError={setError}/><p className="gx-label">regular launch · Robinhood · WETH pair</p><h1 className="gx-display">launch a token<span className="gx-dot">.</span></h1></div><p className="gx-mute">give your idea a name, an image and a story. review the terms, then launch from your own wallet.</p></div>
       <div className="gx-steps" role="group" aria-label="Launch steps">{["idea","identity","on-chain"].map((label,index)=><button key={label} type="button" aria-current={shown===index?"step":undefined} data-done={shown>index||undefined} disabled={locked} onClick={()=>setStep(index)}><b>0{index+1}</b> {label}</button>)}</div>
@@ -265,7 +256,7 @@ export function RobinhoodMainnetCreate() {
         <div className="gx-step" hidden={shown!==2}><div className="gx-step-title"><p className="gx-label">03 · on-chain</p><h3>review, then launch.</h3></div>
           <div className="transaction-review"><p className="launch-review-summary">{name||"Your token"} · ${symbol||"—"}</p><dl><div><dt>Network</dt><dd>Robinhood mainnet</dd></div><div><dt>Pair</dt><dd>WETH</dd></div><div><dt>Supply</dt><dd>1 billion · fixed</dd></div><div><dt>Curve fee</dt><dd>1% · 0.35% grainpad / 0.65% creator</dd></div><div><dt>Graduation</dt><dd>4 ETH net → Uniswap</dd></div></dl></div>
           <p className="small muted">Mainnet ETH pays gas. Create the token, approve its image and description with a message, then authorize its Monero launch record. Your wallet shows every request.</p>
-          <label>Wallet<select value={selected} disabled={locked||!ready} onChange={e=>{setSelected(Number(e.target.value));current.current=null;setConnected(null);}}>{wallets.map((wallet,index)=><option key={index} value={index}>{wallet.name}</option>)}</select></label>
+          <TradeWalletNotice network="robinhood"/>
           <Button variant="outline" disabled={!ready||!!busy||!hydrated} onClick={()=>void run("Connecting",connect)}>{connected?"Change wallet / recover":"Connect wallet"}</Button>
           {connected&&<p className="address-line">{connected.account}</p>}
           {!hash&&!submissionRequested&&<><Button className="primary-action" disabled={!ready||!connected||locked||!name||!symbol} onClick={()=>void run("Review create in your wallet",create)}>Create token <ArrowRight size={17}/></Button><button className="gx-ghost" disabled={!!busy||!hydrated} onClick={()=>setStep(1)}>back to identity</button></>}
