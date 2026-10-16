@@ -1,8 +1,11 @@
+import {ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS} from './chain/robinhood-mainnet-v3.ts';
+import {ROBINHOOD_MAINNET_METADATA_FACTORY_ADDRESS} from './chain/robinhood-mainnet-v3-metadata.ts';
+import {isPublicRobinhoodToken} from './robinhood-publication.mjs';
 import type {LaunchRecord} from './launch-records';
 import {CHAIN_RECORD_NETWORKS,chainOfNetwork,recordNetworkId,type ChainFilter,type ChainKey} from './chain-display.ts';
 import type {DisplayNetworkId} from './chain-display.ts';
 import {isNewLaunch,parseTimestamp} from './token-time.ts';
-export type DiscoveryToken=Omit<LaunchRecord,'launchedAt'>&{networkId:DisplayNetworkId|null;chain:ChainKey|null;launchedAt:string|null;graduatedAt:string|null;state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;marketStale:boolean;figuresSource:'grainpad'|'geckoterminal'|null};
+export type DiscoveryToken=Omit<LaunchRecord,'launchedAt'>&{marketVenue?:'uniswap-v3';networkId:DisplayNetworkId|null;chain:ChainKey|null;launchedAt:string|null;graduatedAt:string|null;state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;marketStale:boolean;figuresSource:'grainpad'|'geckoterminal'|null};
 export type DiscoveryFilter='all'|'new'|'near'|'graduated';
 export type DiscoverySort='newest'|'oldest'|'market-cap'|'volume';
 export type DiscoveryResult={chainCounts:{all:number;solana:number;robinhood:number};coverage?:string;totalIndexed?:number;tokens:DiscoveryToken[];featured:DiscoveryToken[];total:number;filteredTotal:number;page:number;pages:number;pageSize:number;counts:{all:number;new:number;near:number;graduated:number;unknown:number};officialMint:string|null;updatedAt:number;stale:boolean};
@@ -17,7 +20,7 @@ function parse(row:CacheRow|undefined,now:number):DisplaySnapshot|null {
 /** Retain last observed display snapshots with their original timestamp. Read display snapshots only. Browsing the home grid must never fan out into token-page RPC refreshes. */
 export function enrichDiscovery(records:LaunchRecord[],cache:CacheRow[],platform:string,officialMint:string|null,now=Date.now()):DiscoveryToken[]{
  const byKey=new Map(cache.map(row=>[row.key,row]));
- return records.map(record=>{
+ return records.filter(record=>isPublicRobinhoodToken(recordNetworkId(record),record.mint)).map(record=>{
   const snapshotRow=byKey.get(`market:v3:${platform}:${record.mint}`),snapshot=parse(snapshotRow,now);
   const own=snapshot&&snapshot.mint===record.mint&&snapshot.launchPool===record.pool&&(record.quoteMint?snapshot.quote?.mint===record.quoteMint:snapshot.quote?.symbol===(record.quoteAsset||'SOL'));
   const state=own&&snapshot.route==='cpmm'?'graduated':own&&(snapshot.route==='curve'||snapshot.route==='graduating')?snapshot.route:'unknown';
@@ -40,7 +43,8 @@ export function enrichDiscovery(records:LaunchRecord[],cache:CacheRow[],platform
   const lifecycle=state==='graduated'?'raydium_live':state==='graduating'?'migration_pending':state==='curve'&&shown!==null&&shown>=100?'curve_complete':state==='curve'?'curve_live':'unavailable';
   const networkId=recordNetworkId(record),launchedAt=parseTimestamp(record.launchedAt)!==null?record.launchedAt as string:null;
   const recorded=(record as {graduatedAt?:unknown}).graduatedAt,graduatedAt=state==='graduated'&&parseTimestamp(recorded)!==null?recorded as string:null;
-  return {...record,networkId,chain:chainOfNetwork(networkId),launchedAt,graduatedAt,official:Boolean(officialMint&&record.mint===officialMint),state,lifecycle,progress:shown,
+  const marketVenue=networkId==='robinhood:mainnet'&&[ROBINHOOD_MAINNET_V3_FACTORY_ADDRESS,ROBINHOOD_MAINNET_METADATA_FACTORY_ADDRESS].includes(record.platformId??'')?'uniswap-v3' as const:undefined;
+  return {...record,marketVenue,networkId,chain:chainOfNetwork(networkId),launchedAt,graduatedAt,official:Boolean(officialMint&&record.mint===officialMint),state,lifecycle,progress:shown,
    marketCapUsd,volume24h,change24h,figuresSource,marketUpdatedAt,marketStale};
  });
 }
@@ -49,7 +53,7 @@ export function discoveryRecords(rows:{record:string;market?:string|null;chart?:
  const cache:CacheRow[]=[];const records:LaunchRecord[]=[];
  for(const row of rows){
   let record:LaunchRecord|null=null;try{record=JSON.parse(row.record) as LaunchRecord;}catch{record=null;}
-  if(!record?.mint)continue;
+  if(!record?.mint||!isPublicRobinhoodToken(recordNetworkId(record),record.mint))continue;
   records.push(record);
   let market:DisplaySnapshot|null=null;if(row.market){try{market=JSON.parse(row.market) as DisplaySnapshot;}catch{market=null;}}
   if(market)cache.push({key:`market:v3:${platform}:${record.mint}`,value:row.market as string,updated_at:Number(row.market_time)||0});
@@ -61,7 +65,7 @@ export function discoveryPage(allRows:DiscoveryToken[],query:{search?:string;fil
  const filter=query.filter||'all',sort=query.sort||'newest',chain=query.chain||'all',search=(query.search||'').trim().normalize('NFKC').toLowerCase();
  if(!['all','new','near','graduated'].includes(filter)||!['newest','oldest','market-cap','volume'].includes(sort)||!['all',...Object.keys(CHAIN_RECORD_NETWORKS)].includes(chain))throw Error('Invalid directory filter.');
  // Chain scopes the status counts, so "Solana + Graduated" and its pill count always agree. NEW is the shared 12-hour launch rule.
- const publicRows=allRows.filter(r=>r.networkId!=='robinhood:testnet'&&r.networkId!=='solana:devnet');
+ const publicRows=allRows.filter(r=>isPublicRobinhoodToken(r.networkId,r.mint)&&r.networkId!=='robinhood:testnet'&&r.networkId!=='solana:devnet');
  const rows=chain==='all'?publicRows:publicRows.filter(r=>r.chain===chain);
  const isNear=(r:DiscoveryToken)=>r.state==='curve'&&r.progress!==null&&r.progress>=80;
  const isNew=(r:DiscoveryToken)=>isNewLaunch(r.launchedAt,updatedAt);

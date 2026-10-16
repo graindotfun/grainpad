@@ -5,7 +5,8 @@ import type {DiscoveryToken} from '@/lib/token-discovery';
 export type StatusKind='new'|'graduating'|'graduated'|'unknown';
 
 /** Lifecycle chip: graduating = curve complete, migrating or within 80% of the target, graduated = Raydium pool. NEW is not a lifecycle state: it is the shared 12-hour launch window (`isNewLaunch`) and renders independently. */
-export function tokenStatus(token:Pick<DiscoveryToken,'state'|'lifecycle'|'progress'>):{kind:StatusKind;label:string}|null{
+export function tokenStatus(token:Pick<DiscoveryToken,'state'|'lifecycle'|'progress'>&Partial<Pick<DiscoveryToken,'marketVenue'>>):{kind:StatusKind;label:string}|null{
+ if(token.marketVenue==='uniswap-v3')return {kind:'unknown',label:'Uniswap v3'};
  if(token.lifecycle==='raydium_live'||token.state==='graduated')return {kind:'graduated',label:'graduated'};
  if(token.lifecycle==='migration_pending')return {kind:'graduating',label:'migrating'};
  if(token.lifecycle==='curve_complete')return {kind:'graduating',label:'curve complete'};
