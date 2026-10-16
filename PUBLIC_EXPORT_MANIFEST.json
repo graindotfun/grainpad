@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "d74803892e793dbfcd2158d56fb27189e19cdbce",
+  "sourceCommit": "5771c5e7632036c240c27b3a09ba1236b85d0c8a",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -177,7 +177,7 @@
     },
     {
       "path": "app/api/sol-indicative/route.ts",
-      "sha256": "93b010ae9f8a73aa34755b7c347bf1b266b16cb3de5af57d29bc6e594e65b6a9"
+      "sha256": "802df7f196da8051d7c23f2c8405041d5431c521f2f7fb25ddb06201b1b49660"
     },
     {
       "path": "app/api/sol-trade/preflight/route.ts",
@@ -261,7 +261,7 @@
     },
     {
       "path": "app/grains.css",
-      "sha256": "e802716b2e51ebc389333cf5886deb1cc28d6cdf95236a41feeb1a25762b87e9"
+      "sha256": "0392fffcb2ca28ffab2712b19c94ccff6a37c6552e3e28ce04ab1f3c4be7aa86"
     },
     {
       "path": "app/lab/layout.tsx",
@@ -725,7 +725,7 @@
     },
     {
       "path": "components/robinhood-mainnet-market.tsx",
-      "sha256": "092c6f37a6a9275258fac000bf43091726b36983f64edf171434e9efe6d62318"
+      "sha256": "9e500dbe702d215f7088599bd42aeb262e2a8c3050d4fcfe5809376a2d703062"
     },
     {
       "path": "components/robinhood-market-module.tsx",
@@ -789,7 +789,7 @@
     },
     {
       "path": "components/trade-fields.tsx",
-      "sha256": "8450c83d4c999af3535573f340ac03cbacaddb468c419f004bc556f37ce0dff7"
+      "sha256": "248c5ba8e5d2ff90d022e512382bbcf55245ebac089d3c49d558619c26f4ac8c"
     },
     {
       "path": "components/trade-wallet-notice.tsx",
@@ -1541,7 +1541,7 @@
     },
     {
       "path": "lib/jupiter-route-v2.mjs",
-      "sha256": "e23dcf5c333093a6bcf55404e91aea1e13c426127c86afc8e9913976bc721fc9"
+      "sha256": "4ffdf6a95ab961fcfd519c006d6bfad145a27a5873b64cb06be5a6cf04c110ab"
     },
     {
       "path": "lib/launch-desk-status.mjs",
@@ -2157,7 +2157,7 @@
     },
     {
       "path": "lib/server-sol-trade.ts",
-      "sha256": "8287a16e63308e26f4db5676ced8fb5825c412443cb339be36d195bed2a08cad"
+      "sha256": "bc321211833667a168711cd166b417247f2b832e7e1e3591815c4c6fded98fe5"
     },
     {
       "path": "lib/server-utils.ts",
@@ -2205,7 +2205,7 @@
     },
     {
       "path": "lib/sol-direct-route.mjs",
-      "sha256": "17522659a3f833ebd66ee0830419fbf13b8a6aa60362db31526a922e81eee5aa"
+      "sha256": "839bbc772b45e8be91f225698778d31b913c6fd664c103bb0e1e32c990b8fcbd"
     },
     {
       "path": "lib/sol-guard-acceptance.mjs",
@@ -2213,15 +2213,19 @@
     },
     {
       "path": "lib/sol-indicative-client.mjs",
-      "sha256": "dbda12ebcf074a2fd8cae1eb2d14d6e2765f48a2e27fc1cf4b13a6bb1f1876c5"
+      "sha256": "35aa13e47c109af88ec609b7239ea3e8abdba6ef4e07d6d5fc452a64206eb596"
     },
     {
       "path": "lib/sol-indicative-quote.mjs",
-      "sha256": "ea5ada06e23a2d53228bd9aaf49788c7bde08c0810608f2e49305f0a0dbdd52c"
+      "sha256": "aaad108d2fdef06869bbd8ec1bdc21bd7176831cc411bb8be9a3ed389b6198cd"
     },
     {
       "path": "lib/sol-negative-acceptance.mjs",
       "sha256": "4928d1de3fa40caf70ce960eb7dab248745c1da3d84b82b7dec6b947688ca740"
+    },
+    {
+      "path": "lib/sol-payment-assets.mjs",
+      "sha256": "3d493727a0e13693213c53df59af38d4363a51a9a1d5a2e88dce9481ef4a98f2"
     },
     {
       "path": "lib/sol-route-display.mjs",
@@ -2249,23 +2253,23 @@
     },
     {
       "path": "lib/sol-trade-client.mjs",
-      "sha256": "c7a51e2e1101db2e6d46ba79bb5b92c60c4cbfe3352ff1dc698c939f33cf056e"
+      "sha256": "47ebd70ae245b9c94d4abeca24abc954d7fc61d9c0c0dbe541979ed317f047de"
     },
     {
       "path": "lib/sol-trade-intent.mjs",
-      "sha256": "67aa9a2bc76ad8fa023939c765c88d1eefb25dceb562f810f88fb05d45ade56f"
+      "sha256": "9ff29bad7345cb7ea11f3b7e87319fe68d4a429823ff173240b7aadd21e41f1e"
     },
     {
       "path": "lib/sol-trade-preflight.mjs",
-      "sha256": "7fe539f0fb4487913bb1386f7843cd1dd87d2b0f81b51304a039eb58c3c1f441"
+      "sha256": "c12a8be4f8ccbeb8166c7dd91b5725291a7cc8994f9124187a82c15512773617"
     },
     {
       "path": "lib/sol-trade-prepare.mjs",
-      "sha256": "b84cf9e12ade4f61565e2bb3f2191ecb6727d28e7443274d665f25b67bacb202"
+      "sha256": "50bd0895d3489a5309c8f1fcff8d580adc58c4dd8fa5c52bb79a4ed83239e1c6"
     },
     {
       "path": "lib/sol-trade-relay.mjs",
-      "sha256": "9e891dd47b08df86323987eaaf602a5a3473b4f6608026cbe5da0a1b5597a526"
+      "sha256": "03e00997eec48035e3900f180895033e571f42069341cc438f5df3fd58d85b29"
     },
     {
       "path": "lib/sol-trade-speculation.mjs",
@@ -2274,6 +2278,10 @@
     {
       "path": "lib/sol-transient-intermediate.mjs",
       "sha256": "8b4ad4c0de6a69df0ff9e51f85a6e9e98dc322790e50f0579a5fe89a66bc254b"
+    },
+    {
+      "path": "lib/sol-usdc-outcome.mjs",
+      "sha256": "b423d808eb9dc7544780f9a3544521d062b379d3ec37297e6238d9fde13d34b7"
     },
     {
       "path": "lib/stored-launch-policy.mjs",
@@ -2329,7 +2337,7 @@
     },
     {
       "path": "lib/trade.ts",
-      "sha256": "51310b47d1a096f8c8d466c615961d4bdb7aad20139754597893aa5885537790"
+      "sha256": "4e362944990a77ae0643d8927e1479dc8789ccbecb0813dfb6b28f77cb3fba12"
     },
     {
       "path": "lib/trading-venue.ts",
@@ -2413,7 +2421,7 @@
     },
     {
       "path": "lib/wallet-submission-journal.mjs",
-      "sha256": "5cdcecdb05add86d8c57bfb71655acb73ceb55514f5e8070ecd02a34f5c4654e"
+      "sha256": "c317602394dc6e1b44b27da01c68673e81e20ad839bb6d040fad2fe9d28acb34"
     },
     {
       "path": "lib/wallet-transaction-policy.mjs",
