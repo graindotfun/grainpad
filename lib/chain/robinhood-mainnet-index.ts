@@ -22,14 +22,16 @@ export async function upsertMainnetDirectoryRow(db:Db,record:MainnetLaunchRecord
  ON CONFLICT(network,mint) DO UPDATE SET record=CASE WHEN json_extract(excluded.record,'$.launchedAt') IS NULL AND json_extract(launch_index.record,'$.launchedAt') IS NOT NULL THEN json_set(excluded.record,'$.launchedAt',json_extract(launch_index.record,'$.launchedAt')) ELSE excluded.record END,indexed_at=excluded.indexed_at
  WHERE launch_index.platform_id=excluded.platform_id AND launch_index.creator=excluded.creator AND launch_index.pool=excluded.pool`).bind(NETWORK,record.tokenAddress,record.factory,record.creator,record.launchId,createdAt,JSON.stringify(row),now).run();
 }
-export async function syncRobinhoodMainnetLaunches({db,storage,factory,rpc,now=Date.now()}:{db:Db;storage:Store;factory:string;rpc:Rpc;now?:number}){
- if(!await takeBudget(db,`rh-mainnet-directory:v1:${factory}`,1,1,30_000,now))return {indexed:0};
+export async function syncRobinhoodMainnetLaunches({db,storage,factories,rpc,now=Date.now()}:{db:Db;storage:Store;factories:string[];rpc:Rpc;now?:number}){
+ if(!factories.length)return {indexed:0};
+ if(!await takeBudget(db,'rh-mainnet-directory:v2',1,1,30_000,now))return {indexed:0};
  let cursor=(await db.prepare('SELECT value FROM market_cache WHERE key=?').bind(CURSOR).first<{value:string}>())?.value||undefined,indexed=0,rpcLeft=2;
  for(let page=0;page<2;page++){
   const listed=await storage.list({prefix:PREFIX,limit:10,...(cursor?{cursor}:{})});
   for(const object of listed.objects){
    if(!object.key.startsWith(PREFIX))continue;
-   let record:MainnetLaunchRecord|null=null;try{record=await readRobinhoodMainnetLaunch(storage,object.key.slice(PREFIX.length),factory);}catch{continue;}
+   let record:MainnetLaunchRecord|null=null;
+   for(const factory of factories){try{record=await readRobinhoodMainnetLaunch(storage,object.key.slice(PREFIX.length),factory);}catch{continue;}if(record)break;}
    if(!record)continue;
    const existing=await db.prepare("SELECT json_extract(record,'$.launchedAt') AS launched,created_at FROM launch_index WHERE network=? AND mint=?").bind(NETWORK,record.tokenAddress).first<{launched:string|null;created_at:string}>();
    let launchedAt=existing?.launched??null;
