@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "2e4beca769b7469c447931b15238a60dae8b9272",
+  "sourceCommit": "0f4b946f009c55006fbd714d6c656c65e1281fe9",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -57,7 +57,7 @@
     },
     {
       "path": "app/api/discovery/route.ts",
-      "sha256": "b0693f151b85708cf9b2ff0dc0c4eff854840d0b7328ea5972d5a66e4b052eba"
+      "sha256": "bb74ca78c4fc98951ec47bd474e2f7ed4e6d213237f6d4ccf3199b44e296cac8"
     },
     {
       "path": "app/api/identity/fame/route.ts",
@@ -1285,7 +1285,7 @@
     },
     {
       "path": "lib/chain/robinhood-mainnet-index.ts",
-      "sha256": "ebfe7ae718a5dfe52e959d72ec86e04526da7cb08407c127e65e78b7a53c7468"
+      "sha256": "4fb412270ee78680861cff8610ab11aa0a20ae71f6e3a767052c1303e66e1c46"
     },
     {
       "path": "lib/chain/robinhood-mainnet-launch-profiles.ts",
@@ -1413,7 +1413,7 @@
     },
     {
       "path": "lib/discovery-index.mjs",
-      "sha256": "bd3c84fc266221fa7f41dc91ba24603e3238e97cd5f1a56eef845236e9bf661b"
+      "sha256": "0a913fbcbde175c23a3085b90bce30fe6a5452ad2d52a226f0fd7132e2a35c70"
     },
     {
       "path": "lib/discovery-refresh.mjs",

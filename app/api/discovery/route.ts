@@ -1,4 +1,4 @@
-import {ROBINHOOD_MAINNET_FACTORY_ADDRESS} from '@/lib/chain/robinhood-mainnet.ts';
+import {mainnetFactories} from '@/lib/chain/robinhood-mainnet-factories.ts';
 import {database} from '@/lib/server-owner';
 import {grainpadPlatformId} from '@/lib/platform-policy';
 import {discoveryRecords,enrichDiscovery} from '@/lib/token-discovery';
@@ -17,7 +17,7 @@ export async function GET(request:Request){
  const search=params.get('q')||'',filter=params.get('filter')||'all',sort=params.get('sort')||'newest',page=Number(params.get('page')||1),quote=params.get('quote')||'all',chain=params.get('chain')||'all';
  if(!['all','SOL','wXMR'].includes(quote)||!isChainFilter(chain)||search.length>128||!['all','new','near','graduated'].includes(filter)||!['newest','oldest','market-cap','volume'].includes(sort)||!Number.isSafeInteger(page)||page<1)return Response.json({error:'Invalid directory request.'},{status:400,headers});
  try{
-  const platform=grainpadPlatformId().toBase58(),now=Date.now(),result=await queryDiscovery(database(),{platform,search,filter,sort,page,quote,chain,robinhoodMainnetFactory:ROBINHOOD_MAINNET_FACTORY_ADDRESS?.toLowerCase()??null,now});
+  const platform=grainpadPlatformId().toBase58(),now=Date.now(),result=await queryDiscovery(database(),{platform,search,filter,sort,page,quote,chain,robinhoodMainnetFactories:mainnetFactories().map(factory=>factory.address),now});
   // Only registered mainnet launches belong on the production board; testnet remains in its dedicated catalog.
   // Do not delay this response or claim that background observations are already
   // present. The next visible-directory poll reads their persisted snapshots.
