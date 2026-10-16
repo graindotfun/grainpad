@@ -173,3 +173,13 @@ html body .creator-desk{border-radius:20px;padding:28px!important;margin:0 0 32p
 .rh-creator-tools .receipt{font-size:12px}.rh-creator-tools .product-facts{margin:16px 0}
 @media(max-width:760px){.rh-creator-tools{position:static;margin:20px 0 0}.wallet-network-tabs button{padding:8px;font-size:12px}}
 .token-market-page .mobile-trade-bar [data-slot="button"],.wallet-session-dialog .wallet-row{border-radius:999px!important}
+
+/* Trade confirmation stays inside the swap card; hidden reviews never create an overlay. */
+.token-swap .swap-review[hidden],.token-swap .primary-action[hidden]{display:none}
+.token-swap .swap-review{margin-top:20px;padding:20px 0 0;border-top:1px solid var(--gx-rule,var(--charcoal));display:grid;gap:14px;min-width:0}
+.token-swap .swap-review h3,.token-swap .swap-review p{margin:0}
+.token-swap .swap-review dl{display:grid;gap:12px;font-size:14px;margin:0}
+.token-swap .swap-review dl>div{margin:0;display:flex;justify-content:space-between;gap:16px;align-items:baseline}
+.token-swap .swap-review dt{color:var(--gx-mute,var(--muted-foreground))}
+.token-swap .swap-review dd{margin:0;text-align:right;overflow-wrap:anywhere;min-width:0}
+.token-swap .swap-review button{border-radius:999px;min-height:44px;width:100%}

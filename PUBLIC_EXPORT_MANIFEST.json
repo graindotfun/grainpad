@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "6ba688d3ae0240f25f7c20b7ef25be9b5180381d",
+  "sourceCommit": "a466663dc28c9fc397678decce39eac4e569c307",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -461,7 +461,7 @@
     },
     {
       "path": "app/wallet-ux.css",
-      "sha256": "d8e4e77808c7068f17cd18a9ccc2db8d65882177e497ba7a4122a14912e9503a"
+      "sha256": "d5dfe0aaa745838b945204ba4945ec762065a48c2cca7ad030f131e4ae0b02c3"
     },
     {
       "path": "cloudflare-env.d.ts",
@@ -725,7 +725,7 @@
     },
     {
       "path": "components/robinhood-mainnet-market.tsx",
-      "sha256": "321b74072e5a9b3751ee93b5526a8fefe5300444498ee8a204da8525806e5b7b"
+      "sha256": "cc8a49e4801163d92a99b2aa8bfdb7c5af9418b35b8c81f7563ff948e2c4af4b"
     },
     {
       "path": "components/robinhood-market-module.tsx",
@@ -1337,7 +1337,7 @@
     },
     {
       "path": "lib/chain/robinhood-mainnet-payments.ts",
-      "sha256": "d870ab683a51bd0e551098210c58dd74062f9b187992f83f7d96e68740149c8d"
+      "sha256": "c7f3b1ea64793fb23e73219e7d51d13f326075b5701c9f63a24d0e9a13bb8e8b"
     },
     {
       "path": "lib/chain/robinhood-mainnet-registration.ts",
@@ -1349,7 +1349,7 @@
     },
     {
       "path": "lib/chain/robinhood-mainnet-v3-market.ts",
-      "sha256": "390a967ae82d12d4fb0afbb95e3f9f3f9f1680ca36d9ef9f768ca3c26f11ca17"
+      "sha256": "5ac148a723af4ea948dd3e192a00f7932d1c82803a30d6615adda31d73065eae"
     },
     {
       "path": "lib/chain/robinhood-mainnet-v3-metadata.ts",
@@ -2548,6 +2548,10 @@
       "sha256": "34ba3a3e792d8980c0236b51f4a52e26df74d994b2faed0b99939f53ba54a16f"
     },
     {
+      "path": "scripts/restore-client-assets-compatibility.mjs",
+      "sha256": "d12eb3884379a256ff4bd9e3e7936d96cca71f7e038f9449d3ac5e7d0808250d"
+    },
+    {
       "path": "scripts/rpc-config.mjs",
       "sha256": "86bf259ba4353399a838f2a6d8367488c9f008350363531f9b4d623c4e288a44"
     },
@@ -2981,7 +2985,7 @@
     },
     {
       "path": "tests/robinhood-mainnet-payments.test.mjs",
-      "sha256": "3b62fc60098922f57787fec2b769cf67b119d8a863952a4f19300a86f957d69b"
+      "sha256": "f6061dc850587580a40ed0db65f9a7bee028d0b388d30d3df057a6745a3dc769"
     },
     {
       "path": "tests/robinhood-mainnet-registration.test.mjs",
@@ -2998,6 +3002,10 @@
     {
       "path": "tests/robinhood-mainnet.test.mjs",
       "sha256": "777c6c16f5780eeab24937f45d8ae7845a1c98e723482fc652767af05469efef"
+    },
+    {
+      "path": "tests/robinhood-market-parallel.test.mjs",
+      "sha256": "abd308d0d5f1570d30b0facf82f510ac52468ee8dc2cc9a32fa9191a34b099fc"
     },
     {
       "path": "tests/robinhood-market.test.mjs",

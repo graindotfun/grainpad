@@ -76,3 +76,17 @@ test('unsupported currencies, network/wiring/pool/precision/quote failures, bala
  await assert.rejects(prepare(fixture({nativeBalance:99n}),'buy',100n,'ETH'),/Insufficient ETH/);await assert.rejects(prepare(fixture({nativeBalance:100n}),'buy',100n,'ETH'),/gas/);
  const plan=await prepare(fixture(),'buy',100n,'ETH');assert.throws(()=>assertMainnetPaymentFresh({...plan,transaction:{...plan.transaction,value:'0x0'}},now),/changed/);
 });
+
+
+test('independent payment checks overlap without changing exact calldata or the pinned snapshot',async()=>{
+ for(const asset of ['ETH','USDG'])for(const side of ['buy','sell']){
+  const f=fixture(),expected=await prepare(fixture(),side,100n,asset);let active=0,max=0;
+  const rpc=async(method,params)=>{if(method==='eth_chainId')return f.rpc(method,params);active++;max=Math.max(max,active);await new Promise(r=>setImmediate(r));try{return await f.rpc(method,params);}finally{active--;}};
+  const actual=await prepareMainnetPaymentTrade(rpc,market,owner,side,100n,100,asset,now);assert.deepEqual(actual,expected);assert.ok(max>=5&&max<=5);assert.equal(active,0);
+ }
+});
+test('a rejected parallel wiring check cannot later quote or prepare a transaction when siblings finish',async()=>{
+ const f=fixture(),waiters=[];let quotes=0;
+ const rpc=async(method,params)=>{if(method==='eth_chainId')return f.rpc(method,params);if(params[0].to===MAINNET_V3_ROUTER&&params[0].data===sel('factory()'))throw Error('wiring read unavailable');if(params[0].data.startsWith(sel('quoteExactInput(bytes,uint256)')))quotes++;await new Promise(r=>waiters.push(r));return f.rpc(method,params);};
+ await assert.rejects(prepareMainnetPaymentTrade(rpc,market,owner,'buy',100n,100,'USDG',now),/unavailable/);assert.equal(waiters.length,4);for(const done of waiters)done();await new Promise(r=>setImmediate(r));assert.equal(quotes,0);assert.ok(f.calls.every(c=>!c.method.includes('send')));
+});
