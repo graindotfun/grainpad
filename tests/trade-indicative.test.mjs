@@ -30,3 +30,7 @@ test('estimate expiry clears the amount, and a current upstream failure publishe
  const events=[];const stop=startIndicativeQuote({delayMs:0,lifetimeMs:15,read:async()=>({output:'123',expiresAt:Date.now()+100}),publish:x=>events.push(x)});await wait(35);stop();assert.deepEqual(events.map(x=>x.status),['loading','ready','expired']);assert.equal(events.at(-1).quote,null);
  const failed=[];const stopFailure=startIndicativeQuote({delayMs:0,read:async()=>{throw Error('Market unavailable');},publish:x=>failed.push(x)});await wait(5);stopFailure();assert.equal(failed.at(-1).status,'unavailable');assert.equal(failed.at(-1).quote,null);
 });
+
+test('an unresponsive estimate reaches a bounded visible failure and ignores a late result',async()=>{
+ let resolve;const events=[],late=new Promise(r=>resolve=r);const stop=startIndicativeQuote({delayMs:0,timeoutMs:15,read:()=>late,publish:v=>events.push(v)});await wait(35);assert.equal(events.at(-1).status,'unavailable');assert.match(events.at(-1).error,/taking too long/);resolve({output:'999',expiresAt:Date.now()+1000});await wait(5);assert.equal(events.at(-1).quote,null);assert.equal(events.filter(x=>x.status==='ready').length,0);stop();
+});

@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "5771c5e7632036c240c27b3a09ba1236b85d0c8a",
+  "sourceCommit": "6ba688d3ae0240f25f7c20b7ef25be9b5180381d",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -725,7 +725,7 @@
     },
     {
       "path": "components/robinhood-mainnet-market.tsx",
-      "sha256": "9e500dbe702d215f7088599bd42aeb262e2a8c3050d4fcfe5809376a2d703062"
+      "sha256": "321b74072e5a9b3751ee93b5526a8fefe5300444498ee8a204da8525806e5b7b"
     },
     {
       "path": "components/robinhood-market-module.tsx",
@@ -1318,6 +1318,10 @@
     {
       "path": "lib/chain/robinhood-mainnet-index.ts",
       "sha256": "890e566942c4ee5649390e3d180c712caf3c9b22d1a2696866ea51d42b58e3a7"
+    },
+    {
+      "path": "lib/chain/robinhood-mainnet-indicative.ts",
+      "sha256": "4b3cf118bfa784edf1c94d9f420f097d202611e7c98e07308188b678ac8fb7c2"
     },
     {
       "path": "lib/chain/robinhood-mainnet-launch-profiles.ts",
@@ -2329,7 +2333,7 @@
     },
     {
       "path": "lib/trade-indicative-polling.mjs",
-      "sha256": "74c3cf72aaa1267c065fd0128b19954209393cb65b5a963378610f66731e35aa"
+      "sha256": "a85caf07d3502fb509b3c391d96d64a13b9e85c3a6331972d54861229d42604e"
     },
     {
       "path": "lib/trade-indicative.mjs",
@@ -2964,6 +2968,10 @@
       "sha256": "9fcacbfea104f0e8241baac6cb4c3b923a24cdd95f48d48a453d9e4b238c7423"
     },
     {
+      "path": "tests/robinhood-mainnet-indicative.test.mjs",
+      "sha256": "cda01aed47ce1b37bf03ce8af4b079195625ea3fe7ed5103ba23612495935d0f"
+    },
+    {
       "path": "tests/robinhood-mainnet-launch-v2-ui.test.mjs",
       "sha256": "2cf04ed92bf3eca9a60d3cebf008f8343e4beee7a8c3bf45c613241cbabf4804"
     },
@@ -3097,7 +3105,7 @@
     },
     {
       "path": "tests/trade-indicative.test.mjs",
-      "sha256": "6fba5fdea59cf79f81d21f840235f53fd9da2155df66ca4bc3c364e4a73b473c"
+      "sha256": "7030a9e47a656874194901c3136132182014b5fd1c0546614cc45b3bb994b19e"
     },
     {
       "path": "tests/trade-latency.test.mjs",
