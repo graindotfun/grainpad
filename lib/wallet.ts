@@ -1,3 +1,4 @@
+import {connectWalletWithIntent,cancelWalletConnections,walletIntentRevision} from './wallet-connection-intent.mjs';
 import {walletSession} from './wallet-session.mjs';
 import {getWallets} from '@wallet-standard/app';
 import {discoverWalletProviders} from './wallet-adapters.mjs';
@@ -29,10 +30,11 @@ export function isMobileBrowser(userAgent:string,maxTouchPoints=0){
 let restoring:Promise<void>|null=null;
 export function restoreWalletSession(){
  if(restoring||walletSession.getSnapshot())return restoring||Promise.resolve();
+ const revision=walletIntentRevision();
  restoring=(async()=>{let name='';try{name=sessionStorage.getItem('grainpad-wallet-provider')||'';}catch{}if(!name)return;
  // Wait briefly for an installed provider to inject. Never fall back to another wallet.
- for(let i=0;i<4;i++){const selected=walletProviders().find(p=>p.name===name);if(selected){try{await selected.wallet.connect({silent:true});}catch{}return;}await new Promise(resolve=>setTimeout(resolve,300));}
- })();return restoring;
+ for(let i=0;i<4;i++){if(revision!==walletIntentRevision())return;const selected=walletProviders().find(p=>p.name===name);if(selected){try{await connectWalletWithIntent(selected.wallet,{silent:true});}catch{}return;}await new Promise(resolve=>setTimeout(resolve,300));}
+ })().finally(()=>{restoring=null;});return restoring;
 }
-export async function disconnectWalletSession(){const selected=walletSession.getSnapshot();try{sessionStorage.removeItem('grainpad-wallet-provider');}catch{}walletSession.clear();await selected?.wallet.disconnect?.();}
-export function openWalletPicker(){window.dispatchEvent(new Event('grainpad-open-wallet'));}
+export async function disconnectWalletSession(){cancelWalletConnections();const selected=walletSession.getSnapshot();try{sessionStorage.removeItem('grainpad-wallet-provider');}catch{}walletSession.clear();await selected?.wallet.disconnect?.();}
+export function openWalletPicker(){window.dispatchEvent(new CustomEvent('grainpad-open-wallet',{detail:{network:'solana'}}));}

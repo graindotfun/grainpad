@@ -154,3 +154,22 @@ html body .creator-desk{border-radius:20px;padding:28px!important;margin:0 0 32p
  .creator-desk .product-table td:last-child{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;flex-direction:row;align-items:center;justify-content:space-between;gap:12px}
  .creator-desk .product-table td a{font-size:12px;line-height:1.5;text-align:right}
 }
+
+/* Both wallet families use one chooser and the same purchase controls. */
+.wallet-network-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.wallet-network-tabs button,.wallet-session-dialog [data-slot="button"],.trade-flow-dialog [data-slot="button"]{border-radius:999px}
+.wallet-network-badge{font:600 10px var(--font-code);letter-spacing:.04em;border:1px solid currentColor;border-radius:999px;padding:3px 5px}
+.trade-wallet-context{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--market-muted);overflow-wrap:anywhere;margin:8px 0 16px}
+.trade-wallet-mismatch{border:1px solid var(--market-border);border-radius:16px;padding:14px;margin:12px 0;font-size:12px;line-height:1.5}
+.trade-wallet-mismatch p{margin:8px 0 12px;color:var(--market-muted)}
+.token-market-page .token-swap [data-slot="button"],.token-market-page .rh-creator-tools [data-slot="button"]{border-radius:999px!important}
+.swap-funding{margin:12px 0 16px}.swap-funding p{margin-bottom:8px}
+.trade-recovery{margin-top:18px;border-top:1px solid var(--market-border);padding-top:14px;font-size:12px}
+.trade-recovery summary,.rh-creator-tools>summary{cursor:pointer;font-weight:600}
+.trade-recovery label{display:grid;gap:8px;margin:12px 0}
+.rh-creator-tools{margin-top:20px;overflow-wrap:anywhere}
+.rh-creator-tools[open]>summary{margin-bottom:14px}
+.rh-creator-tools [data-slot="button"]{margin:6px 4px 6px 0}
+.rh-creator-tools .receipt{font-size:12px}.rh-creator-tools .product-facts{margin:16px 0}
+@media(max-width:760px){.rh-creator-tools{position:static;margin:20px 0 0}.wallet-network-tabs button{padding:8px;font-size:12px}}
+.token-market-page .mobile-trade-bar [data-slot="button"],.wallet-session-dialog .wallet-row{border-radius:999px!important}

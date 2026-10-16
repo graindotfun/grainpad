@@ -7,6 +7,7 @@ import {TokenTile} from './token-tile';
 import {GradSquares,StatusChip,tokenStatus} from './grain-ui';
 import {BRAND_ASSETS} from '@/lib/brand-assets';
 import {grainImpersonation} from '@/lib/launch-identity.mjs';
+import {formatPrice} from '@/lib/price-format';
 import {formatMarketCap,formatChange} from '@/lib/token-market';
 import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import type {DiscoveryResult,DiscoveryToken,DiscoveryFilter,DiscoverySort} from '@/lib/token-discovery';
@@ -27,7 +28,8 @@ function DiscoveryCard({token,roomMode=false,now}:{token:CardToken;roomMode?:boo
  const [copied,setCopied]=useState(false),[copyError,setCopyError]=useState(false);
  const status=tokenStatus(token);
  const graduated=token.state==='graduated',progress=graduated?100:token.progress,isNew=isNewLaunch(token.launchedAt,now);
- const impersonation=grainImpersonation(token);
+ const impersonation=grainImpersonation(token),nativeCap=token.marketCapQuote??null,quoteSymbol=token.chain==='robinhood'?'WETH':token.quoteAsset||'SOL';
+ const capLabel=token.marketCapUsd!==null?formatMarketCap(token.marketCapUsd):nativeCap!==null?formatPrice(nativeCap,quoteSymbol,3):'—';
  // Robinhood Chain launches have their own market page; /token/[mint] only accepts Solana mints.
  const href=token.chain==='robinhood'?`/network/robinhood/${token.networkId==='robinhood:mainnet'?'mainnet/':''}token/${token.mint}`:`/token/${token.mint}${roomMode?'/room':''}`;
  return <article className={`gx-token-card is-${token.state}${token.official?' is-grain':''}`}>
@@ -35,11 +37,11 @@ function DiscoveryCard({token,roomMode=false,now}:{token:CardToken;roomMode?:boo
   <TokenTile src={token.official?BRAND_ASSETS.token:token.image} symbol={token.symbol} seed={token.mint}>{token.official&&<StatusChip kind="graduated" label="official"/>}{status&&!token.official&&<StatusChip kind={status.kind} label={status.label}/>}{isNew&&<StatusChip kind="new" label="new"/>}</TokenTile>
   <div className="gx-token-body">
    <h3><span className="gx-token-title"><span className="gx-token-name" title={token.name}>{token.name}</span><ChainLogo chain={token.chain} networkId={token.networkId}/></span><span className="gx-mono gx-mute">${token.symbol}</span></h3>
-   {impersonation?<p className="gx-token-caution">not the official GRAIN</p>:<p className="gx-token-pair gx-mono gx-mute">{token.quoteAsset||'SOL'} pair{token.figuresSource==='geckoterminal'?' · usd via geckoterminal':''}</p>}
-   <div className="gx-token-value"><strong className="gx-num" title={token.marketCapUsd===null?'Market cap not available yet':undefined}>{formatMarketCap(token.marketCapUsd)}</strong>{token.change24h!==null&&<small className={`gx-mono ${token.change24h>=0?'is-up':'is-down'}`}>{formatChange(token.change24h)} 24h</small>}</div>
-   <p className="gx-token-meta gx-mono gx-mute"><span>{token.state==='curve'||token.state==='graduating'?'curve mc':'mc'}{token.marketCapUsd===null?' · not indexed yet':''}</span><time dateTime={token.launchedAt??token.createdAt} title={new Date(token.launchedAt??token.createdAt).toISOString()}>{age(token.launchedAt??token.createdAt,now)}</time></p>
+   {impersonation?<p className="gx-token-caution">not the official GRAIN</p>:<p className="gx-token-pair gx-mono gx-mute">{token.marketVenue==='uniswap-v3'?'WETH':token.quoteAsset||'SOL'} pair{token.figuresSource==='geckoterminal'?' · usd via geckoterminal':''}</p>}
+   <div className="gx-token-value"><strong className="gx-num" title={token.marketCapUsd===null?nativeCap!==null?'Market cap in '+quoteSymbol+'; USD conversion unavailable':'Market cap not available yet':undefined}>{capLabel}</strong>{token.change24h!==null&&<small className={`gx-mono ${token.change24h>=0?'is-up':'is-down'}`}>{formatChange(token.change24h)} 24h</small>}</div>
+   <p className="gx-token-meta gx-mono gx-mute"><span>{token.state==='curve'||token.state==='graduating'?'curve mc':'mc'}{token.marketCapUsd===null?nativeCap!==null?' · USD unavailable':' · not indexed yet':''}</span><time dateTime={token.launchedAt??token.createdAt} title={new Date(token.launchedAt??token.createdAt).toISOString()}>{age(token.launchedAt??token.createdAt,now)}</time></p>
    {token.marketStale&&<p className="gx-token-delayed gx-mono" role="status">delayed{token.marketUpdatedAt!==null&&<> · last seen <time dateTime={new Date(token.marketUpdatedAt).toISOString()} title={new Date(token.marketUpdatedAt).toISOString()}>{age(new Date(token.marketUpdatedAt).toISOString(),now)}</time></>}</p>}
-   {graduated?<GraduationInfo launchedAt={token.launchedAt} graduatedAt={token.graduatedAt} now={now} venue={tradingVenue({state:token.state,mint:token.mint,quoteMint:token.quoteMint})}/>:<>
+   {token.marketVenue==='uniswap-v3'?<p className="gx-token-progress gx-mono gx-mute">Uniswap v3 · Robinhood Chain</p>:graduated?<GraduationInfo launchedAt={token.launchedAt} graduatedAt={token.graduatedAt} now={now} venue={tradingVenue({state:token.state,mint:token.mint,quoteMint:token.quoteMint})}/>:<>
    <GradSquares progress={progress} label={`Graduation progress for ${token.symbol}`}/>
    <p className="gx-token-progress gx-mono gx-mute">{progress===null?'curve not read yet':`${Math.round(progress)}% to graduate`}</p></>}
   </div>

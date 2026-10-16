@@ -1,3 +1,4 @@
+import {isPublicRobinhoodToken} from '../robinhood-publication.mjs';
 /** Display-only projection of registered mainnet launches. No signing or transaction construction. */
 import {admittedPrefix} from './evm-token-list.ts';
 import {takeBudget} from '../shared-market-cache.mjs';
@@ -39,7 +40,7 @@ export async function syncRobinhoodMainnetLaunches({db,storage,factories,rpc,now
    if(!object.key.startsWith(PREFIX))continue;
    let record:MainnetLaunchRecord|null=null;
    for(const factory of factories){try{record=await readRobinhoodMainnetLaunch(storage,object.key.slice(PREFIX.length),factory);}catch{continue;}if(record)break;}
-   if(!record)continue;
+   if(!record||!isPublicRobinhoodToken(record.networkId,record.tokenAddress))continue;
    const existing=await db.prepare("SELECT json_extract(record,'$.launchedAt') AS launched,created_at FROM launch_index WHERE network=? AND mint=?").bind(NETWORK,record.tokenAddress).first<{launched:string|null;created_at:string}>();
    let launchedAt=existing?.launched??null;
    if(!launchedAt&&rpcLeft>0){rpcLeft--;launchedAt=await mainnetLaunchTime(record,rpc);}
