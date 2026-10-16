@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "6d74c893afbf607457bfb2c3f8a4af112a679aaa",
+  "sourceCommit": "5067fcdb5bfd938dfb738073399a13111b54ac2b",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -429,7 +429,7 @@
     },
     {
       "path": "app/token-page.css",
-      "sha256": "15190380c920c60bdb387d7aee64f40cb95cc42a92b2bc4dccb8acad5942b0cc"
+      "sha256": "22bc41aacda3496969f75bb0f9bf7543faabedf2fe247b6d8a0eb6bfd7d7bf95"
     },
     {
       "path": "app/token-tape.css",
@@ -569,7 +569,7 @@
     },
     {
       "path": "components/grain-ui.tsx",
-      "sha256": "bb6f1ab230163ece827f766a8448c3cf8f3c6ca377303617211db65e173a8caf"
+      "sha256": "752a65f07cdf4d3fba322d7999166d333e21ef241af8335dc26761e612bcf60d"
     },
     {
       "path": "components/grains-chart.tsx",
@@ -712,6 +712,10 @@
       "sha256": "53827c3ca428213fbb29f01bb40581542bfaf82752940250bb39b19bec61e3ec"
     },
     {
+      "path": "components/robinhood-mainnet-history.tsx",
+      "sha256": "cec684bd2ec6d0de730cbacdf4c41aca95c2b015eb395dbeac63a53d4445a81e"
+    },
+    {
       "path": "components/robinhood-mainnet-identity.tsx",
       "sha256": "de1b51bc23dc25f75b87330baab7ff367323c58126e22fd251aab93182b81e4b"
     },
@@ -721,7 +725,7 @@
     },
     {
       "path": "components/robinhood-mainnet-market.tsx",
-      "sha256": "d9e2157c5dc4a1b9b37c73ae7ff1798c247dc096286fd923aa9fff3065246a4d"
+      "sha256": "6b0da513e3e5354a350ed62bcfd8c38e7e4c1c38f3b01bf60dead5ce25d2f2e2"
     },
     {
       "path": "components/robinhood-market.tsx",
@@ -730,6 +734,10 @@
     {
       "path": "components/robinhood-provenance.tsx",
       "sha256": "051794f67811af4d7db27ade8031ac34d97ef1f219f1e930ae64e4c31624d7ec"
+    },
+    {
+      "path": "components/robinhood-token-workspace.tsx",
+      "sha256": "3b19c42a2056515443a48796be56744784dd3477a76dbe7104333359a8ee5e89"
     },
     {
       "path": "components/rules-badge.tsx",
@@ -757,7 +765,7 @@
     },
     {
       "path": "components/token-discovery.tsx",
-      "sha256": "aaa87ed3f72e2b4dab33d7a3771da162d1735692b4ad59d5be5ff4a14a6f54d9"
+      "sha256": "8e498034f9da0e863357136a55dd90da26f4931d9dbc00924867acd86d37549a"
     },
     {
       "path": "components/token-image.tsx",
@@ -1285,7 +1293,7 @@
     },
     {
       "path": "lib/chain/robinhood-mainnet-index.ts",
-      "sha256": "6b62eea49d08b818d1d8d688214487a89d2d62ddbe58f7ada58af70e9774cfbe"
+      "sha256": "890e566942c4ee5649390e3d180c712caf3c9b22d1a2696866ea51d42b58e3a7"
     },
     {
       "path": "lib/chain/robinhood-mainnet-launch-profiles.ts",
@@ -1326,6 +1334,10 @@
     {
       "path": "lib/chain/robinhood-mainnet.ts",
       "sha256": "671962f3c0aa14ef254704f221d4af7b35cb5d3895a75c6a618189f42bd0d572"
+    },
+    {
+      "path": "lib/chain/robinhood-market-display.ts",
+      "sha256": "f64495457645765251376473c89dcd9dc576cec35de2323b08af281704f127e6"
     },
     {
       "path": "lib/chain/robinhood-market.ts",
@@ -1413,7 +1425,7 @@
     },
     {
       "path": "lib/discovery-index.mjs",
-      "sha256": "0a913fbcbde175c23a3085b90bce30fe6a5452ad2d52a226f0fd7132e2a35c70"
+      "sha256": "750e46c2acd3431d2fe0d238b30b7e49637d6bb92f5cab814485c2145ca1b97f"
     },
     {
       "path": "lib/discovery-refresh.mjs",
@@ -2016,6 +2028,10 @@
       "sha256": "b060f9c81797a5e182f7156be38a8600cff01cfaa591f69e2fc1323793d6aa03"
     },
     {
+      "path": "lib/robinhood-publication.mjs",
+      "sha256": "d1bcc3a44d2be0800a465a6bbfc74f5c199f2c5e570253718a929ed36f1bfeb8"
+    },
+    {
       "path": "lib/room-funding.mjs",
       "sha256": "86d2e0bc786ea088d876e3e9456b32c2408f69ad78616085d41a3a03d0e3619e"
     },
@@ -2073,7 +2089,7 @@
     },
     {
       "path": "lib/server-homepage.ts",
-      "sha256": "e24ba0df618c548aaa9ed0539813323a061266ea7e270ad5a108073cfd30340b"
+      "sha256": "69f3a047eb4b1bb563cd946d92d38848505112bc37dadb938c04936082edaad9"
     },
     {
       "path": "lib/server-market-live.ts",
@@ -2229,7 +2245,7 @@
     },
     {
       "path": "lib/token-discovery.ts",
-      "sha256": "808c9512a43a732c776040c0dde8be17df19afeca2942a5b67d8f79ba8fa528b"
+      "sha256": "e8e1abeb1822f544deb6de67b977eb20f75cebb7b5fde045f01f115d713cc2d4"
     },
     {
       "path": "lib/token-launch-post.mjs",
