@@ -112,6 +112,10 @@
       "sha256": "472d8ed10d9cab8b6a367af12d0f6c20438bb9bbd7cb47a5ba7ed834413e3bce"
     },
     {
+      "path": "app/api/launch-image/route.ts",
+      "sha256": "688501432efc5245adfac6d9fe7a3c7d421f6e7603173b3a942fbfb1e1dd19f0"
+    },
+    {
       "path": "app/api/market/[mint]/history/route.ts",
       "sha256": "c6d90c608792916cbdc9e169c0c2ea2b13e2dfbff0540c8eeafee009ab3d2b06"
     },
@@ -612,6 +616,10 @@
       "sha256": "5013a37eba1ddb7e163e920e2d3739b88f695e921f1fd3db60b47d1519ec87c3"
     },
     {
+      "path": "components/launch-image-proof.tsx",
+      "sha256": "90edf44a935e6eb0b9867a20651a58bbb3d0c45f7dd84d95a64d23b473df66a7"
+    },
+    {
       "path": "components/launch-network-chip.tsx",
       "sha256": "99d18cf642185910cef9f3e177ba1b5f38767c443b4c71a1508aeeb3198166e7"
     },
@@ -1050,6 +1058,10 @@
     {
       "path": "docs/GRN1.md",
       "sha256": "2f4ee891f97e138038cc0297143a230cd76ced1011e760b0b55887bc7c45e137"
+    },
+    {
+      "path": "docs/LAUNCH_IMAGE_ARCHIVES.md",
+      "sha256": "27950e754926701a6265e9a5aea6cadad985556bbe4e8f61e9606a50fa9f5d80"
     },
     {
       "path": "docs/SOURCE_UPDATES.md",
@@ -1582,6 +1594,14 @@
     {
       "path": "lib/launch-identity.mjs",
       "sha256": "17229dba5450c0c3cfd500a8a9989b57b485564d8c33ef66c68e6e984a7daab7"
+    },
+    {
+      "path": "lib/launch-image-archive.mjs",
+      "sha256": "9094cf9b19ea54e3cfe5f1a0969437defec983d7887782553f764df4343e23cc"
+    },
+    {
+      "path": "lib/launch-image-binding.ts",
+      "sha256": "b80c8c178abf0376baf61f7cc1f3127ec9dfb04d8194b3642be951b60aa9cfcf"
     },
     {
       "path": "lib/launch-index.mjs",
@@ -2573,7 +2593,7 @@
     },
     {
       "path": "scripts/restore-client-assets-compatibility.mjs",
-      "sha256": "eff68dca73f7209bad29c9e97d68336e886515d5a52f2c3c3bde6f6611a8aded"
+      "sha256": "79577d04a738943354ef159611c2c3cafffc2a9d2ce3c4dde1943cbdbae45736"
     },
     {
       "path": "scripts/rpc-config.mjs",
@@ -2582,6 +2602,10 @@
     {
       "path": "scripts/verify-fees.mjs",
       "sha256": "fa980ae839f739515ab66a8dc58e242bb43ae4861c9dd20adffe0ed270c6c7f7"
+    },
+    {
+      "path": "scripts/verify-launch-image-archive.mjs",
+      "sha256": "02bc822f5793feefbade9ac549b5bbda8b4ffe129c792ebbade8f47eeccea969"
     },
     {
       "path": "scripts/verify-launch.mjs",
