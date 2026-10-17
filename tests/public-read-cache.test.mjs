@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createPublicReadCache,publicReadPolicy} from '../lib/public-read-cache.mjs';
 const mint='A'.repeat(32);
-const request=(path='/api/discovery',headers={},method='GET')=>new Request('https://grainpad.fun'+path,{headers,method});
+const request=(path=`/api/market/${mint}`,headers={},method='GET')=>new Request('https://grainpad.fun'+path,{headers,method});
 function fixture(){
  let time=1000,loads=0;const rows=new Map();
  const cache={match:async key=>rows.get(key.url)?.clone(),put:async(key,value)=>rows.set(key.url,value.clone())};
@@ -23,9 +23,9 @@ test('expiry and deploy version force an origin load without retimestamping stal
 });
 test('queries, pagination and visible refresh permission are isolated; tracking parameters share a key',async()=>{
  const f=fixture();
- for(const path of ['/api/discovery?q=a','/api/discovery?q=b',`/api/creator/${mint}?cursor=a`,`/api/creator/${mint}?cursor=b`,`/api/market/${mint}/history?interval=1m`,`/api/market/${mint}/history?interval=5m`,`/api/room/${mint}?need=a`,`/api/room/${mint}?need=b`])await f.read(request(path),f.load);
+ for(const path of [`/api/room/${mint}?need=a`,`/api/room/${mint}?need=b`,`/api/room/${mint}?before=a`,`/api/room/${mint}?before=b`,`/api/market/${mint}/history?interval=1m`,`/api/market/${mint}/history?interval=5m`,`/api/room/${mint}?need=c`,`/api/room/${mint}?need=d`])await f.read(request(path),f.load);
  assert.equal(f.loads(),8);
- await f.read(request('/api/discovery?q=a&utm_source=x'),f.load);assert.equal(f.loads(),8);
+ await f.read(request(`/api/room/${mint}?need=a&utm_source=x`),f.load);assert.equal(f.loads(),8);
  await f.read(request(`/api/market/${mint}`,{'X-Grainpad-Viewer':'visible'}),f.load);
  await f.read(request(`/api/market/${mint}`),f.load);assert.equal(f.loads(),10);
 });
@@ -56,9 +56,9 @@ test('cache failure and absent runtime cache preserve origin availability',async
 test('bounded distinct cold requests shed load instead of flooding the database',async()=>{
  let release;const gate=new Promise(r=>release=r),cache={match:async()=>undefined,put:async()=>{}};
  const read=createPublicReadCache({cache,version:'v',maxFlights:1});
- const first=read(request('/api/discovery?q=a'),async()=>{await gate;return Response.json({ok:true});});
+ const first=read(request(`/api/room/${mint}?need=a`),async()=>{await gate;return Response.json({ok:true});});
  await new Promise(r=>setTimeout(r,0));
- const second=await read(request('/api/discovery?q=b'),async()=>{throw Error('must not load');});
+ const second=await read(request(`/api/room/${mint}?need=b`),async()=>{throw Error('must not load');});
  assert.equal(second.status,503);assert.equal(second.headers.get('Retry-After'),'2');release();await first;
 });
 test('named cache opens lazily for public reads and failure preserves origin availability',async()=>{
@@ -71,12 +71,17 @@ test('named cache opens lazily for public reads and failure preserves origin ava
  assert.equal((await unavailable(request(),f.load)).status,200);
 });
 
-test('chain and lifecycle responses remain isolated on hot cache hits and concurrent misses',async()=>{
- const f=fixture();let loads=0;
- const paths=['/api/discovery?chain=all&filter=all','/api/discovery?chain=solana&filter=all','/api/discovery?chain=robinhood&filter=all','/api/discovery?chain=robinhood&filter=graduated'];
- const read=path=>f.read(request(path),async()=>{loads++;await new Promise(r=>setTimeout(r,2));return Response.json({path});});
- const cold=await Promise.all(paths.map(read));
- assert.deepEqual(await Promise.all(cold.map(r=>r.json())),paths.map(path=>({path})));
- for(const path of paths){const response=await read(path);assert.equal(response.headers.get('X-Grainpad-Read-Cache'),'HIT');assert.deepEqual(await response.json(),{path});}
- assert.equal(loads,paths.length);
+test('catalogs recheck current evidence on every call despite old cached snapshots',async()=>{
+ const paths=['/api/discovery?chain=all&filter=all','/api/discovery?chain=robinhood&filter=all','/api/token-tape','/api/site-overview',`/api/creator/${mint}?cursor=a`];
+ for(const path of paths){
+  let eligible=true,loads=0,cacheAccess=0;
+  const read=createPublicReadCache({version:'same-release',cache:{match:async()=>{cacheAccess++;return Response.json({listed:true},{headers:{'X-Grainpad-Cache-Expires':String(Date.now()+100000)}});},put:async()=>{cacheAccess++;}}});
+  const load=async()=>{loads++;return Response.json({listed:eligible},{headers:{'Cache-Control':'no-store'}});};
+  assert.equal(publicReadPolicy(request(path)),null);
+  assert.equal((await(await read(request(path),load)).json()).listed,true);
+  eligible=false;
+  const responses=await Promise.all([read(request(path),load),read(request(path),load)]);
+  for(const response of responses)assert.equal((await response.json()).listed,false);
+  assert.equal(loads,3);assert.equal(cacheAccess,0);
+ }
 });

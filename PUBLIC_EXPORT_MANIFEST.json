@@ -1957,7 +1957,7 @@
     },
     {
       "path": "lib/public-read-cache.mjs",
-      "sha256": "00b2c7e2c1e33a1af7a26d483c65e7d1b70a64b89ee7a8c8378606abbfe4ae96"
+      "sha256": "571635fb55807769b3d762333beea55d37d9bea1aed991086158238b3c043310"
     },
     {
       "path": "lib/public-receipt.mjs",
@@ -2913,7 +2913,7 @@
     },
     {
       "path": "tests/public-read-cache.test.mjs",
-      "sha256": "7720d66663e7c5c1c07a55ab7a2c1fd6b04e6c9d87a42c333a8a994557bafaf1"
+      "sha256": "101f32055985f68e6c2f6b878faf8b7ea2907da9c6fcf181a768df9272a5e4e2"
     },
     {
       "path": "tests/quote-price-client-store.test.mjs",
