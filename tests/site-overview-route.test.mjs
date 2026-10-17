@@ -24,13 +24,17 @@ const statement=(sql,args=[])=>({
 globalThis.overviewTest={db:{prepare:sql=>statement(sql)}};
 async function route(creationEnabled){
  const outfile=`.test-output/site-overview-${creationEnabled?'open':'locked'}.mjs`;
+ // Isolate overview claims/math; signed catalog authority and cache behavior have
+ // separate actual-D1 regression suites, with no injected approval path in runtime.
  const stubs={
+  '@/lib/verified-monero-catalog.mjs':'export const catalogContains=()=>false;export const verifiedCatalogWitnesses=async()=>["current-launch"];export const catalogMembership=()=>"mint IN (SELECT value FROM json_each(?))";', 
   '@/lib/server-owner':'export const database=()=>globalThis.overviewTest.db;',
   '@/lib/server-utils':'export const bucket=()=>({});',
   '@/lib/server-cache':'export const sharedMarketCache=async(db,key,read)=>({data:await read(),updatedAt:Date.now(),stale:false});',
   '@/lib/launch-records':'export const readLaunchRecords=async()=>[];',
  };
  await build({entryPoints:['app/api/site-overview/route.ts'],outfile,bundle:true,packages:'external',platform:'node',format:'esm',logLevel:'silent',plugins:[{name:'overview-boundaries',setup(b){
+  b.onResolve({filter:/^\.\/verified-monero-catalog\.mjs$/},()=>({path:'@/lib/verified-monero-catalog.mjs',namespace:'stub'}));
   b.onResolve({filter:/^\.\/server-owner$/},()=>({path:'@/lib/server-owner',namespace:'stub'}));
   b.onResolve({filter:/^server-only$/},()=>({path:'server-only',namespace:'stub'}));
   b.onLoad({filter:/^server-only$/,namespace:'stub'},()=>({contents:'',loader:'js'}));

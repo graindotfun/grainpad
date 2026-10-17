@@ -1,3 +1,4 @@
+import {verifiedCatalogWitnesses,catalogMembership} from './verified-monero-catalog.mjs';
 import {mainnetFactories} from '@/lib/chain/robinhood-mainnet-factories.ts';
 import 'server-only';
 import {database} from './server-owner';
@@ -16,11 +17,12 @@ export async function readHomepageDiscovery():Promise<DiscoveryResult>{
 }
 
 /** Report only available, recent, identity-matched snapshots. Missing volume is not zero. */
-export async function readOverviewVolume(db:ReturnType<typeof database>,platform:string,now=Date.now()){
+export async function readOverviewVolume(db:ReturnType<typeof database>,platform:string,now=Date.now(),eligibleKeys?:Awaited<ReturnType<typeof verifiedCatalogWitnesses>>){
+ const visible=eligibleKeys??await verifiedCatalogWitnesses(db,{network:'mainnet-beta',now});
  const rows=await db.prepare(`SELECT l.record,m.value AS market,m.updated_at AS market_time,c.value AS chart,c.updated_at AS chart_time
  FROM launch_index l LEFT JOIN market_cache m ON m.key=('market:v3:'||l.platform_id||':'||l.mint)
  LEFT JOIN market_cache c ON c.key=('chart:v3:'||json_extract(m.value,'$.pool'))
- WHERE l.network='mainnet-beta' AND l.platform_id=? ORDER BY l.created_at DESC,l.mint LIMIT 1001`).bind(platform).all<{record:string;market:string|null;market_time:number;chart:string|null;chart_time:number}>();
+ WHERE l.network='mainnet-beta' AND l.platform_id=? AND ${catalogMembership('l')} ORDER BY l.created_at DESC,l.mint LIMIT 1001`).bind(platform,JSON.stringify(visible)).all<{record:string;market:string|null;market_time:number;chart:string|null;chart_time:number}>();
  const {records,cache}=discoveryRecords(rows.results.slice(0,1000),platform);
  const tokens=enrichDiscovery(records.filter(record=>!isPreviousOfficialMint(record.mint)),cache,platform,null,now);
  const known=tokens.filter(token=>!token.marketStale&&token.volume24h!==null);

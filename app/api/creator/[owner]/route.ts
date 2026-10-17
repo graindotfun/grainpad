@@ -1,6 +1,6 @@
 import {creatorFeeTotals} from '@/lib/event-history.mjs';
 import {splitFeeHistory} from '@/lib/creator-earnings.mjs';
-import {PublicKey} from '@solana/web3.js';import {database} from '@/lib/server-owner';import {grainpadPlatformId} from '@/lib/platform-policy';import {indexedLaunchPage} from '@/lib/launch-index.mjs';
+import {PublicKey} from '@solana/web3.js';import {database} from '@/lib/server-owner';import {grainpadPlatformId} from '@/lib/platform-policy';import {indexedLaunchPage} from '@/lib/catalog-launch-index.mjs';
 import {identityCards} from '@/lib/wallet-identity.mjs';
 export async function GET(request:Request,{params}:{params:Promise<{owner:string}>}){try{
  const owner=new PublicKey((await params).owner).toBase58(),db=database();

@@ -52,8 +52,12 @@
       "sha256": "69abb9acd9c9c52e09f78c83cedd8e06d55d19eedbe8166b6406ddc3b58a59eb"
     },
     {
+      "path": "app/api/catalog/status/route.ts",
+      "sha256": "960ccaef0bc2d4adc5860a8e052a84807dcf64e41b6d03d94e9365d87ad64cb2"
+    },
+    {
       "path": "app/api/creator/[owner]/route.ts",
-      "sha256": "86a3e024526e8ac72936bd981b095709864bab7ab937be4818eb2c15c2a115e3"
+      "sha256": "c8326b0facb60cfd20c4b071de1d59e97a4e6cb9be7247043c77bb22550d31f2"
     },
     {
       "path": "app/api/discovery/route.ts",
@@ -65,7 +69,7 @@
     },
     {
       "path": "app/api/identity/manifest/route.ts",
-      "sha256": "b9bf05cb3ec0401f9fe4d5a98599657109e20f5e1c7acabd75ca963e80ceadea"
+      "sha256": "5b7d4c408cadd6d1d5330a2bf0d540704c66ec23fce0421e4135aad6fa1e73dd"
     },
     {
       "path": "app/api/identity/resolve/route.ts",
@@ -193,7 +197,7 @@
     },
     {
       "path": "app/api/token-tape/route.ts",
-      "sha256": "dcc171658c6bc6d70227aed2f4f3ea13aa3764cd73430c1f9dfbba9bbbcf0f77"
+      "sha256": "6de5cc39bf288fefe27d555fc48099eb08abb2c0339c98f3a0a6d6a7076fb3e7"
     },
     {
       "path": "app/api/token/[mint]/launch-post/route.ts",
@@ -413,7 +417,7 @@
     },
     {
       "path": "app/sitemap.xml/route.ts",
-      "sha256": "3c5890b18d98a8f95898540f8e4524d047e80991ae79941e25728ae1a81e09df"
+      "sha256": "c055c471df27ca54d58051262a7e8cdfaed6bb8300095ada56f9ead97bd8a0ab"
     },
     {
       "path": "app/theme.css",
@@ -482,6 +486,10 @@
     {
       "path": "components/canonical-identity-desk.tsx",
       "sha256": "8c4d6175516b475109c323b96a346eb530d1212df7d15279d3664e5475164a34"
+    },
+    {
+      "path": "components/catalog-listing-status.tsx",
+      "sha256": "51917f69bdbb839a2beef0de48559465a76dcc67e9c9384dfe32bf8f10e3c4e3"
     },
     {
       "path": "components/chain-context-chrome.tsx",
@@ -645,7 +653,7 @@
     },
     {
       "path": "components/launch-workspace.tsx",
-      "sha256": "a0bb90e7f1828f76a0c0e7ce84e49456d0b53f49277bdb345ace2fdad44c77b3"
+      "sha256": "38cb1b8925b66fec4982715deaeffd55b18e995353896c10db65b0c4cde24e4e"
     },
     {
       "path": "components/live-market-chart.tsx",
@@ -689,7 +697,7 @@
     },
     {
       "path": "components/protected-launch-workspace.tsx",
-      "sha256": "537684d27977b2c43e95885ebb09798b33b617119ba6fa833cd57789b0b17774"
+      "sha256": "0444ef8a83bcc5d5fb50b590b229620f209fdbf56ca4ed159c3891f42f46bebb"
     },
     {
       "path": "components/reality-check.tsx",
@@ -1164,6 +1172,18 @@
       "sha256": "e394537d91579f517438658ffcb097bed4d2b465c9766df03a5aaa4602bb6c60"
     },
     {
+      "path": "lib/catalog-launch-index.mjs",
+      "sha256": "7f81a09beeacc9a02fcbdf5653ee5303e988add86d7193a56b28f3b57434ee63"
+    },
+    {
+      "path": "lib/catalog-listing-status.mjs",
+      "sha256": "1ae797cba5ce65a4dfb854b22bfb7730ea2405aafeaa7232119d9ac2daaeae9e"
+    },
+    {
+      "path": "lib/catalog-token-list.mjs",
+      "sha256": "8952ee121df98c9e22f2260813dfa41f56ba580ad2d4ca6c889f060afa54a784"
+    },
+    {
       "path": "lib/chain-display.ts",
       "sha256": "16315ed9221295bea643785bb20b72e757ab443046e8176ad8f56a194adf6600"
     },
@@ -1233,7 +1253,7 @@
     },
     {
       "path": "lib/chain/launch-progress.ts",
-      "sha256": "6cd36f66d9a69389925bf440e95fbc6302e06a7594006f2c8eaefb8cc748c689"
+      "sha256": "bf73e123118350965754fa824e94ffcd08c8023e17fbaa5dd6a4940b85093bcf"
     },
     {
       "path": "lib/chain/launch-submission-journal.ts",
@@ -1457,7 +1477,7 @@
     },
     {
       "path": "lib/discovery-index.mjs",
-      "sha256": "750e46c2acd3431d2fe0d238b30b7e49637d6bb92f5cab814485c2145ca1b97f"
+      "sha256": "e0d479b2032bfb81be1e4e208df42e1fc58d9f9aa93b840b280b836892d594f9"
     },
     {
       "path": "lib/discovery-refresh.mjs",
@@ -2129,7 +2149,7 @@
     },
     {
       "path": "lib/server-homepage.ts",
-      "sha256": "69f3a047eb4b1bb563cd946d92d38848505112bc37dadb938c04936082edaad9"
+      "sha256": "1fedd0e8158b36772f29a77fba4c403f35b95eacba5e60d10abaa0c9e1beb412"
     },
     {
       "path": "lib/server-market-live.ts",
@@ -2388,6 +2408,10 @@
       "sha256": "8fe3a04f526fd721ce007b5c4918e093f6830c74306693aa16f22e1df5ad2117"
     },
     {
+      "path": "lib/verified-monero-catalog.mjs",
+      "sha256": "4f7acf4d928d89850bbf07f67ec3d7f26b80e6c6bb07edc5ea2b2eff5cf27b8f"
+    },
+    {
       "path": "lib/verify-launch.mjs",
       "sha256": "7bcad59876163c4b414a0acea68d9da3c9c5a68eeae329a6e2c405d5150d2ad7"
     },
@@ -2549,7 +2573,7 @@
     },
     {
       "path": "scripts/restore-client-assets-compatibility.mjs",
-      "sha256": "33a3b39128ef5e5bede84e20b4166fac0f5a0129cdf19a60b29f9243e3fb9e51"
+      "sha256": "eff68dca73f7209bad29c9e97d68336e886515d5a52f2c3c3bde6f6611a8aded"
     },
     {
       "path": "scripts/rpc-config.mjs",
@@ -3053,7 +3077,7 @@
     },
     {
       "path": "tests/site-overview-route.test.mjs",
-      "sha256": "008c833ecb297bad8ce23b51f1cee6f3c717adee0124c515a84a1dca7cf4b1f5"
+      "sha256": "84ced0484131fdbf9c0be2b98697c439d504ff3f53ba664d98c466241634e17f"
     },
     {
       "path": "tests/sol-acceptance-policy.test.mjs",
