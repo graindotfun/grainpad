@@ -2516,6 +2516,14 @@
       "sha256": "509462a67bb2ab00ffab47a1a145d6cb235bd45ee8b32bd4ac37b9e0e3c5b993"
     },
     {
+      "path": "public/brand/grain-logo-1080.png",
+      "sha256": "9040bddb9cc31277a83d7642cbd31d4dd7f25af888dc2a8e2e91fd25a38ffdbb"
+    },
+    {
+      "path": "public/brand/grain-logo-512.png",
+      "sha256": "2cca7fdfe189ebea6a6154de4f5d8c94e5a082b60f89b48c3868bb8f9ffcdad1"
+    },
+    {
       "path": "public/brand/grain-token.png",
       "sha256": "c29539e0d739b00fb16e4f05c682e525dcd39cd668e5a377020b0f159deebce2"
     },
@@ -2593,7 +2601,7 @@
     },
     {
       "path": "scripts/restore-client-assets-compatibility.mjs",
-      "sha256": "79577d04a738943354ef159611c2c3cafffc2a9d2ce3c4dde1943cbdbae45736"
+      "sha256": "bc84e3d680fe1e36a2719b1005e1bee83b31499e1d3f8c714352344b3c9fca22"
     },
     {
       "path": "scripts/rpc-config.mjs",
