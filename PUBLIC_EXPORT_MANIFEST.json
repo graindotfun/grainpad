@@ -1656,6 +1656,10 @@
       "sha256": "5e0a7c857552f7fc99fde82a5382bcaeac52ba13c01185011571f9a39eabeaa6"
     },
     {
+      "path": "lib/live-coverage.mjs",
+      "sha256": "ae519eeb41673baa200612e248e2bcb35d33df5ed666715472a8dc7e943acb71"
+    },
+    {
       "path": "lib/load-trading.ts",
       "sha256": "d11ac066cae08878dfc4bb8ed57adb7e90d38ba0decfc6c152f0d7d915945d43"
     },
@@ -1973,7 +1977,7 @@
     },
     {
       "path": "lib/public-overview.mjs",
-      "sha256": "667bc93d9690322d1908125d447b09e2ca067eb9ed02e4c3b2f643167510fac3"
+      "sha256": "f92f91c312d9460cf404308cd621e4f9f1c2666fc002ab1a87d16b294ee0055b"
     },
     {
       "path": "lib/public-read-cache.mjs",
@@ -2169,7 +2173,7 @@
     },
     {
       "path": "lib/server-homepage.ts",
-      "sha256": "1fedd0e8158b36772f29a77fba4c403f35b95eacba5e60d10abaa0c9e1beb412"
+      "sha256": "9f4d18496f5618b33e99544e6885c8a0d464eebe6185cbe39871c084a38f2a1c"
     },
     {
       "path": "lib/server-market-live.ts",
@@ -2234,6 +2238,10 @@
     {
       "path": "lib/site-config.ts",
       "sha256": "166e0f4b2bd5ac23f39312c927cb3a36321aa3f54b55a0f76738b379f07efb31"
+    },
+    {
+      "path": "lib/site-stats.mjs",
+      "sha256": "8ac54aa5c978123dc01776ce7512a13cb3011ef177814ef062de14edf939d977"
     },
     {
       "path": "lib/site-wallet-client.ts",
@@ -2429,7 +2437,7 @@
     },
     {
       "path": "lib/verified-monero-catalog.mjs",
-      "sha256": "4f7acf4d928d89850bbf07f67ec3d7f26b80e6c6bb07edc5ea2b2eff5cf27b8f"
+      "sha256": "e600e0176e71b4ecaaf5d7205ef356af06adeb27e01cbe73967caf51969e7c58"
     },
     {
       "path": "lib/verify-launch.mjs",
@@ -2941,7 +2949,7 @@
     },
     {
       "path": "tests/public-overview.test.mjs",
-      "sha256": "aa5a6d3d054ad1755c9a38fe5cec71a427e72defcecdd83eaab20696760df31e"
+      "sha256": "e051f67a440b5c111bb8589e6fa9ac94d59c26093963d7820a253a62c971af97"
     },
     {
       "path": "tests/public-read-cache.test.mjs",
@@ -3109,7 +3117,7 @@
     },
     {
       "path": "tests/site-overview-route.test.mjs",
-      "sha256": "84ced0484131fdbf9c0be2b98697c439d504ff3f53ba664d98c466241634e17f"
+      "sha256": "719dee7a861bc87f5b62a20029f977da098a533690cc7eecc17218b046cab0a9"
     },
     {
       "path": "tests/sol-acceptance-policy.test.mjs",
