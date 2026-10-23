@@ -245,7 +245,7 @@
     },
     {
       "path": "app/docs/page.tsx",
-      "sha256": "7e864080d5b83580d00cc78760edcd2fbc2425a4ba382a11193ebfef1afc9fbc"
+      "sha256": "39d26bf4f5d52ac166ac66c7dbe8adc87055bc880b7fdbb912e9601294c05ee3"
     },
     {
       "path": "app/fees/layout.tsx",
@@ -421,7 +421,7 @@
     },
     {
       "path": "app/sitemap.xml/route.ts",
-      "sha256": "c055c471df27ca54d58051262a7e8cdfaed6bb8300095ada56f9ead97bd8a0ab"
+      "sha256": "1bd357be427578c058645cd1010b504c7a914bbad91471cdee9da04d37372ff9"
     },
     {
       "path": "app/theme.css",
@@ -2882,6 +2882,10 @@
     {
       "path": "tests/monero-record.test.mjs",
       "sha256": "0c176ce0d8e2e1e04aad1a001afd8c7284c4c1288ce6964461d77438d48d8702"
+    },
+    {
+      "path": "tests/official-addresses.test.mjs",
+      "sha256": "e9fb297c4361407b1fa972326fdc0ef6dd4d996e3800b2fb6bd73bb88f9806f1"
     },
     {
       "path": "tests/official-burn-connection.test.mjs",

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DocsContent } from "@/components/docs-content";
 import { POLICY, grainpadPlatformId } from "@/lib/platform-policy";
 import { SITE } from "@/lib/site-config";
+import { PLATFORM_SETTINGS } from "@/lib/platform-settings.mjs";
 import "./docs.css";
 import {env} from "cloudflare:workers";
 import {GRAINPAD_SOL_LOOKUP_TABLE} from "@/lib/sol-route-lookup-policy.mjs";
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default function DocsPage() {
-  return <DocsContent solTradingEnabled={(env as unknown as {SOL_TRADING_ENABLED?:string}).SOL_TRADING_ENABLED==="true"} solLookupConfigured={Boolean(GRAINPAD_SOL_LOOKUP_TABLE)} platformId={grainpadPlatformId().toBase58()} rates={{
+  return <DocsContent solTradingEnabled={(env as unknown as {SOL_TRADING_ENABLED?:string}).SOL_TRADING_ENABLED==="true"} solLookupConfigured={Boolean(GRAINPAD_SOL_LOOKUP_TABLE)} platformId={grainpadPlatformId().toBase58()} feeWallet={PLATFORM_SETTINGS.feeWallet} rates={{
     creator: POLICY.creatorRate / 10000,
     platform: POLICY.platformRate / 10000,
     protocol: POLICY.protocolRate / 10000,
