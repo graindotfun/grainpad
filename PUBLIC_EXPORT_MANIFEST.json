@@ -685,7 +685,7 @@
     },
     {
       "path": "components/native-tape.tsx",
-      "sha256": "63e8ea727fe689bb4bb231fc12fc2f9f2ce96becbbedb0d875a424c72a7bdfcd"
+      "sha256": "fbc6afe4405ec5c9f41ed99b89a82d2863c95ec64b594c21aaaedad63b8b5285"
     },
     {
       "path": "components/open-in-wallet.tsx",
@@ -2345,7 +2345,7 @@
     },
     {
       "path": "lib/tape-ledger.mjs",
-      "sha256": "91803439007b418bfe911c2aa0fc8b62f9ebf4c61dbcc2d1b68d8212b136fe35"
+      "sha256": "915e9fdfd9e51f3778f48dc2d5048073589a97cf0deacb08cf38055e8a4a4644"
     },
     {
       "path": "lib/token-discovery.ts",
@@ -2829,7 +2829,7 @@
     },
     {
       "path": "tests/market-ui-state.test.mjs",
-      "sha256": "ce8459b4821e3834de5430805ea9bc80c14c80450d5061b68e3ff501c2a43b9f"
+      "sha256": "3ca56fe5292f23b8a3f1e02694285f1fa7d514b4f820717a7ab23593972b75e1"
     },
     {
       "path": "tests/metadata-browser-load.test.mjs",
