@@ -697,7 +697,7 @@
     },
     {
       "path": "components/price-tab.tsx",
-      "sha256": "ad3e7ffe19dee51aca916b85899e6e62fe7bc8d7fc73a96db21272a4f670cce8"
+      "sha256": "47e5d3ef63ab80626def80b25a9d61350e135704cbc63c1aa43dfc079c26c60f"
     },
     {
       "path": "components/pro-chart.tsx",
@@ -1161,7 +1161,7 @@
     },
     {
       "path": "lib/brand-colors.mjs",
-      "sha256": "d0eda40c99eba6c41221b04ff4218a3262a2f8928db2eada613d16ed96144d8e"
+      "sha256": "f16f383926a7ae0697993c8a34088dd0ecf4794cff969fc0c3a7eba7c6d66947"
     },
     {
       "path": "lib/brand-presentation.ts",
@@ -1981,7 +1981,7 @@
     },
     {
       "path": "lib/public-read-cache.mjs",
-      "sha256": "571635fb55807769b3d762333beea55d37d9bea1aed991086158238b3c043310"
+      "sha256": "146efa1a4f9b26851550c7570ab6e2e8a3e078c4b32c7861d2da99eaf4354274"
     },
     {
       "path": "lib/public-receipt.mjs",
@@ -2061,7 +2061,7 @@
     },
     {
       "path": "lib/reward-credit-illustration.mjs",
-      "sha256": "97253b957ef55bfdd7f5be7d38363db7241b04dfe8fbc13e644f3476a7427428"
+      "sha256": "19d837ccaa231c02e2525713c9b3d65b70ec320959fa7c6fcfd0b7b449710dd2"
     },
     {
       "path": "lib/reward-credit-totals.mjs",
@@ -2070,6 +2070,10 @@
     {
       "path": "lib/rewards-allocation.mjs",
       "sha256": "34395d8a26857e9fe46f9fed9909c9dff4141ea6a68bd6ef4b43bfc8461dbced"
+    },
+    {
+      "path": "lib/rewards-card-options.mjs",
+      "sha256": "47a0e56f473f801608e8a6c1fd93037ea1e1903f84c7ecb94287bbf522f54ba1"
     },
     {
       "path": "lib/rewards-cost-policy.mjs",
@@ -3017,7 +3021,7 @@
     },
     {
       "path": "tests/reward-credit-illustration.test.mjs",
-      "sha256": "378d51a7b5e285fd02a31b820e18968cde40a4ade7e2ce17bc1735b95dc6f02c"
+      "sha256": "070361b399057383683afcbe65b33375d5ed9067eacdf6b63b29f11acf42affe"
     },
     {
       "path": "tests/reward-credit-totals.test.mjs",
