@@ -697,7 +697,7 @@
     },
     {
       "path": "components/price-tab.tsx",
-      "sha256": "3af6243a248a30f1934d1922154213b7784307ea7ca0ff2450c63ca2e0f4c67e"
+      "sha256": "ad3e7ffe19dee51aca916b85899e6e62fe7bc8d7fc73a96db21272a4f670cce8"
     },
     {
       "path": "components/pro-chart.tsx",
@@ -1201,7 +1201,7 @@
     },
     {
       "path": "lib/chain-events.mjs",
-      "sha256": "219ef91965af3f6fe50806c82d5bd7a2a83a17741a0d043b311ff9a6eacde076"
+      "sha256": "f659d203a08714e47351e4e7d3b563c7e109463d4ddb17994b0c600cb8876fd7"
     },
     {
       "path": "lib/chain/adapter.ts",
@@ -1977,7 +1977,7 @@
     },
     {
       "path": "lib/public-overview.mjs",
-      "sha256": "f92f91c312d9460cf404308cd621e4f9f1c2666fc002ab1a87d16b294ee0055b"
+      "sha256": "9484c31f682b36f596a7899542e93bcdb012359ef9cc0fe2d57960512b1afa4c"
     },
     {
       "path": "lib/public-read-cache.mjs",
@@ -2061,7 +2061,7 @@
     },
     {
       "path": "lib/reward-credit-illustration.mjs",
-      "sha256": "d0b1cadc5d9cf90899cb1ef7d68fdfcc11cd45b64349e104d71d34f9f1fb520b"
+      "sha256": "97253b957ef55bfdd7f5be7d38363db7241b04dfe8fbc13e644f3476a7427428"
     },
     {
       "path": "lib/reward-credit-totals.mjs",
@@ -2221,7 +2221,7 @@
     },
     {
       "path": "lib/shared-market-cache.mjs",
-      "sha256": "ed287d3f7d56bd79dee27f996f1d53cb62c0a2237b2b1357ff46f0cdac173f98"
+      "sha256": "bf465514af4c3ca5613a8996a5951e1f33ce69087cb742dbe85b5ce4f3e26a08"
     },
     {
       "path": "lib/signing-attempt.mjs",
@@ -2240,8 +2240,12 @@
       "sha256": "166e0f4b2bd5ac23f39312c927cb3a36321aa3f54b55a0f76738b379f07efb31"
     },
     {
+      "path": "lib/site-stats-sql.mjs",
+      "sha256": "d3fe3d25f48c9402c8246a353283e669b1ee2a6d474c68ca0ca82b7c1eeadc9f"
+    },
+    {
       "path": "lib/site-stats.mjs",
-      "sha256": "8ac54aa5c978123dc01776ce7512a13cb3011ef177814ef062de14edf939d977"
+      "sha256": "94507f3eca5dadd4a2b054e3478cf55da0c6dd9d2011478fd0bec210bccf5af7"
     },
     {
       "path": "lib/site-wallet-client.ts",
@@ -3013,7 +3017,7 @@
     },
     {
       "path": "tests/reward-credit-illustration.test.mjs",
-      "sha256": "7668a78d40746e53420bbc4e40f24478a8a44be9c88eac362a4ef938679e4704"
+      "sha256": "378d51a7b5e285fd02a31b820e18968cde40a4ade7e2ce17bc1735b95dc6f02c"
     },
     {
       "path": "tests/reward-credit-totals.test.mjs",
@@ -3121,7 +3125,7 @@
     },
     {
       "path": "tests/site-overview-route.test.mjs",
-      "sha256": "719dee7a861bc87f5b62a20029f977da098a533690cc7eecc17218b046cab0a9"
+      "sha256": "142a4beef08e5204acaef0d97198e672a37b1941a34ad75208ba7a8c0313331c"
     },
     {
       "path": "tests/sol-acceptance-policy.test.mjs",

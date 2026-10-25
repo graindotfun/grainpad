@@ -114,3 +114,15 @@ test('a cached overview never serves completeness or a burn past their own evide
   assert.ok(Math.abs(Date.parse(data.servedAt)-Date.now())<5000,'The response names its server time for browser-side aging.');
  } finally {delete globalThis.overviewTest.cached;}
 });
+
+test('"Last known data" follows a recorded refresh failure, never the snapshot age alone',{timeout:10000},async()=>{
+ const now=Date.now(),iso=ms=>new Date(ms).toISOString();
+ const snapshot=(age,meta)=>({updatedAt:now-age,stale:true,refreshFailed:false,...meta,data:{launches:9,launchesAwaiting:0,volume:6000,volumeTokens:3,volumeCoverage:'partial',volumeIndexedThrough:null,volumeSource:'indexed-trades',
+  burned:'130000000000000',burn:{source:'mint-supply',initialSupply:'1000000000000000',currentSupply:'870000000000000',decimals:6,slot:1,checkedAt:iso(now-age),stale:false}}});
+ try {
+  // A healthy refresh pending for longer than the TTL is not a failure (Sol B1).
+  for(const age of [61_000,151_000,290_000]){globalThis.overviewTest.cached=snapshot(age);assert.equal((await read()).stale,false,`${age/1000} s old, no failure recorded`);}
+  globalThis.overviewTest.cached=snapshot(61_000,{refreshFailed:true});assert.equal((await read()).stale,true,'A recorded failure is shown.');
+  globalThis.overviewTest.cached=snapshot(0,{stale:false});assert.equal((await read()).stale,false,'A success clears it.');
+ } finally {delete globalThis.overviewTest.cached;}
+});
