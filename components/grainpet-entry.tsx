@@ -53,5 +53,5 @@ export function GrainpetEntry(){
  },[post,phase,note,search]);
  useEffect(()=>{if(!active)post({type:"gate",phase,note});},[active,phase,note,post]);
  const src=active?`${ROOM}${search}`:`${ROOM}?gate=1`;
- return <div className="grainpet-stage"><iframe key={active??"gate"} ref={frame} className="grainpet-frame" title="grainpet" src={src} allow="clipboard-write"/></div>;
+ return <div className="grainpet-stage"><iframe key={active??"gate"} ref={frame} className="grainpet-frame" title="grainpet" src={src} allow="clipboard-write; fullscreen"/></div>;
 }

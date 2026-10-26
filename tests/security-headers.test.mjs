@@ -26,7 +26,11 @@ test('public document policies reject missing, weak and injected nonces',()=>{
  const changed=documentSecurityHeaders('grainpad.fun','abcdef0123456789abcdef0123456789');
  assert.notEqual(changed['Content-Security-Policy'],documentSecurityHeaders('grainpad.fun',nonce)['Content-Security-Policy']);
 });
-test('the static room page can only be framed by this origin (static assets bypass the Worker, so public/_headers carries the rule)',()=>{
+test('the static room page can only be framed by this origin, on the address it is really served from (static assets bypass the Worker, so public/_headers carries the rule)',()=>{
  const rules=readFileSync(new URL('../public/_headers',import.meta.url),'utf8');
- assert.match(rules,/^\/pet\/room\.html\n(?:  .+\n)*  X-Frame-Options: SAMEORIGIN\n/m);assert.match(rules,/frame-ancestors 'self'/);
+ /* the asset layer serves room.html at /pet/room (".html" is dropped by a 307), and the redirect response is not the page that gets framed */
+ for(const path of ['/pet/room','/pet/room.html']){
+  const block=rules.split(/\n(?=\/)/).find(b=>b.startsWith(path+'\n'));
+  assert.ok(block,path);assert.match(block,/X-Frame-Options: SAMEORIGIN/);assert.match(block,/frame-ancestors 'self'/);
+ }
 });

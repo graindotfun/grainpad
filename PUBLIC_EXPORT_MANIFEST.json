@@ -609,7 +609,7 @@
     },
     {
       "path": "components/grainpet-entry.tsx",
-      "sha256": "200ff497dbf075f33fc310c05faf0fb2dce24cc1a3009efbe4deb0388db15b91"
+      "sha256": "15f16e093d5da9cbb4e05a096044fcd8a31020b0abb4ffbbbf0c7ddd3878bb6e"
     },
     {
       "path": "components/grains-chart.tsx",
@@ -2581,7 +2581,7 @@
     },
     {
       "path": "public/_headers",
-      "sha256": "d55e8c2a60d1c649f8ed764cfbab9ca4e811d439a2d6407287866ea65d479783"
+      "sha256": "54c1709f35fa7482142c71723196e7c7b40498c177af090ed7e252f2e4f8f7ae"
     },
     {
       "path": "public/brand/chains/robinhood.svg",
@@ -3229,7 +3229,7 @@
     },
     {
       "path": "tests/security-headers.test.mjs",
-      "sha256": "e21d010e0912bfdbd8fd00fc014bf4edca717e427529bf2d0f8de72972952881"
+      "sha256": "9633afeeed0fe6016cfd8f4364701c2188f0c93471fe6fb5d776e1cce4aa8fc5"
     },
     {
       "path": "tests/sell-percentage.test.mjs",
