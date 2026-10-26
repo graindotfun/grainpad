@@ -376,12 +376,12 @@ const LAYOUTS = {
       xf: { s1: [290, 62, 56, 68, 1], s2: [358, 62, 56, 68, 1], finds: [20, 232, 200, 46, 2], decoA: [236, 196, 256, 92, 2], decoB: null } },
   ],
   w: [
-    { name: 'gallery', win: [-56, 60, 112, 126, 1], hero: [72, 62, 124, 124, 1], s1: [212, 62, 56, 68, 1], s2: [280, 62, 56, 68, 1], notebook: [352, 62, 60, 82, 1], decoA: [432, 62, 136, 96, 1], decoB: [-56, 202, 136, 96, 2], finds: [368, 232, 200, 46, 2],
-      xf: { finds: [-56, 232, 200, 46, 2], decoA: [176, 196, 250, 92, 2], decoB: null } },
-    { name: 'mirror', notebook: [-56, 62, 60, 82, 1], hero: [24, 62, 124, 124, 1], s1: [164, 62, 56, 68, 1], s2: [232, 62, 56, 68, 1], win: [308, 62, 112, 126, 1], decoA: [438, 62, 130, 96, 1], finds: [-56, 232, 200, 46, 2], decoB: [432, 202, 136, 96, 2],
-      xf: { decoA: [176, 196, 250, 92, 2], decoB: null } },
-    { name: 'corner', win: [-56, 60, 112, 126, 1], s1: [80, 62, 56, 68, 1], s2: [148, 62, 56, 68, 1], hero: [222, 62, 124, 124, 1], notebook: [366, 62, 60, 82, 1], decoA: [446, 62, 122, 96, 1], decoB: [-56, 202, 136, 96, 2], finds: [368, 232, 200, 46, 2],
-      xf: { finds: [-56, 232, 200, 46, 2], decoA: [176, 196, 250, 92, 2], decoB: null } },
+    { name: 'gallery', win: [-56, 60, 112, 126, 1], hero: [72, 62, 124, 124, 1], s1: [212, 62, 56, 68, 1], s2: [280, 62, 56, 68, 1], notebook: [352, 62, 60, 82, 1], decoA: [432, 62, 136, 96, 1], decoB: [80, 202, 136, 96, 2], finds: [232, 232, 200, 46, 2],
+      xf: { win: [22, 60, 112, 126, 1], hero: [150, 62, 124, 124, 1], s1: [290, 62, 56, 68, 1], s2: [358, 62, 56, 68, 1], notebook: [430, 62, 60, 82, 1], finds: [15, 232, 200, 46, 2], decoA: [247, 196, 250, 92, 2], decoB: null } },
+    { name: 'mirror', notebook: [-56, 62, 60, 82, 1], hero: [24, 62, 124, 124, 1], s1: [164, 62, 56, 68, 1], s2: [232, 62, 56, 68, 1], win: [308, 62, 112, 126, 1], decoA: [438, 62, 130, 96, 1], finds: [80, 232, 200, 46, 2], decoB: [296, 202, 136, 96, 2],
+      xf: { notebook: [22, 62, 60, 82, 1], hero: [102, 62, 124, 124, 1], s1: [242, 62, 56, 68, 1], s2: [310, 62, 56, 68, 1], win: [386, 62, 112, 126, 1], finds: [15, 232, 200, 46, 2], decoA: [247, 196, 250, 92, 2], decoB: null } },
+    { name: 'corner', win: [-56, 60, 112, 126, 1], s1: [80, 62, 56, 68, 1], s2: [148, 62, 56, 68, 1], hero: [222, 62, 124, 124, 1], notebook: [366, 62, 60, 82, 1], decoA: [446, 62, 122, 96, 1], decoB: [80, 202, 136, 96, 2], finds: [232, 232, 200, 46, 2],
+      xf: { win: [15, 60, 112, 126, 1], s1: [151, 62, 56, 68, 1], s2: [219, 62, 56, 68, 1], hero: [293, 62, 124, 124, 1], notebook: [437, 62, 60, 82, 1], finds: [15, 232, 200, 46, 2], decoA: [247, 196, 250, 92, 2], decoB: null } },
   ],
 };
 const SLOTS = {}; let LAYOUT_BP = 'n';
@@ -488,6 +488,9 @@ function editMarks(edit, row) {
     s += `<rect x="${a.x - 5}" y="${a.y - 5}" width="${a.w + 10}" height="${a.h + 10}" rx="14" fill="${sel ? '#ff6600' : '#fff'}" fill-opacity="${sel ? .14 : .22}" stroke="${sel ? '#ff6600' : '#1a1714'}" stroke-opacity="${sel ? 1 : .2}" stroke-width="${sel ? 3 : 1.6}"/>`;
     if (!a.filled) s += `<path d="M${a.x + a.w / 2 - 8} ${a.y + a.h / 2}h16M${a.x + a.w / 2} ${a.y + a.h / 2 - 8}v16" stroke="${sel ? '#ff6600' : '#1a1714'}" stroke-opacity="${sel ? 1 : .4}" stroke-width="3.2" stroke-linecap="round"/>`;
   }
+  /* the notebook has its own fixed spot: while customising it shows as a quiet outline (never a tap target) so the top row always reads as one balanced row, whether or not the notebook has appeared yet */
+  const nb = SLOTS.notebook;
+  if (row === nb.row && !nb.hidden && !NOTES[0].need()) s += `<g opacity=".55"><rect x="${nb.x}" y="${nb.y}" width="${nb.w}" height="${nb.h}" rx="8" fill="none" stroke="#1a1714" stroke-opacity=".28" stroke-width="1.6" stroke-dasharray="5 5"/><path d="M${nb.x + 19} ${nb.y + 30}h22M${nb.x + 19} ${nb.y + 42}h16" stroke="#1a1714" stroke-opacity=".3" stroke-width="3" stroke-linecap="round"/></g>`;
   return s;
 }
 let wallShift = 0, wallShift2 = 0;   /* on a tall screen the wall things rise with the extra wall height, so the room keeps a calm top-to-bottom rhythm */
@@ -1419,7 +1422,7 @@ function bootGate() {
   st = newState(); st.seen = NOW(); st.flags.arrived = true; newSession(); applyLayout(LAYOUT_BP); render();
   mountLockup();
   makeGrain(MID, GROUND + 60, 'alert'); let placed = false;
-  gFront.insertAdjacentHTML('beforeend', `<path d="M-8 ${GROUND - 2} Q120 ${GROUND - 14} 256 ${GROUND - 6} T520 ${GROUND - 4} V${H + 40} H-8Z" fill="#c9a77b"/><path d="M-8 ${GROUND - 2} Q120 ${GROUND - 14} 256 ${GROUND - 6} T520 ${GROUND - 4}" fill="none" stroke="#a98a60" stroke-width="3"/><path d="M40 ${GROUND + 26} h430 M30 ${GROUND + 54} h450" stroke="#b8946a" stroke-width="3" stroke-linecap="round" opacity=".7"/>`);
+  gFront.insertAdjacentHTML('beforeend', `<path d="M-700 ${GROUND - 2} L-8 ${GROUND - 2} Q120 ${GROUND - 14} 256 ${GROUND - 6} T520 ${GROUND - 4} L1212 ${GROUND - 4} V${H + 400} H-700Z" fill="#c9a77b"/><path d="M-700 ${GROUND - 2} L-8 ${GROUND - 2} Q120 ${GROUND - 14} 256 ${GROUND - 6} T520 ${GROUND - 4} L1212 ${GROUND - 4}" fill="none" stroke="#a98a60" stroke-width="3"/><path d="M-600 ${GROUND + 26} h1200 M-600 ${GROUND + 54} h1200" stroke="#b8946a" stroke-width="3" stroke-linecap="round" opacity=".7"/>`);
   const card = $('#gate'), btn = $('#gateBtn'), line = $('#gateP'), head = $('#gateH');
   const dot = '<i>.</i>';
   const phases = {

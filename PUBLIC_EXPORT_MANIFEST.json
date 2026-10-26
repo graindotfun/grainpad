@@ -2677,7 +2677,7 @@
     },
     {
       "path": "public/pet/pet.js",
-      "sha256": "88e4ad5d6bf87136d1c8d4fef1745a68f23757a10a1f32c5de4e619ab2955107"
+      "sha256": "0bc4cb88d83e40bd946ed1fbee3dbd8fbfce5938ba8aac3aaea032284abd8986"
     },
     {
       "path": "public/pet/price-source.js",
@@ -2685,7 +2685,7 @@
     },
     {
       "path": "public/pet/room.html",
-      "sha256": "5f1265441460dc4171759abba4a36bd6d1411d32d3136bff267b7549160b2fa5"
+      "sha256": "4c042198d48719289a2122797af3e631797cfbd1a361aace8c67c7c7fe5e2107"
     },
     {
       "path": "public/research/ARCHITECTURE.md",
