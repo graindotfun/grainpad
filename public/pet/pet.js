@@ -1,7 +1,7 @@
 /* grain pet, prototype. One grain per save, five fixed characters (mori, nori, pip, rolo, peb), a bond that deepens
    through shared moments. Visuals come from the approved character runtime (art/grain-core.js + art/grain-runtime.js):
    this file decides WHEN and WHY a character acts; the runtime decides HOW it looks.
-   Everything is local (localStorage). No wallet, no network, no rewards. */
+   The grain belongs to a wallet identity: persist.js keeps the save on the server and a per-wallet cache in this browser (see there). No coins, no rewards. */
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
@@ -13,7 +13,7 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const QS = new URLSearchParams(location.search), DEV = QS.has('review');   /* review mode: time tools and diagnostics, never shown to players */
-const LS = 'grainpet.v1';
+const STORE = window.GrainpetStore;   /* persist.js: wallet save, review-mode local save, gate */
 
 /* ---------- scene constants (viewBox 512 x 540) ---------- */
 const W = 512, H = 540, GROUND = 452, SCL = 0.62;
@@ -126,9 +126,8 @@ function sanitize(o) {
   n.flags = (o.flags && typeof o.flags === 'object') ? Object.fromEntries(Object.entries(o.flags).slice(0, 30).map(([k, v]) => [String(k).slice(0, 20), !!v])) : {};
   return n;
 }
-function load() { try { return sanitize(JSON.parse(localStorage.getItem(LS))); } catch { return null; } }
 let noSave = false;
-function save() { if (noSave) return; try { st.seen = NOW(); localStorage.setItem(LS, JSON.stringify(st)); } catch {} }
+function save() { if (noSave || !st) return; try { st.seen = NOW(); STORE.save(st); } catch {} }
 const day = () => Math.floor((NOW() - st.born) / 86400000) + 1;
 function note(key, ...a) { if (st.flags['n_' + key]) return; st.flags['n_' + key] = true; st.notes.push({ t: NOW(), s: `day ${day()}. ` + NOTE[key](st.name, st, ...a) }); }
 const stageOf = () => { const m = st.bond.meet; return m === 0 ? 0 : m < 2 ? 1 : m < 4 ? 2 : 3; };
@@ -262,7 +261,7 @@ function boardSvg() {
 const DECO_SIZE = { window: [128, 128], poster: [86, 114], flags: [166, 40], board: [124, 92], clock: [92, 92], xmr: [112, 96], xmrf: [230, 92] };
 
 /* ---------- xmr chart: a small string-and-pins graph. The numbers come only from priceProvider and never touch the grain's mood ---------- */
-const PRICE_KEY = 'grainpet.price', PRICE_MODE = DEV ? (QS.get('price') || 'demo') : '';   /* ?review=1&price=demo|stale|loading|error : labelled demo fixtures, review mode only */
+const PRICE_KEY = 'grainpet.price', PRICE_MODE = DEV ? (QS.get('price') === 'provider' ? '' : (QS.get('price') || 'demo')) : '';   /* ?review=1&price=demo|stale|loading|error : labelled demo fixtures, review mode only; price=provider uses the registered provider as a player would */
 const finite = a => Array.isArray(a) && a.length >= 2 && a.length <= 400 && a.every(Number.isFinite);
 function sanitizePrice(d) {
   if (!d || !Number.isFinite(d.usd) || !Number.isFinite(d.updated) || !finite(d.h24)) return null;
@@ -1061,10 +1060,10 @@ $('#dMenu').addEventListener('click', e => {
   const m = e.target.dataset && e.target.dataset.m; if (!m) return;
   if (m === 'sound') { PREFS.sound = !PREFS.sound; savePrefs(); if (PREFS.sound) snd('pop'); menuLabels(); return; }
   if (m === 'calm') { PREFS.calm = !PREFS.calm; savePrefs(); menuLabels(); return; }
-  if (m === 'reset') { const b = e.target; if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'tap again: this clears this grain'; return; } noSave = true; try { localStorage.removeItem(LS); } catch {} location.reload(); return; }
+  if (m === 'reset') { const b = e.target; if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'tap again: this clears this grain'; return; } noSave = true; st = newState(); STORE.replace(st).finally(() => location.reload()); return; }
   $('#dMenu').close();
   if (m === 'backup') { $('#code').value = exportCode(); $('#bkMsg').textContent = ''; $('#dBackup').showModal(); }
-  if (m === 'about') { $('#infoT').replaceChildren('grainpet', Object.assign(document.createElement('i'), { textContent: '.' })); $('#infoB').textContent = 'a little world by grainpad. your grain lives in this browser only: nothing is sent anywhere. no coins, no streaks, no pressure.'; $('#dInfo').showModal(); }
+  if (m === 'about') { $('#infoT').replaceChildren('grainpet', Object.assign(document.createElement('i'), { textContent: '.' })); $('#infoB').textContent = 'a little world by grainpad. your grain is saved to your wallet, so it follows you to any device where you sign in with it. no coins, no streaks, no pressure.'; $('#dInfo').showModal(); }
 });
 function exportCode() { save(); return 'GRAIN1.' + btoa(unescape(encodeURIComponent(JSON.stringify(st)))); }
 function importCode(t) {
@@ -1074,7 +1073,7 @@ function restore(text) {
   const o = importCode(text), m = $('#bkMsg');
   if (!o) { m.textContent = 'that code did not work. nothing changed.'; return; }
   if (!confirm('replace this grain with the one in the code?')) return;
-  st = o; save(); location.reload();
+  st = o; save(); STORE.replace(st).finally(() => location.reload());
 }
 $('#cpCode').onclick = async () => { try { await navigator.clipboard.writeText($('#code').value); $('#bkMsg').textContent = 'copied.'; } catch { $('#code').select(); $('#bkMsg').textContent = 'select and copy by hand.'; } };
 $('#dlCode').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([$('#code').value], { type: 'text/plain' })); a.download = `${st.name}-grain.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
@@ -1231,7 +1230,7 @@ function openNotes2() {
   $('#dGrainNotes').showModal();
 }
 function openHistory() { const ol = $('#notes'); ol.replaceChildren(); (st.notes.length ? st.notes : [{ s: 'nothing yet. give it a few visits.' }]).forEach(n => { const li = document.createElement('li'); li.textContent = n.s; ol.append(li); }); $('#dNotes').showModal(); }
-/* idea board: pin what you want to build; it stays in this browser and can be taken to grainpad */
+/* idea board: pin what you want to build; it stays with your grain and can be taken to grainpad */
 let ideasBefore = 0;
 function openIdeas() { ideasBefore = st.ideas.length; renderIdeas(); $('#dIdeas').showModal(); }
 function renderIdeas() {
@@ -1353,11 +1352,11 @@ if (DEV) {
   const bx = $('#devTypes'); TYPES.forEach(t => { const b = document.createElement('button'); b.textContent = t; b.dataset.t = t; bx.append(b); });
   $('#dev').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return; const d = b.dataset.d, t = b.dataset.t;
-    if (t) { noSave = true; st = newState(t); try { localStorage.setItem(LS, JSON.stringify(st)); sessionStorage.removeItem('grainpet.clock'); } catch {} location.reload(); }
+    if (t) { noSave = true; st = newState(t); try { localStorage.setItem('grainpet.v1', JSON.stringify(st)); sessionStorage.removeItem('grainpet.clock'); } catch {} location.reload(); }
     if (d && d.startsWith('away')) returnAfter(Number(d.slice(4)));
-    if (d === 'reset') { noSave = true; try { localStorage.removeItem(LS); sessionStorage.removeItem('grainpet.clock'); } catch {} location.reload(); }
+    if (d === 'reset') { noSave = true; try { localStorage.removeItem('grainpet.v1'); sessionStorage.removeItem('grainpet.clock'); } catch {} location.reload(); }
+    if (d === 'move') STORE.transferLegacy().then(m => alert(m));
     if (d === 'invite') inviteRitual();
-    if (d && d.startsWith('px')) { const pv = priceProvider, cur = pv.data ? pv.data.usd : 160; pv.demoSet(d === 'pxup' ? cur + 0.37 + Math.random() * 1.2 : d === 'pxdown' ? cur - 0.41 - Math.random() * 1.2 : d === 'pxbig' ? cur + 13.3 : d === 'pxsame' ? cur : d === 'pxlen' ? (cur < 100 ? 100.05 : 99.95) : cur); }
     if (d && d.startsWith('px')) { const pv = priceProvider, cur = pv.data ? pv.data.usd : 160; pv.demoSet(d === 'pxup' ? cur + 0.37 + Math.random() * 1.2 : d === 'pxdown' ? cur - 0.41 - Math.random() * 1.2 : d === 'pxbig' ? cur + 13.3 : d === 'pxsame' ? cur : d === 'pxlen' ? (cur < 100 ? 100.05 : 99.95) : cur); }
   });
   const fmt = t => new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -1393,17 +1392,56 @@ function mountLockup() {
 /* ---------- boot ---------- */
 function visibility() {
   if (!document.hidden) priceProvider.refresh(false);
-  if (document.hidden) { save(); hiddenAt = NOW(); }
+  if (document.hidden) { save(); STORE.pageHide(); hiddenAt = NOW(); }
   else if (hiddenAt && NOW() - hiddenAt > 25 * 60000) { st.seen = hiddenAt; hiddenAt = 0; cur = null; pending = null; enter(); }
 }
 let hiddenAt = 0;
-document.addEventListener('visibilitychange', visibility); addEventListener('pagehide', save);
-const boot = () => { savePrefs(); priceProvider.load(); setInterval(() => priceProvider.refresh(false), 240000); st = load() || newState();
+document.addEventListener('visibilitychange', visibility); addEventListener('pagehide', () => { save(); STORE.pageHide(); });
+const boot = saved => { savePrefs(); priceProvider.load(); setInterval(() => priceProvider.refresh(false), 240000); st = (saved && sanitize(saved)) || newState();
   if (DEV && QS.get('seed')) for (const k of QS.get('seed').split(',')) {   /* review only: ?seed=tired,rich,xmr,xmrf puts a ready-made room on a phone without any tools */
     if (k === 'tired') st.needs.e = .3;
     if (k === 'rich') { st.bond.meet = 4; st.bond.play = 2; st.bond.ritual = 1; st.memories = { meeting: { t: NOW() - 4 * 864e5 }, ritual: { t: NOW() - 2 * 864e5 }, find: { t: NOW() - 864e5 } }; st.finds.got = [0, 1, 2, 3, 4]; st.finds.shown = [0, 1, 2, 3, 4]; st.home.frames = { hero: 'meeting', s1: 'ritual', s2: 'find' }; st.home.decoB = 'clock'; }
     if (k === 'xmr') { st.home.decoA = 'xmr'; if (!st.home.decoB) st.home.decoB = 'clock'; }
     if (k === 'xmrf') { st.home.decoA = 'xmrf'; if (!st.home.decoB) st.home.decoB = 'clock'; }
   } applyLayout(LAYOUT_BP); setName(); mountLockup(); buildTray(); enter(); requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); }); };
-fetch('art/grain-friends.manifest.json').then(r => r.json()).then(deriveFromManifest).catch(() => {}).finally(boot);
+/* ---------- save note, wallet gate ---------- */
+let noteT = 0;
+function showSaveNote(state) {
+  const el = $('#saveNote'); if (!el) return; clearTimeout(noteT);
+  if (state === 'idle') { el.hidden = true; return; }
+  const text = state === 'saving' ? 'saving…' : 'saved locally. will sync.';
+  if (state === 'saving') noteT = setTimeout(() => { if (STORE.status === 'saving') { el.textContent = text; el.hidden = false; } }, 700);
+  else { el.textContent = text; el.hidden = false; }
+}
+/* No wallet identity yet: no save is read, created or written. The room is only a doorway, with a grain peeking in. */
+function bootGate() {
+  document.body.classList.add('gate'); savePrefs(); noSave = true;
+  st = newState(); st.seen = NOW(); st.flags.arrived = true; newSession(); applyLayout(LAYOUT_BP); render();
+  mountLockup();
+  makeGrain(MID, GROUND + 60, 'alert'); let placed = false;
+  gFront.insertAdjacentHTML('beforeend', `<path d="M-8 ${GROUND - 2} Q120 ${GROUND - 14} 256 ${GROUND - 6} T520 ${GROUND - 4} V${H + 40} H-8Z" fill="#c9a77b"/><path d="M-8 ${GROUND - 2} Q120 ${GROUND - 14} 256 ${GROUND - 6} T520 ${GROUND - 4}" fill="none" stroke="#a98a60" stroke-width="3"/><path d="M40 ${GROUND + 26} h430 M30 ${GROUND + 54} h450" stroke="#b8946a" stroke-width="3" stroke-linecap="round" opacity=".7"/>`);
+  const card = $('#gate'), btn = $('#gateBtn'), line = $('#gateP'), head = $('#gateH');
+  const dot = '<i>.</i>';
+  const phases = {
+    connect: ['your grain is waiting' + dot, '', 'connect wallet', 'connect'],
+    checking: ['your grain is waiting' + dot, 'opening your room…', '', ''],
+    signing: ['one signature' + dot, 'sign in to save your grain. no transaction. no fee.', '', ''],
+    signerr: ['one signature' + dot, 'sign in to save your grain. no transaction. no fee.', 'sign in', 'retry'],
+    unreachable: ['your grain is waiting' + dot, 'can\'t reach your grain right now.', 'try again', 'retry'],
+  };
+  let action = 'connect';
+  const apply = d => {
+    const p = phases[d.phase] || phases.connect; head.innerHTML = p[0]; line.textContent = d.note || p[1];
+    btn.hidden = !p[2]; btn.textContent = p[2]; action = p[3]; card.hidden = false;
+  };
+  btn.onclick = () => { if (action) STORE.gateAction(action); };
+  STORE.onGate(apply); apply({ phase: 'connect' });
+  let last = performance.now(); const loop = ts => { requestAnimationFrame(loop); const dt = Math.min(.05, (ts - last) / 1000); last = ts; if (!document.hidden) GrainRuntime.tick(dt);
+    if (!placed) { const bb = gChar.getBBox(); if (bb.height > 20) { placed = true; g.ground = GROUND - 80 - bb.y * SCL; } } };   /* every character peeks the same amount: its top 80 units above the blanket */ requestAnimationFrame(loop);
+  STORE.start();
+}
+STORE.onAdopt(() => location.reload());   /* another device saved a newer grain: start from that one */
+STORE.onFlushRequest(() => { document.body.classList.add('frozen'); noSave = false; save(); });   /* the page is switching wallet or leaving: stop input, then persist.js sends the last save */
+STORE.onStatus(showSaveNote);
+fetch('art/grain-friends.manifest.json').then(r => r.json()).then(deriveFromManifest).catch(() => {}).finally(() => { if (STORE.mode === 'gate') return bootGate(); STORE.start().then(r => boot(r && r.state)); });
 })();

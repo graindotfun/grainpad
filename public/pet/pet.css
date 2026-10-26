@@ -303,3 +303,18 @@ dialog #okName,dialog #pinIdea,dialog #shareBtn,dialog #saveCard,dialog #cpCode,
 .drawers>.drawer{grid-area:1/1}
 .drawers>.drawer[hidden]{display:flex;visibility:hidden;pointer-events:none}
 .editing .drawers{display:none}
+
+/* wallet gate: the room with the grain peeking over a blanket, and one way in */
+.gate #side,.gate #nameBtn,.gate #homeBtn,.gate #menuBtn,.gate #fsBtn,.gate #say,.gate #dev{display:none!important}
+.gate .stage{pointer-events:none}
+.gatecard{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:2px 12px 6px}
+.gatecard[hidden]{display:none}
+.gatecard h2{margin:0;font-size:30px;font-weight:800;letter-spacing:-.05em;line-height:1.05}
+.gateline{margin:0;min-height:20px;color:var(--soft);font-size:15px;font-weight:600;letter-spacing:-.02em;max-width:30ch}
+.gatebtn{border:0;border-radius:999px;height:52px;padding:0 30px;background:var(--btn);color:var(--btnText);font:800 17px "Albert Sans",sans-serif;letter-spacing:-.03em;cursor:pointer;min-width:180px}
+.gatebtn:active{transform:scale(.97)}
+.gatebtn[hidden]{display:none}
+.gatefoot{margin:2px 0 0;color:var(--soft);font-size:13px;font-weight:600}
+.savenote{position:absolute;right:12px;bottom:12px;margin:0;padding:5px 11px;border-radius:999px;background:rgba(244,236,223,.92);font-size:12.5px;font-weight:700;color:#5d5246;letter-spacing:-.01em;pointer-events:none;z-index:3}
+.savenote[hidden]{display:none}
+.frozen .stage,.frozen #side{pointer-events:none;opacity:.7}

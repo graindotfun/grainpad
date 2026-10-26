@@ -64,6 +64,18 @@
       "sha256": "bb74ca78c4fc98951ec47bd474e2f7ed4e6d213237f6d4ccf3199b44e296cac8"
     },
     {
+      "path": "app/api/grainpet/challenge/route.ts",
+      "sha256": "76ff1d97e0d1b2ec7be247f3b8f732863e9866efe61b87b8756c260687dbf248"
+    },
+    {
+      "path": "app/api/grainpet/route.ts",
+      "sha256": "8a7ab40f827f7a66584a67c55f9aa293f6c035b0737c42144ba4594d8e815164"
+    },
+    {
+      "path": "app/api/grainpet/session/route.ts",
+      "sha256": "21dbe5a51f13a4873cf82a4dc42ec9f2240003e2109e956706affcd8bf6d346d"
+    },
+    {
       "path": "app/api/identity/fame/route.ts",
       "sha256": "01a2a7bca209ab87d61e9e8ef4e714966054a9cd66237c75ae58e2a2d6a7939f"
     },
@@ -376,6 +388,10 @@
       "sha256": "fca85c9a1c78a82c44e1456224a0fb50a0a3e494c58167361010a0d27ffeac5a"
     },
     {
+      "path": "app/pet/page.tsx",
+      "sha256": "5a9b42cb7c4f02c952d6fad552c998755dabfb20d63f973a937f91272414c61c"
+    },
+    {
       "path": "app/premium.css",
       "sha256": "19e573669b7f06ebd91b69cf8e07c27ac18815bb433cc6fa3241879d961d0b2d"
     },
@@ -592,6 +608,10 @@
       "sha256": "752a65f07cdf4d3fba322d7999166d333e21ef241af8335dc26761e612bcf60d"
     },
     {
+      "path": "components/grainpet-entry.tsx",
+      "sha256": "200ff497dbf075f33fc310c05faf0fb2dce24cc1a3009efbe4deb0388db15b91"
+    },
+    {
       "path": "components/grains-chart.tsx",
       "sha256": "8be1615dcf8fc52180c2b83c51e9784ea7fc94102b5b2725d60bb68a448aa8e8"
     },
@@ -785,7 +805,7 @@
     },
     {
       "path": "components/site-wallet.tsx",
-      "sha256": "56f976a5a18dd8078174981d52861d85545553f2d85d98d5ff82455f7c70e719"
+      "sha256": "ee6bc4bb9564518d5b5fda9b3b1e36955ff744576fcd53a968150d008fe335ab"
     },
     {
       "path": "components/theme-toggle.tsx",
@@ -1560,6 +1580,30 @@
       "sha256": "7651dbab5fcf6b613689a303ae50a409ca73bcda81378174976ab3804cd4acf9"
     },
     {
+      "path": "lib/grainpet-api.mjs",
+      "sha256": "42a8e2eeddd61f87db4e05b3338e61162ce0120dc4797ee3fd640075d24313d0"
+    },
+    {
+      "path": "lib/grainpet-auth.mjs",
+      "sha256": "892a0b2255dc03eca3dc1022204531f82d1edad1cf458989c6937b6baca72b86"
+    },
+    {
+      "path": "lib/grainpet-client.ts",
+      "sha256": "9ae41555eaecd20face958c0d5e573800388b97d215353495121cea1d5c1da19"
+    },
+    {
+      "path": "lib/grainpet-entry.mjs",
+      "sha256": "f3140585e336b56b628167535f52336e1c6b6f4a0c657c37d8f5ef966f1e459e"
+    },
+    {
+      "path": "lib/grainpet-server.ts",
+      "sha256": "bd0f21dbb5a52f4ef66962635005c0eb6a58154c98674b67f88c6215f175c92f"
+    },
+    {
+      "path": "lib/grainpet-store.mjs",
+      "sha256": "2c12a8ddda225f9c57f43f10f70805692d92e6981748738eb346ac8b4120ed3d"
+    },
+    {
       "path": "lib/header-image.mjs",
       "sha256": "c52982da1c8258371060da1225e067adee757faa333eaf6066b338283b31c980"
     },
@@ -2173,7 +2217,7 @@
     },
     {
       "path": "lib/security-headers.mjs",
-      "sha256": "983d2bddd336a8a73b4669e24b4df1e4cce2ab34c7c1c7042aed687e18d59fb0"
+      "sha256": "b5e4e4ded5ff8bdb47be8f656e0a4dfbbfd1107e17222c58cb5c56575ae4f6b7"
     },
     {
       "path": "lib/server-cache.ts",
@@ -2536,6 +2580,10 @@
       "sha256": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde"
     },
     {
+      "path": "public/_headers",
+      "sha256": "d55e8c2a60d1c649f8ed764cfbab9ca4e811d439a2d6407287866ea65d479783"
+    },
+    {
       "path": "public/brand/chains/robinhood.svg",
       "sha256": "526b7c346f630ac94d196ec0e6041775f1dd8f406546cd55cbcbf8cb7e17d88d"
     },
@@ -2620,16 +2668,24 @@
       "sha256": "db0b9eef1ba47c069377a43ee71ccc8e9b6a89bec4d9e733c01c60cb126d10b8"
     },
     {
+      "path": "public/pet/persist.js",
+      "sha256": "d20117fa1fbe60e3c695d4908d04122474e2117c8924eba378e36d36aeaf5e20"
+    },
+    {
       "path": "public/pet/pet.css",
-      "sha256": "ed7feb94feda917d090cab21d91bdfd579224b4d78b30b35cd61394d08c85e9d"
+      "sha256": "21cebf8ac1ef58cf9408c7d79d7a2d62ca84c9fbb439a7684f572ca7ff0e4866"
     },
     {
       "path": "public/pet/pet.js",
-      "sha256": "decdeb69f43633807d95afff583e76637427b3a4f98e3f0af888e46b6df5c138"
+      "sha256": "88e4ad5d6bf87136d1c8d4fef1745a68f23757a10a1f32c5de4e619ab2955107"
     },
     {
       "path": "public/pet/price-source.js",
       "sha256": "eef2537f73b9c09844bd85334ae2764f8531d79bf393c2f72609011be7e9c130"
+    },
+    {
+      "path": "public/pet/room.html",
+      "sha256": "d653834e5b2700032a355342fa088fb75084d6404aced20404f8eec444e20748"
     },
     {
       "path": "public/research/ARCHITECTURE.md",
@@ -2806,6 +2862,14 @@
     {
       "path": "tests/grain-stage-policy.test.mjs",
       "sha256": "5f9675db21d01645ffa7a7a9d13fb66379265e98fdedfde04393123f035c6433"
+    },
+    {
+      "path": "tests/grainpet-api.test.mjs",
+      "sha256": "cf7607ddea92a4c244aed0c9824f30859995b2b6abd33f0340ce05101f21cd7c"
+    },
+    {
+      "path": "tests/grainpet-entry.test.mjs",
+      "sha256": "24606b0a49e0ad0cb4a23e00677b8e3a4a1c42a08bd4c645135e8b9ee5ece712"
     },
     {
       "path": "tests/homepage-server-render.test.mjs",
@@ -3165,7 +3229,7 @@
     },
     {
       "path": "tests/security-headers.test.mjs",
-      "sha256": "e7669cee069b811a73dd56f1569b3596a25bb2603fabd56a93d9ac8877df404d"
+      "sha256": "e21d010e0912bfdbd8fd00fc014bf4edca717e427529bf2d0f8de72972952881"
     },
     {
       "path": "tests/sell-percentage.test.mjs",
