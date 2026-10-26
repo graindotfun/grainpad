@@ -3,7 +3,7 @@ import {readFileSync,writeFileSync,mkdirSync,lstatSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {resolve,dirname,join,posix} from 'node:path';
-export const CLIENT_ASSETS_MANIFEST_SHA256="3c1a5fa64907f1f0c04e6d4ca4c9fbab2322daadba92b5db2d0a54d6c3e54bb1";
+export const CLIENT_ASSETS_MANIFEST_SHA256="7e9cbc59bd59cebc2d0c0226c89507d94b2c28b2bfe62862685914011c70e0dd";
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const pathText=value=>value instanceof URL?fileURLToPath(value):String(value);
 const assetPath=path=>typeof path==='string'&&/^\/_next\/static\/(?:(?:chunks|css|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\/)?[A-Za-z0-9_.-]+\.(?:js|css)$/.test(path)&&!path.includes('..');
