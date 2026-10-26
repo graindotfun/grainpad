@@ -268,6 +268,10 @@
       "sha256": "b6d37a2d069faf675b8b5739113628a24e95b8f4856066119ef5f61b3abcf192"
     },
     {
+      "path": "app/grainpet/route.ts",
+      "sha256": "c0e910da2ae1f78d5a0b1e3672f26b4512d25ad06864ca3db3eeb022c218f48f"
+    },
+    {
       "path": "app/grains.css",
       "sha256": "0392fffcb2ca28ffab2712b19c94ccff6a37c6552e3e28ce04ab1f3c4be7aa86"
     },
@@ -2582,6 +2586,38 @@
     {
       "path": "public/fonts/ibm-plex-mono-latin-400.woff2",
       "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7"
+    },
+    {
+      "path": "public/pet/OFL.txt",
+      "sha256": "5c856c086e8743b84932aae46ced424729a703932b601e9eb8aaeac15a617ec6"
+    },
+    {
+      "path": "public/pet/albert-sans.woff2",
+      "sha256": "c2fb6fda415c7bf5926c15aa98f759da45cdc5ac4ac6925a72a84db4eb3862a3"
+    },
+    {
+      "path": "public/pet/art/grain-core.js",
+      "sha256": "bb6609e6e59d926afeda63720c46df350566683716525070ec1b801bcce5d1fd"
+    },
+    {
+      "path": "public/pet/art/grain-friends.manifest.json",
+      "sha256": "2fe1e5f2721b437b13a824c9c2666983392ec8b488fe5ee56fde0dda30cd4005"
+    },
+    {
+      "path": "public/pet/art/grain-runtime.js",
+      "sha256": "25cadbb9317b3c3a6a4f298221a6edb32dd1174541eb0a1d3ad485cadfed592f"
+    },
+    {
+      "path": "public/pet/brand/grainpet-logo-face-v1.svg",
+      "sha256": "db0b9eef1ba47c069377a43ee71ccc8e9b6a89bec4d9e733c01c60cb126d10b8"
+    },
+    {
+      "path": "public/pet/pet.css",
+      "sha256": "ed7feb94feda917d090cab21d91bdfd579224b4d78b30b35cd61394d08c85e9d"
+    },
+    {
+      "path": "public/pet/pet.js",
+      "sha256": "decdeb69f43633807d95afff583e76637427b3a4f98e3f0af888e46b6df5c138"
     },
     {
       "path": "public/research/ARCHITECTURE.md",
