@@ -785,7 +785,7 @@
     },
     {
       "path": "components/token-discovery.tsx",
-      "sha256": "63ebc1baf509d3691961f71b98143a5ab4aa6a9c0a8495826132c02753d5037e"
+      "sha256": "1c977985338db54df6e114b3b59fcf7b3afae47105a7f4c52a630b677ad68df9"
     },
     {
       "path": "components/token-image.tsx",
@@ -1489,7 +1489,7 @@
     },
     {
       "path": "lib/discovery-index.mjs",
-      "sha256": "e0d479b2032bfb81be1e4e208df42e1fc58d9f9aa93b840b280b836892d594f9"
+      "sha256": "2ec2d89e003583413d630269af94a3d9864ff06ea403f50f4a4bc9281d995c45"
     },
     {
       "path": "lib/discovery-refresh.mjs",
@@ -2249,7 +2249,7 @@
     },
     {
       "path": "lib/site-stats.mjs",
-      "sha256": "94507f3eca5dadd4a2b054e3478cf55da0c6dd9d2011478fd0bec210bccf5af7"
+      "sha256": "8f5374148a9b1802c5b2a0d9861970adef9624280f4990cad9d3c19a16e97142"
     },
     {
       "path": "lib/site-wallet-client.ts",
@@ -2357,7 +2357,7 @@
     },
     {
       "path": "lib/token-discovery.ts",
-      "sha256": "1d9b9efa4e93fa3c21ae4b7fdd308aa2a9c8f2ab24b934e65ae7d6b180731b0b"
+      "sha256": "b40280bf39eca9f0d5627a5878e8db31be429c586c9f4ed8093cdb7526c1d45a"
     },
     {
       "path": "lib/token-launch-post.mjs",

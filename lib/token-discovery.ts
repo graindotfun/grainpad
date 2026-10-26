@@ -5,7 +5,9 @@ import type {LaunchRecord} from './launch-records';
 import {CHAIN_RECORD_NETWORKS,chainOfNetwork,recordNetworkId,type ChainFilter,type ChainKey} from './chain-display.ts';
 import type {DisplayNetworkId} from './chain-display.ts';
 import {isNewLaunch,parseTimestamp} from './token-time.ts';
-export type DiscoveryToken=Omit<LaunchRecord,'launchedAt'>&{marketVenue?:'uniswap-v3';networkId:DisplayNetworkId|null;chain:ChainKey|null;launchedAt:string|null;graduatedAt:string|null;state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapQuote?:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;marketStale:boolean;figuresSource:'grainpad'|'geckoterminal'|null};
+export type DiscoveryToken=Omit<LaunchRecord,'launchedAt'>&{marketVenue?:'uniswap-v3';networkId:DisplayNetworkId|null;chain:ChainKey|null;launchedAt:string|null;graduatedAt:string|null;state:'curve'|'graduating'|'graduated'|'unknown';lifecycle:'curve_live'|'curve_complete'|'migration_pending'|'raydium_live'|'unavailable';progress:number|null;marketCapQuote?:number|null;marketCapUsd:number|null;volume24h:number|null;change24h:number|null;marketUpdatedAt:number|null;marketStale:boolean;figuresSource:'grainpad'|'geckoterminal'|null;moneroRecord?:MoneroRecordStatus};
+/** Presentation of the Monero launch record beside a listed token; never a publication or trading decision. */
+export type MoneroRecordStatus='verified'|'pending'|'unpublished';
 export type DiscoveryFilter='all'|'new'|'near'|'graduated';
 export type DiscoverySort='newest'|'oldest'|'market-cap'|'volume';
 export type DiscoveryResult={chainCounts:{all:number;solana:number;robinhood:number};coverage?:string;totalIndexed?:number;tokens:DiscoveryToken[];featured:DiscoveryToken[];total:number;filteredTotal:number;page:number;pages:number;pageSize:number;counts:{all:number;new:number;near:number;graduated:number;unknown:number};officialMint:string|null;updatedAt:number;stale:boolean};
@@ -49,12 +51,13 @@ export function enrichDiscovery(records:LaunchRecord[],cache:CacheRow[],platform
  });
 }
 /** One bad cache or launch row must not fail the directory. */
-export function discoveryRecords(rows:{record:string;market?:string|null;chart?:string|null;market_time?:number;chart_time?:number}[],platform:string){
+export function discoveryRecords(rows:{record:string;monero_record?:string|null;market?:string|null;chart?:string|null;market_time?:number;chart_time?:number}[],platform:string){
  const cache:CacheRow[]=[];const records:LaunchRecord[]=[];
  for(const row of rows){
   let record:LaunchRecord|null=null;try{record=JSON.parse(row.record) as LaunchRecord;}catch{record=null;}
   if(!record?.mint||!isPublicRobinhoodToken(recordNetworkId(record),record.mint))continue;
-  records.push(record);
+  const monero=row.monero_record;
+  records.push(monero==='verified'||monero==='pending'||monero==='unpublished'?{...record,moneroRecord:monero} as LaunchRecord:record);
   let market:DisplaySnapshot|null=null;if(row.market){try{market=JSON.parse(row.market) as DisplaySnapshot;}catch{market=null;}}
   if(market)cache.push({key:`market:v3:${platform}:${record.mint}`,value:row.market as string,updated_at:Number(row.market_time)||0});
   if(row.chart&&market?.pool)cache.push({key:`chart:v3:${market.pool}`,value:row.chart,updated_at:Number(row.chart_time)||0});
