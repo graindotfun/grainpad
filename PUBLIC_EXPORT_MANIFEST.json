@@ -216,6 +216,10 @@
       "sha256": "f9edb86990b943782a90b2fa5c93a768689dd726a680eb541bfd3a40b5ac2ace"
     },
     {
+      "path": "app/api/xmr-price/route.ts",
+      "sha256": "02efb341a5be021b6e9ebde75dab11ce85e7fc4601e34b4d570436adc47ced82"
+    },
+    {
       "path": "app/authority/authority.css",
       "sha256": "5a73c3897c08612787c68721d9fd60f5b319575e8d9d5f4a90752558f3993b26"
     },
@@ -2504,6 +2508,10 @@
       "sha256": "cb54d41fef25a752842abf0e531733c30204a8b9a1c323ed0f83b7cf0b28d789"
     },
     {
+      "path": "lib/xmr-usd.mjs",
+      "sha256": "f4855b8aeda5ea042704b9e88a6f1bd0d3d5b4c91daaafcca6de0291894bebbb"
+    },
+    {
       "path": "middleware.ts",
       "sha256": "a10d2b8f79969424e90465f908ca95f592b9c8800ec9204d755db19facd23fe5"
     },
@@ -2618,6 +2626,10 @@
     {
       "path": "public/pet/pet.js",
       "sha256": "decdeb69f43633807d95afff583e76637427b3a4f98e3f0af888e46b6df5c138"
+    },
+    {
+      "path": "public/pet/price-source.js",
+      "sha256": "eef2537f73b9c09844bd85334ae2764f8531d79bf393c2f72609011be7e9c130"
     },
     {
       "path": "public/research/ARCHITECTURE.md",
@@ -3290,6 +3302,10 @@
     {
       "path": "tests/wxmr-wallet-help.test.mjs",
       "sha256": "d249d3d614b9a526376c48832c1afc6efcb3c71e36ef21e9a213b35d8b820648"
+    },
+    {
+      "path": "tests/xmr-usd.test.mjs",
+      "sha256": "617d42b84aa277b0b5364acbfca84e90b908fc48d0f5bab36228a4d9b639674e"
     },
     {
       "path": "tsconfig.json",
