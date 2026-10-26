@@ -609,7 +609,7 @@
     },
     {
       "path": "components/grainpet-entry.tsx",
-      "sha256": "15f16e093d5da9cbb4e05a096044fcd8a31020b0abb4ffbbbf0c7ddd3878bb6e"
+      "sha256": "256fc5b1aaf8ba81858b21cb12b5f0ce8dfb9cf9488ee6ba29c687f0d0af1543"
     },
     {
       "path": "components/grains-chart.tsx",
@@ -2669,11 +2669,11 @@
     },
     {
       "path": "public/pet/persist.js",
-      "sha256": "d20117fa1fbe60e3c695d4908d04122474e2117c8924eba378e36d36aeaf5e20"
+      "sha256": "faca5512a94b82205de91eb810a71f7ca9942823b1d73622ba803e3823e2dfa7"
     },
     {
       "path": "public/pet/pet.css",
-      "sha256": "21cebf8ac1ef58cf9408c7d79d7a2d62ca84c9fbb439a7684f572ca7ff0e4866"
+      "sha256": "d2a8501110f74d698253b40e7465838cab141c48dbf8784e74379b4e6177a8c8"
     },
     {
       "path": "public/pet/pet.js",
@@ -2685,7 +2685,7 @@
     },
     {
       "path": "public/pet/room.html",
-      "sha256": "d653834e5b2700032a355342fa088fb75084d6404aced20404f8eec444e20748"
+      "sha256": "5f1265441460dc4171759abba4a36bd6d1411d32d3136bff267b7549160b2fa5"
     },
     {
       "path": "public/research/ARCHITECTURE.md",

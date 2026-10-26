@@ -1,5 +1,5 @@
 "use client";
-import {useCallback,useEffect,useRef,useState,useSyncExternalStore} from "react";
+import {useCallback,useEffect,useLayoutEffect,useRef,useState,useSyncExternalStore} from "react";
 import {useSiteWallet,type SiteWalletConnection} from "./use-site-wallet";
 import {openSiteWallet} from "@/lib/site-wallet-session.mjs";
 import {grainpetIdentityOf} from "@/lib/grainpet-entry.mjs";
@@ -11,9 +11,9 @@ const ROOM="/pet/room.html";
 export function GrainpetEntry(){
  const wallet=useSiteWallet(),identity=grainpetIdentityOf(wallet);
  const search=useSyncExternalStore(()=>()=>{},()=>window.location.search,()=>""),[active,setActive]=useState<string|null>(null),[phase,setPhase]=useState<Phase>("connect"),[note,setNote]=useState(""),[retry,setRetry]=useState(0);
- const frame=useRef<HTMLIFrameElement>(null),walletRef=useRef<SiteWalletConnection|null>(null),run=useRef(0),activeRef=useRef<string|null>(null),flushWaiters=useRef(new Map<number,()=>void>());
+ const stage=useRef<HTMLDivElement>(null),[fit,setFit]=useState<number|null>(null),frame=useRef<HTMLIFrameElement>(null),walletRef=useRef<SiteWalletConnection|null>(null),run=useRef(0),activeRef=useRef<string|null>(null),flushWaiters=useRef(new Map<number,()=>void>());
  useEffect(()=>{walletRef.current=wallet;activeRef.current=active;});
- const post=useCallback((message:Record<string,unknown>)=>{frame.current?.contentWindow?.postMessage({grainpet:1,...message},window.location.origin);},[]);
+ const post=useCallback((message:Record<string,unknown>)=>{frame.current?.contentWindow?.postMessage({grainpet:1,theme:document.documentElement.dataset.theme==="dark"?"dark":"light",...message},window.location.origin);},[]);
  const flush=useCallback(()=>new Promise<void>(done=>{
   if(!frame.current?.contentWindow||!activeRef.current)return done();
   const id=Date.now();const timer=setTimeout(()=>{flushWaiters.current.delete(id);done();},2500);
@@ -39,6 +39,16 @@ export function GrainpetEntry(){
    }
   })();
  },[identity,retry,flush]);
+ /* the room fills exactly what is left of the window under the site header, so the page itself never scrolls (a scrolling page lets the frame jump when it takes focus) */
+ useLayoutEffect(()=>{
+  const measure=()=>{const top=stage.current?.getBoundingClientRect().top??0;setFit(Math.max(420,Math.floor(window.innerHeight-top-8)));};
+  measure();const t=window.setTimeout(measure,400);window.addEventListener("resize",measure);return()=>{window.clearTimeout(t);window.removeEventListener("resize",measure);};
+ },[]);
+ useEffect(()=>{
+  const sync=()=>post({type:"theme"});
+  window.addEventListener("grainpad:theme",sync);const watch=new MutationObserver(sync);watch.observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  return()=>{window.removeEventListener("grainpad:theme",sync);watch.disconnect();};
+ },[post]);
  useEffect(()=>{
   const onMessage=(e:MessageEvent)=>{
    if(e.origin!==window.location.origin||e.source!==frame.current?.contentWindow||e.data?.grainpet!==1)return;
@@ -53,5 +63,5 @@ export function GrainpetEntry(){
  },[post,phase,note,search]);
  useEffect(()=>{if(!active)post({type:"gate",phase,note});},[active,phase,note,post]);
  const src=active?`${ROOM}${search}`:`${ROOM}?gate=1`;
- return <div className="grainpet-stage"><iframe key={active??"gate"} ref={frame} className="grainpet-frame" title="grainpet" src={src} allow="clipboard-write; fullscreen"/></div>;
+ return <div ref={stage} className="grainpet-stage" style={fit?{height:fit}:undefined}><iframe key={active??"gate"} ref={frame} className="grainpet-frame" title="grainpet" src={src} allow="clipboard-write; fullscreen"/></div>;
 }

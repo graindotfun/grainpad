@@ -4,8 +4,10 @@
   --page:#f4ecdf;--card:#e9dac6;--text:#1a1714;--soft:#5d5246;--btn:#1a1714;--btnText:#f4ecdf;
 }
 @media (prefers-color-scheme:dark){
-  :root{--page:#1a1714;--text:#f4ecdf;--soft:#b9ab99;--btn:#f4ecdf;--btnText:#1a1714}
+  :root:not([data-theme]){--page:#1a1714;--text:#f4ecdf;--soft:#b9ab99;--btn:#f4ecdf;--btnText:#1a1714}
 }
+/* framed by /pet the room takes the site's own theme (data-theme), not the system's */
+:root[data-theme=dark]{--page:#1a1714;--text:#f4ecdf;--soft:#b9ab99;--btn:#f4ecdf;--btnText:#1a1714}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--page);color:var(--text);font-family:"Albert Sans",system-ui,sans-serif;font-weight:600}
 body{min-height:100dvh;display:flex;justify-content:center}
@@ -235,7 +237,8 @@ body.fs .top .fs{display:grid}
 
 /* header: one calm family. soft cream pills and circles, no black blocks */
 :root{--soft-fill:#e6d7c0}
-@media (prefers-color-scheme:dark){:root{--soft-fill:#2c2722}}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--soft-fill:#2c2722}}
+:root[data-theme=dark]{--soft-fill:#2c2722}
 .top{align-items:center;gap:8px}
 .pill{border:0;border-radius:999px;height:36px;padding:0 14px;background:var(--soft-fill);color:var(--text);font:700 14px "Albert Sans",sans-serif;letter-spacing:-.02em;cursor:pointer;max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pill:active,.rb:active{transform:scale(.95)}
@@ -318,3 +321,10 @@ dialog #okName,dialog #pinIdea,dialog #shareBtn,dialog #saveCard,dialog #cpCode,
 .savenote{position:absolute;right:12px;bottom:12px;margin:0;padding:5px 11px;border-radius:999px;background:rgba(244,236,223,.92);font-size:12.5px;font-weight:700;color:#5d5246;letter-spacing:-.01em;pointer-events:none;z-index:3}
 .savenote[hidden]{display:none}
 .frozen .stage,.frozen #side{pointer-events:none;opacity:.7}
+
+/* dialogs always fit the frame: they scroll inside instead of running off the bottom */
+dialog{max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
+#dShare{width:min(460px,calc(100vw - 32px))}
+#cardImg{width:auto;max-width:100%;max-height:calc(100dvh - 350px);min-height:140px;align-self:center;object-fit:contain}
+dialog input:focus,dialog textarea:focus{outline:none;border-color:var(--orange)}
+dialog button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}

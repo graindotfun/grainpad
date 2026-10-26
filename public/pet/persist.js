@@ -10,7 +10,7 @@ const QS = new URLSearchParams(location.search), DEV = QS.has('review'), GATE = 
 const LEGACY = 'grainpet.v1', API = '/api/grainpet';
 const mode = GATE ? 'gate' : DEV ? 'local' : FRAMED ? 'wallet' : 'redirect';
 const never = () => new Promise(() => {});
-let identity = null, cacheKey = '', rev = 0, latest = null, lastPushed = '', lastDigest = '', lastPushAt = 0, inflight = null, timer = null, failures = 0, status = 'idle', halted = false;
+let identity = null, cacheKey = '', rev = 0, latest = null, lastPushed = '', lastDigest = '', modAt = 0, seenDigest = '', lastPushAt = 0, inflight = null, timer = null, failures = 0, status = 'idle', halted = false;
 const statusFns = [], adoptFns = [];
 let gateFn = null, flushFn = null, initFn = null;
 const toParent = m => { try { parent.postMessage({ grainpet: 1, ...m }, location.origin); } catch {} };
@@ -24,6 +24,7 @@ function listen() {
   addEventListener('message', async e => {
     if (e.origin !== location.origin || e.source !== parent || !e.data || e.data.grainpet !== 1) return;
     const d = e.data;
+    if (d.theme === 'dark' || d.theme === 'light') document.documentElement.dataset.theme = d.theme;   /* the site's theme, sent with every message from /pet */
     if (d.type === 'init' && typeof d.identity === 'string') { if (initFn) initFn(d); }
     else if (d.type === 'gate' && gateFn) gateFn(d);
     else if (d.type === 'flush') { try { if (flushFn) flushFn(); await flush(); } finally { toParent({ type: 'flushed', id: d.id }); } }
@@ -64,31 +65,38 @@ async function start() {
   }
   rev = server.revision;
   let state = server.state;
-  if (cache) {
-    if (server.revision === 0 || (cache.dirty && (cache.state.seen || 0) >= ((server.state && server.state.seen) || 0))) state = cache.state;
+  if (cache) {   /* the cache wins over the server only when this browser changed something the server has not seen: judged by when something meaningful changed, never by the idle clock that every open tab keeps ticking */
+    if (server.revision === 0 || (cache.dirty && (digest(cache.state) === digest(server.state) || (cache.modAt || 0) > (server.updatedAt || 0)))) { state = cache.state; modAt = cache.modAt || 0; }
   }
   lastPushed = server.state ? JSON.stringify(server.state) : ''; lastDigest = server.state ? digest(server.state) : '';
-  latest = state;
-  writeCache({ rev, dirty: !!state && JSON.stringify(state) !== lastPushed, state });
+  latest = state; seenDigest = state ? digest(state) : '';
+  writeCache({ rev, dirty: !!state && JSON.stringify(state) !== lastPushed, state, modAt });
   if (state && JSON.stringify(state) !== lastPushed) schedule(true);
   return { state };
 }
+/* modAt = the last time a person touched this room. A tab that only sat there ticking its clock never counts as a change, so it can never overwrite what another tab or device saved. */
+for (const ev of ['pointerdown', 'keydown', 'touchstart']) addEventListener(ev, () => { if (mode === 'wallet') modAt = Date.now(); }, { capture: true, passive: true });
 let gateSeen = false;
 const gateOn = fn => { gateFn = d => { gateSeen = true; fn(d); }; };
 function save(state) {
   const json = JSON.stringify(state);
   if (mode === 'local') { try { localStorage.setItem(LEGACY, json); } catch {} return; }
   if (mode !== 'wallet' || !identity || halted) return;
-  latest = state; writeCache({ rev, dirty: json !== lastPushed, state });
+  latest = state;
+  writeCache({ rev, dirty: json !== lastPushed, state, modAt });
   if (json !== lastPushed) schedule(digest(state) !== lastDigest);
 }
+let timerAt = 0;
 function schedule(now) {
-  if (timer || halted) return;
-  timer = setTimeout(() => { timer = null; push(); }, now ? 2500 : Math.max(2500, 300000 - (Date.now() - lastPushAt)));
+  if (halted) return;
+  const due = Date.now() + (now ? 2500 : Math.max(2500, 300000 - (Date.now() - lastPushAt)));
+  if (timer && timerAt <= due) return;   /* a meaningful change must never wait behind the slow timer that idle drift set */
+  clearTimeout(timer); timerAt = due; timer = setTimeout(() => { timer = null; push(); }, due - Date.now());
 }
 function scheduleRetry() {
   if (timer || halted) return;
-  timer = setTimeout(() => { timer = null; push(); }, Math.min(60000, 4000 * 3 ** Math.max(0, failures - 1)));
+  const wait = Math.min(60000, 4000 * 3 ** Math.max(0, failures - 1)); timerAt = Date.now() + wait;
+  timer = setTimeout(() => { timer = null; push(); }, wait);
 }
 function push(opts) {
   const keepalive = !!(opts && opts.keepalive);
@@ -104,12 +112,12 @@ function push(opts) {
       if (r.status === 200) {
         const j = await r.json(); rev = j.revision; lastPushed = sentJson; lastDigest = digest(sent); lastPushAt = Date.now(); failures = 0;
         const more = latest && JSON.stringify(latest) !== lastPushed;
-        writeCache({ rev, dirty: !!more, state: latest || sent }); setStatus(more ? 'saving' : 'idle'); if (more) schedule(digest(latest) !== lastDigest);
+        writeCache({ rev, dirty: !!more, state: latest || sent, modAt }); setStatus(more ? 'saving' : 'idle'); if (more) schedule(digest(latest) !== lastDigest);
       } else if (r.status === 409) {
         const j = await r.json(), theirs = j.state, same = theirs && JSON.stringify(theirs) === sentJson;
-        if (same) { rev = j.revision; lastPushed = sentJson; lastDigest = digest(sent); writeCache({ rev, dirty: false, state: sent }); setStatus('idle'); }
-        else if (!theirs || (sent.seen || 0) >= (theirs.seen || 0)) { rev = j.revision; failures = 0; setTimeout(push, 0); }   /* this device is the newer one: keep it on top of the other device's revision */
-        else { halted = true; writeCache({ rev: j.revision, dirty: false, state: theirs }); for (const f of adoptFns) f(); }   /* the other device is newer: adopt it */
+        if (same || (theirs && digest(theirs) === digest(sent))) { rev = j.revision; lastPushed = sentJson; lastDigest = digest(sent); writeCache({ rev, dirty: false, state: sent, modAt }); setStatus('idle'); }   /* same grain, only the idle clock differs */
+        else if (!theirs || modAt > (j.updatedAt || 0)) { rev = j.revision; failures = 0; setTimeout(push, 0); }   /* this device changed something after the other save: keep it on top of the other device's revision */
+        else { halted = true; writeCache({ rev: j.revision, dirty: false, state: theirs, modAt: 0 }); for (const f of adoptFns) f(); }   /* the other device changed something later: adopt it */
       } else if (r.status === 401) { toParent({ type: 'error', code: 'signin' }); setStatus('local'); }
       else if (r.status === 400) { setStatus('local'); }   /* the server refused this save for good; the local copy stays */
       else throw Error('http ' + r.status);
