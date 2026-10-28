@@ -433,7 +433,7 @@
     },
     {
       "path": "app/robots.txt/route.ts",
-      "sha256": "7823627ae7c22f395b4901d4c33487f6315bc50cac2c0c24bd3fe4ab7f8d5d33"
+      "sha256": "d781679c156397e60d8e7118eaa71f6424e95ed09f1900ea0cea6ad4b36a9d6f"
     },
     {
       "path": "app/rooms/layout.tsx",
@@ -3202,6 +3202,10 @@
     {
       "path": "tests/robinhood-wallet.test.mjs",
       "sha256": "394087f461c931fd252f9a75096bd29aa8bd488dde61e6e95157bd904f9d5a64"
+    },
+    {
+      "path": "tests/robots.test.mjs",
+      "sha256": "cb7d22a9ed21d0cc6f81240a9da36db7a63ddaaa8f556a6e9063b20929035e58"
     },
     {
       "path": "tests/room-funding.test.mjs",
