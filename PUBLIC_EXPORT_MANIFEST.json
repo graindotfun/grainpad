@@ -2125,7 +2125,7 @@
     },
     {
       "path": "lib/rewards-card-options.mjs",
-      "sha256": "47a0e56f473f801608e8a6c1fd93037ea1e1903f84c7ecb94287bbf522f54ba1"
+      "sha256": "793eb61e831ab4724ebd51caa48726828cfcb5f5133a6d23bc3b040d6a6aa298"
     },
     {
       "path": "lib/rewards-cost-policy.mjs",
