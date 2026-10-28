@@ -2721,7 +2721,7 @@
     },
     {
       "path": "scripts/restore-client-assets-compatibility.mjs",
-      "sha256": "5a32f3931a6da17ad64475d1c1ba59bcbffd57c34b87b4b211283ba6764d91c2"
+      "sha256": "ad94b5e0ad9c208843f7079ac6d02e2f8c6baa94e2f90c4bd603d82c71dd4843"
     },
     {
       "path": "scripts/rpc-config.mjs",
