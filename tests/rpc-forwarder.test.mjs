@@ -97,3 +97,17 @@ test('archive recovery cannot opt financial, nonfinalized or other network reads
  ['mainnet-beta',{...body('getTransaction'),params:['synthetic',{commitment:'finalized'}]},{submissionValidation:true}]
  ]){const f=fixture();assert((await createRpcForwarder(f.options)(network,query,{...options,archival:true})).error);assert.equal(f.calls.length,0);}
 });
+
+for(const wait of ['budget','lease'])test(`dispatch authority is checked after ${wait} wait and denied transport releases lease`,async()=>{
+ const f=fixture();let revoked=false,released=0,admissions=0;
+ f.options.reserve=async()=>{if(wait==='budget')revoked=true;return true;};
+ f.options.acquire=async()=>{if(wait==='lease')revoked=true;return async()=>{released++;};};
+ const response=await createRpcForwarder(f.options)('mainnet-beta',body('sendTransaction'),{primaryOnly:true,submissionValidation:true,beforeDispatch:async()=>{admissions++;assert.equal(revoked,true);throw Error('revoked');}});
+ assert(response.error);assert.equal(admissions,1);assert.equal(released,1);assert.equal(f.calls.length,0);
+});
+test('dispatch authority completion rechecks synchronous cancellation before fetch',async()=>{
+ const f=fixture();let current=true,released=0;
+ f.options.acquire=async()=>async()=>{released++;};
+ const response=await createRpcForwarder(f.options)('mainnet-beta',body('sendTransaction'),{primaryOnly:true,submissionValidation:true,assertCurrent:()=>{if(!current)throw Error('cancelled');},beforeDispatch:async()=>{current=false;}});
+ assert(response.error);assert.equal(released,1);assert.equal(f.calls.length,0);
+});
