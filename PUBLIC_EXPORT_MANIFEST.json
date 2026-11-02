@@ -1885,11 +1885,11 @@
     },
     {
       "path": "lib/official-launch-policy.mjs",
-      "sha256": "5891abc6643befe6d6815ca8595075ccd568498abd3651b89f40460fdd1c500b"
+      "sha256": "74b4addd0667423418c8fc3201fd4d1e1b530d715d04d926795cc9e61cfeaa15"
     },
     {
       "path": "lib/official-launch-readiness.mjs",
-      "sha256": "d0629d596d2567d5af8bf973f6efbbdec7be82e73dfce5b24f2a39ab23eede9e"
+      "sha256": "f3b33636ec33b1d50c5e21ef4ae114b62aa5962faac0986aea7678f5ec0573cd"
     },
     {
       "path": "lib/official-launch-reservation.mjs",
@@ -1973,7 +1973,7 @@
     },
     {
       "path": "lib/platform-settings.mjs",
-      "sha256": "7a361bcd77d4b1fac24fc6a06ddc9a8af7f59facdcab7103a163ceaca58a5323"
+      "sha256": "e19b1773269150fce9c6bdd70a4e1c5cf546c5b7cbffbf42b2489e00a3fe1161"
     },
     {
       "path": "lib/platform-setup.mjs",
@@ -2165,7 +2165,7 @@
     },
     {
       "path": "lib/rewards-policy.mjs",
-      "sha256": "0db4b599c77d8850d2ad4c33797b5b6f7d62139caae439b0ba847c5c1a8fa2aa"
+      "sha256": "107ad59dabc62aafb690523897fb128611dd46423c62d580fb6c4a07014d2216"
     },
     {
       "path": "lib/rewards-setup-review.mjs",
