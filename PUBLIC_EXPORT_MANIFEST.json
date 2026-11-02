@@ -2733,7 +2733,7 @@
     },
     {
       "path": "scripts/restore-client-assets-compatibility.mjs",
-      "sha256": "ad94b5e0ad9c208843f7079ac6d02e2f8c6baa94e2f90c4bd603d82c71dd4843"
+      "sha256": "20ec1019827c1710697da9b5e8164b71491b9f90f284431cf9879bd0cc021900"
     },
     {
       "path": "scripts/rpc-config.mjs",
