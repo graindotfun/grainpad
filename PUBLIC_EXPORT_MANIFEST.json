@@ -353,7 +353,7 @@
     },
     {
       "path": "app/layout.tsx",
-      "sha256": "f518f970bf8b64057ae1a7310e82b85cd5a457d588d2d5c48ae77bf27d648236"
+      "sha256": "e0481f3ed1e4d96515314f9a8acab83c3d14a3cc5c01b43b0a8db8efcb31b903"
     },
     {
       "path": "app/marketing-refinements.css",
@@ -2618,6 +2618,10 @@
     {
       "path": "public/brand/grainpad-logo-horizontal-core.svg",
       "sha256": "b9dc1750795fcd9e06ba2c58e9a5c37ff222f9b13b28fd8cab28789c8f2bce6a"
+    },
+    {
+      "path": "public/brand/grainpad-social-ideas-20261103.jpeg",
+      "sha256": "82155441900552350a1bed8c4b6805d7c56233e51cde48cb608f9aa2cb507788"
     },
     {
       "path": "public/brand/grainpad-social-minute-two-20261010.jpeg",
