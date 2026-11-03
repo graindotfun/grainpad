@@ -261,7 +261,7 @@
     },
     {
       "path": "app/docs/page.tsx",
-      "sha256": "39d26bf4f5d52ac166ac66c7dbe8adc87055bc880b7fdbb912e9601294c05ee3"
+      "sha256": "92a806b22de6c203109117853af0e1cf10ff0312a48b2b9fd7db1f48602a7179"
     },
     {
       "path": "app/fees/layout.tsx",
@@ -585,7 +585,7 @@
     },
     {
       "path": "components/graduation-coverage.tsx",
-      "sha256": "786d03c83132fcd7e3a6633cb8c5560ee500a29d93bf06f5497d80e642319d75"
+      "sha256": "2866b21ec58f1b922bd631c8584e8ae33316e9180e1d1610aa2433aeb9fc6be0"
     },
     {
       "path": "components/graduation-info.tsx",
@@ -1529,7 +1529,7 @@
     },
     {
       "path": "lib/docs-config.ts",
-      "sha256": "9908c368b5356b8177ab951aef4c112f782e3f53323f32165456824865a0891b"
+      "sha256": "fdbecad7d49849cc1ea99c7103da983c0fb3b1d6aefa7aac86d46e403841c3b2"
     },
     {
       "path": "lib/economics-breakdown.mjs",
@@ -2061,7 +2061,7 @@
     },
     {
       "path": "lib/quote-assets.mjs",
-      "sha256": "936cb5307c0d1796d882d42e78ce6749780ec56e6efdd2b4a332b32737837880"
+      "sha256": "e1352482ffa59a64ca535848687b380f19e6d27de90127371fb54e1d08f3171a"
     },
     {
       "path": "lib/quote-freshness.mjs",
@@ -2818,6 +2818,10 @@
     {
       "path": "tests/discovery-refresh.test.mjs",
       "sha256": "4e9c8408a55a93505c184f1bb317ae2238fd50c01a6774be4bdd42f861d1fb7b"
+    },
+    {
+      "path": "tests/docs-claims.test.mjs",
+      "sha256": "9c124b70dcde80ac6fe21ff817256c796d7b6cb6d9ec5e553dc7fccf02bfb601"
     },
     {
       "path": "tests/evm-network-contracts.test.mjs",
