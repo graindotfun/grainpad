@@ -189,7 +189,7 @@
     },
     {
       "path": "app/api/site-overview/route.ts",
-      "sha256": "b640e2f42e5ff5a4c216a708a45e68d6d8d95c919e539f7b6c8d674030d521ae"
+      "sha256": "b69113976a93b57bf95eb21529a488c67725d3f1e332e35098cc060ad3b3071b"
     },
     {
       "path": "app/api/sol-acceptance/route.ts",
@@ -277,7 +277,7 @@
     },
     {
       "path": "app/globals.css",
-      "sha256": "f0b34d8d59c4631f26bc3c041885de1e596e95fd780506cec1ee7925379ac0ed"
+      "sha256": "de28148a854c22a8540f1671503bd6c43a9744edb23fede041f0e4711ac8983f"
     },
     {
       "path": "app/grain-system.css",
@@ -289,7 +289,7 @@
     },
     {
       "path": "app/grains.css",
-      "sha256": "0392fffcb2ca28ffab2712b19c94ccff6a37c6552e3e28ce04ab1f3c4be7aa86"
+      "sha256": "41d3bdda007043e706d43af2dfdeaab73db6acadc853a22490e1846d4ee90ab2"
     },
     {
       "path": "app/lab/layout.tsx",
@@ -382,6 +382,10 @@
     {
       "path": "app/not-found.tsx",
       "sha256": "048a9cbcfb206eb2813e043ba65d044bdc8975184187ac530ce865dd577cc344"
+    },
+    {
+      "path": "app/official/page.tsx",
+      "sha256": "90138a13b0586e7683bef2d2a29b5885c75bb876fe540bbce35451b847ff8eb5"
     },
     {
       "path": "app/page.tsx",
@@ -565,7 +569,7 @@
     },
     {
       "path": "components/docs-content.tsx",
-      "sha256": "b2db1bbd704b943cfcff80ef5d202f929514c6f718e60a458050e11cb3b9e426"
+      "sha256": "813f62bed91967bdc23c541eca1dab9cd98ac4ee6a0d0bb9ee8156269a8ae7f2"
     },
     {
       "path": "components/economics-breakdown.tsx",
@@ -736,6 +740,10 @@
       "sha256": "0444ef8a83bcc5d5fb50b590b229620f209fdbf56ca4ed159c3891f42f46bebb"
     },
     {
+      "path": "components/public-receipt.tsx",
+      "sha256": "bb731387c9d0e26a35283cc1c11b6c726f7855b38165695c38a4a458baefa247"
+    },
+    {
       "path": "components/reality-check.tsx",
       "sha256": "09c5fd547afc84683153c1026d646aa3b97743d64a42e79c80f5da7afca9872c"
     },
@@ -793,15 +801,15 @@
     },
     {
       "path": "components/site-footer.tsx",
-      "sha256": "3dbc999aa6a74b45c967c483726f2d40f09e86a5bc8b7f34093ac1729745a929"
+      "sha256": "6ef2f926956f17001d864c562b0e1c21146d7c2372e8f046219ad6f7cb015edf"
     },
     {
       "path": "components/site-header.tsx",
-      "sha256": "b1e3273f049cb2920196332b0be439b94f2916d4b3746dd68c57d72f63c4f27e"
+      "sha256": "aafebde42873d45f649d535ed66874d89b7595eaaef59c8d9ec5e566371eb93f"
     },
     {
       "path": "components/site-overview.tsx",
-      "sha256": "04cae17479cf18d62ddbf4fc75f8239e5eb20be4b6f7e56b74ac47445e470435"
+      "sha256": "c34baac53ffb1278e55e065f9a578ce968f734dd062aa7da285c428ffc2bd093"
     },
     {
       "path": "components/site-wallet.tsx",
@@ -814,6 +822,10 @@
     {
       "path": "components/token-discovery.tsx",
       "sha256": "1c977985338db54df6e114b3b59fcf7b3afae47105a7f4c52a630b677ad68df9"
+    },
+    {
+      "path": "components/token-header.tsx",
+      "sha256": "2b96180f41bcb1aa2e4c547153d2afeb779c2eafc8cfb38c7c2622973eaf0544"
     },
     {
       "path": "components/token-image.tsx",
@@ -909,7 +921,7 @@
     },
     {
       "path": "components/wallets-faq.tsx",
-      "sha256": "e70729db9b13d494bd43a86d20cf2c80c3869b604789518610b32a145e0c26c5"
+      "sha256": "8a3f12531e3dff731a693d2b218acf351ca7e7511bc9f071bacd4e3f4759ae7b"
     },
     {
       "path": "components/wxmr-wallet-note.tsx",
@@ -2569,7 +2581,7 @@
     },
     {
       "path": "middleware.ts",
-      "sha256": "a10d2b8f79969424e90465f908ca95f592b9c8800ec9204d755db19facd23fe5"
+      "sha256": "28d9dd3756c2e17f53bca0cef44062f23c31a88d6c80a8260a72c407d01ffd0f"
     },
     {
       "path": "next-env.d.ts",
@@ -2897,7 +2909,7 @@
     },
     {
       "path": "tests/homepage-server-render.test.mjs",
-      "sha256": "7e66b72cb094c2cdd62d96476d0cea0890202bd1bfe8de20962e8b646e80b2d2"
+      "sha256": "a9c7a56e32cec2ad8b77820bf5a7fc66324a226e1a4f2fdbcc235212f93a1f5d"
     },
     {
       "path": "tests/identity-amendment.test.mjs",
@@ -3393,7 +3405,7 @@
     },
     {
       "path": "tests/wxmr-wallet-help.test.mjs",
-      "sha256": "d249d3d614b9a526376c48832c1afc6efcb3c71e36ef21e9a213b35d8b820648"
+      "sha256": "8d23d88854b8f9c3c3e385058ba2c448bbaa30e2dcd92c3d896618de6f221792"
     },
     {
       "path": "tests/xmr-usd.test.mjs",
@@ -3429,7 +3441,7 @@
     },
     {
       "path": "worker.ts",
-      "sha256": "df13082b9542544f1ac930dbaeeb5c3dd80bf1e700aef5896cdea455a633101e"
+      "sha256": "1f47f17332ffb4ddf87323d8b643109a5eeaeec03cf7937821e10c84136c4448"
     },
     {
       "path": "wrangler.jsonc",

@@ -1033,3 +1033,8 @@ html[data-theme] .rh-launch-flow button.primary-action:hover{background:color-mi
 
 .gx.gx-token .token-swap .swap-trade-note>p{margin:0}
 .gx.gx-token .token-swap .swap-trade-note>p+p{margin-top:8px}
+
+
+.gx-home .site-stats .unit-toggle{display:inline-flex;gap:0;border:1px solid var(--gx-rule);border-radius:999px;overflow:hidden}
+.gx-home .site-stats .unit-toggle button{background:none;border:0;color:var(--gx-mute);font:400 11px var(--gx-mono);letter-spacing:.1em;padding:3px 10px;cursor:pointer}
+.gx-home .site-stats .unit-toggle button[aria-pressed="true"]{background:var(--gx-ink);color:var(--gx-card)}

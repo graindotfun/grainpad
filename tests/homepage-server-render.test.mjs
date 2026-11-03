@@ -4,7 +4,7 @@ import {build} from 'esbuild';
 import {renderToStaticMarkup} from 'react-dom/server';
 const token={mint:'server-listed-token',pool:'pool',name:'Server Listed Token',symbol:'SLT',createdAt:'2026-10-05T12:00:00Z',state:'unknown',lifecycle:'unavailable',quoteAsset:'wXMR',marketCapUsd:null,volume24h:null,change24h:null,progress:null,official:false};
 const discovery={tokens:[token],featured:[],total:7,filteredTotal:7,page:1,pages:1,pageSize:20,counts:{all:7,new:0,near:0,graduated:0,unknown:7},officialMint:null,updatedAt:1000,stale:false};
-const stats={launches:7,volume:396358.39,volumeTokens:1,volumeCoverage:'partial',burned:'1616893367599',checkedAt:'2026-10-05T12:00:00Z',stale:false,features:{pairedLaunches:false,onChainRules:false}};
+const stats={paid:{wxmrRaw:'5516122837193',decimals:12,payments:240,latestAt:'2026-10-25T15:03:00Z',usdPrice:600},launches:7,volume:396358.39,volumeTokens:1,volumeCoverage:'partial',burned:'1616893367599',burn:{source:'mint-supply',initialSupply:'1000000000000000',currentSupply:'998383106632401',decimals:6,slot:1,checkedAt:'2026-10-05T11:40:00Z',stale:true},launchesAwaiting:2,volumeIndexedThrough:'2026-10-05T11:55:00Z',checkedAt:'2026-10-05T12:00:00Z',stale:false,features:{pairedLaunches:false,onChainRules:false}};
 test('homepage HTML contains server-provided launch count, cards and exact burn before browser effects',async()=>{
  const outfile='.test-output/homepage-server-render.mjs';
  await build({entryPoints:['app/page.tsx'],outfile,bundle:true,packages:'external',platform:'node',format:'esm',jsx:'automatic',loader:{'.css':'empty'},logLevel:'silent',plugins:[{name:'server-render-boundaries',setup(b){
@@ -23,11 +23,11 @@ test('homepage HTML contains server-provided launch count, cards and exact burn 
  const {default:Page}=await import('../'+outfile);
  const html=renderToStaticMarkup(await Page());
  assert.match(html,/Server Listed Token/);
- assert.match(html,/7 launches/);
  assert.match(html,/1616893\.367599/);
  assert.match(html,/\$396\.3K/);
  assert.match(html,/title="\$396,358\.39"/);
  assert.match(html,/>1\.61M<\/dd>/);
- assert.match(html,/href="\/rewards#holder-receipts-title"/);
- assert.match(html,/partial coverage/);
+ assert.match(html,/Indexed on-chain trades through 11:55 UTC · 1 launch · some trades not yet indexed/);
+ assert.match(html,/1B created · 998\.38M remain on chain · as of 11:40 UTC/);
+ assert.match(html,/Last known data/,'A stale burn read is not presented as freshly verified.');
 });

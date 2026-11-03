@@ -48,7 +48,7 @@ test('FAQ uses live rates and current prospective 50/15/35 policy, and keeps act
  assert.match(html,/1.25%: 0.25% Raydium, 0.75% grainpad and 0.25% creator/);
  assert.match(html,/50% to eligible holders/);assert.match(html,/15% to the GRAIN/);assert.match(html,/35% to grainpad/);
  assert.match(html,/Public distribution is not active/);assert.match(html,/Not yet: public SOL/);
- assert.match(html,/No official GRAIN mint is registered yet/);assert.doesNotMatch(html,/Copy official GRAIN mint/);
+ assert.match(html,/official GRAIN mint is listed on the official addresses page/);assert.doesNotMatch(html,/Copy official GRAIN mint/);
 });
 test('FAQ never turns failed or stale reads into zero fees, active rewards or a substituted mint',()=>{
  for(const p of [null,{...platform,stale:true},{...platform,protocolRate:null}]){
