@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "a466663dc28c9fc397678decce39eac4e569c307",
+  "sourceCommit": "c338c37448569c6d7c9ec6c857ee69891cfe3c9d",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -569,7 +569,7 @@
     },
     {
       "path": "components/docs-content.tsx",
-      "sha256": "813f62bed91967bdc23c541eca1dab9cd98ac4ee6a0d0bb9ee8156269a8ae7f2"
+      "sha256": "f91048b846f2f3582ab0d66087f7190621dc659acb14f3a0071baa5922104da7"
     },
     {
       "path": "components/economics-breakdown.tsx",
@@ -1853,7 +1853,7 @@
     },
     {
       "path": "lib/monero-record-status.mjs",
-      "sha256": "2890f5531d5053a6ba65b97068c9aa0144791a36d84584403cec02428c4a204d"
+      "sha256": "6cbf8d7471cb87f159ff5b79e0a739c24c4452dc6a7da17f916e2a01c3d50c00"
     },
     {
       "path": "lib/monero-record.mjs",
@@ -1985,11 +1985,11 @@
     },
     {
       "path": "lib/platform-settings.mjs",
-      "sha256": "e19b1773269150fce9c6bdd70a4e1c5cf546c5b7cbffbf42b2489e00a3fe1161"
+      "sha256": "410dd84e91a10bfa6cf2753a269a4c3ecf1ada62b10bbc78cfe77b109b61ba08"
     },
     {
       "path": "lib/platform-setup.mjs",
-      "sha256": "f53eba7ee7fc5c14be6da023e295d35aea79be7e8b9a327507024a6ace1e6480"
+      "sha256": "151bbd1e57b098c53d15adcdcad20e0239ee420e80fbfaaac5f8cb9dbe99d487"
     },
     {
       "path": "lib/previous-official-mints.mjs",
@@ -2181,7 +2181,7 @@
     },
     {
       "path": "lib/rewards-setup-review.mjs",
-      "sha256": "702da11ad0bb8ab56b95ae8704415861b97ed13f0d7aa92dc02664e6ea8e9b48"
+      "sha256": "ccb31633580d677b83a134c2e6906df6b0fc47666caa3ba9467dc67c2531d644"
     },
     {
       "path": "lib/rewards-snapshot.mjs",
@@ -2749,7 +2749,7 @@
     },
     {
       "path": "scripts/restore-client-assets-compatibility.mjs",
-      "sha256": "20ec1019827c1710697da9b5e8164b71491b9f90f284431cf9879bd0cc021900"
+      "sha256": "41885bec0fcfb1c1700d01df1a915c9ba5555448dc1fed2ecb04e34bfce754de"
     },
     {
       "path": "scripts/rpc-config.mjs",
