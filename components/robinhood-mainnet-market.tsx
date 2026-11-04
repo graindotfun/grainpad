@@ -17,7 +17,6 @@ import {TradeFields} from './trade-fields';
 import {TradeWalletNotice} from './trade-wallet-notice';
 import {useSharedMainnetWallet} from './use-site-wallet';
 import {openSiteWallet} from '@/lib/site-wallet-session.mjs';
-import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from './ui/dialog';
 import {X} from "lucide-react";
 import {readWalletSubmission,journalWalletRequest,assertRecoveredSubmission} from "@/lib/wallet-submission-journal.mjs";
 
@@ -35,7 +34,9 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
   const [paymentAsset,setPaymentAsset]=useState<MainnetPaymentAsset>("USDG");
   const [side, setSide] = useState<"buy" | "sell">("buy"); const [amount, setAmount] = useState("");
   const [indicative,setIndicative]=useState<{key:string;status:string;quote:{output:bigint;outputDecimals:number;expiresAt:number}|null;error:string}>({key:'',status:'idle',quote:null,error:''});
-  const [plan, setPlan] = useState<MainnetPaymentPlan | null>(null); const [hash, setHash] = useState(""); const [status, setStatus] = useState("pending");
+  const [reviewOpen,setReviewOpen]=useState(false);const reviewElement=useRef<HTMLElement|null>(null);
+  const [plan, setPlan] = useState<MainnetPaymentPlan | null>(null);
+  useEffect(()=>{if(reviewOpen){reviewElement.current?.focus({preventScroll:true});reviewElement.current?.scrollIntoView({block:"nearest",behavior:"smooth"});}},[reviewOpen,plan]); const [hash, setHash] = useState(""); const [status, setStatus] = useState("pending");
   const [recovery, setRecovery] = useState(""); const [busy, setBusy] = useState(""); const working = useRef(false);
   const [notice,setNotice]=useState("");
   const [error, setError] = useState("");const [historyRevision,setHistoryRevision]=useState(0),[pending,setPending]=useState(false);const pendingHash=useRef("");const operationSession=useRef<MainnetWalletSession|null>(null);
@@ -44,10 +45,10 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
   const storageKey = (account: string) => "grainpad:4663:trade:" + record.tokenAddress + ":" + account;
   const walletRpc = (active: MainnetWalletSession): Rpc => (method, params) => active.provider.request({method, params});
   useSharedMainnetWallet(current,next=>{
-    setSession(next);setNotice("");setPlan(null);setMarket(null);setBalances(null);setHash("");setRecovery("");setStatus("pending");setPending(false);pendingHash.current="";
+    setSession(next);setNotice("");setReviewOpen(false);setPlan(null);setMarket(null);setBalances(null);setHash("");setRecovery("");setStatus("pending");setPending(false);pendingHash.current="";
     if(next)loadPending(next);
   });
-  useEffect(()=>{if(!working.current&&!pendingHash.current){setSide(preferredSide);setPlan(null);}},[preferredSide]);
+  useEffect(()=>{if(!working.current&&!pendingHash.current){setSide(preferredSide);setReviewOpen(false);setPlan(null);}},[preferredSide]);
   useEffect(()=>{if(!session)return;void Promise.resolve().then(()=>run("Reading wallet balances",()=>refresh(session),true));
   // The store supplies a stable session identity until an account/network event invalidates it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,8 +63,9 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
     if(typeof native!=="string"||!/^0x[0-9a-f]+$/i.test(native))throw Error("Wallet balance unavailable.");
     if (current.current !== active) return;
     setMarket(next); setBalances({...fees, poolPlatformWeth: values[0], poolCreatorWeth: values[1], poolPlatformToken: values[2], poolCreatorToken: values[3],native:BigInt(native),weth:scalar(weth),usdg:usdg===null?null:scalar(usdg),token:scalar(token)});
+    return next;
   }
-  async function run(label: string, job: () => Promise<void>,readOnly=false) {
+  async function run(label: string, job: () => Promise<unknown>,readOnly=false) {
     if(working.current)return;if(!readOnly&&pendingHash.current){setError("Check the pending transaction before starting another action.");return;}
     working.current=true;operationSession.current=current.current;onBusyChange?.(true);setBusy(label);setError("");
     try{await job();}catch(cause){setError(cause instanceof Error?cause.message:"Please retry.");}
@@ -100,7 +102,7 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
       const provider={request:async (args:Parameters<MainnetWalletSession["provider"]["request"]>[0])=>{
         if(args.method!=="eth_sendTransaction")return active.provider.request(args);
         if(current.current!==active||operationSession.current!==active)throw Error("Wallet changed. Review again.");
-        return journalWalletRequest({storage:localStorage,key:storageKey(active.account),transaction:tx,context:intent?{...intent,kind:tx.data.startsWith("0x095ea7b3")?"approval":"trade"}:null,request:()=>active.provider.request(args),onChange:(item:{hash:string|null}|null)=>{if(sameWallet(active)){showPending(active,item);setPlan(null);setStatus("pending");}notifyJournal(storageKey(active.account));}});
+        return journalWalletRequest({storage:localStorage,key:storageKey(active.account),transaction:tx,context:intent?{...intent,kind:tx.data.startsWith("0x095ea7b3")?"approval":"trade"}:null,request:()=>active.provider.request(args),onChange:(item:{hash:string|null}|null)=>{if(sameWallet(active)){showPending(active,item);setReviewOpen(false);setPlan(null);setStatus("pending");}notifyJournal(storageKey(active.account));}});
       }};
       await submitTransaction(provider,tx);
       // A→B→A is allowed to recover the hash, but never authorizes a stale send.
@@ -108,10 +110,11 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
       else throw Error("The previous wallet submitted a transaction. Reconnect that wallet to check its receipt.");
     });
   }
-  async function review(selection:TradeIntent={side,paymentAsset,amount}) {
+  async function review(selection:TradeIntent={side,paymentAsset,amount},freshMarket?:MainnetMarket) {
     const active = current.current; if (!active) throw new Error("Connect your mainnet wallet.");
     const intent=intentKey(selection);if(paymentIntent.current!==intent)throw Error("Amount or payment currency changed. Review again.");
-    const next = await readMainnetMarket(walletRpc(active), record);
+    setReviewOpen(true);setPlan(null);
+    const next = freshMarket??await readMainnetMarket(walletRpc(active), record);
     const proposal = await prepareMainnetPaymentTrade(walletRpc(active), next, active.account, selection.side, parseMainnetPaymentAmount(selection.amount,selection.paymentAsset,selection.side), 100,selection.paymentAsset);
     if(paymentIntent.current!==intent)throw Error("Amount or payment currency changed. Review again.");
     if (current.current !== active) throw new Error("Wallet changed. Review again.");
@@ -161,8 +164,8 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
     const selection=resume as TradeIntent|null;
     if(selection&&(!amount||paymentIntent.current===intentKey(selection))){
       setSide(selection.side);setPaymentAsset(selection.paymentAsset);setAmount(selection.amount);paymentIntent.current=intentKey(selection);
-      await refresh(active);
-      if(current.current===active&&paymentIntent.current===intentKey(selection))await review(selection);
+      const refreshed=await refresh(active);
+      if(current.current===active&&paymentIntent.current===intentKey(selection))await review(selection,refreshed);
     }else await refresh(active);
     setHistoryRevision(n=>n+1);onHistoryRefresh?.();
   }
@@ -204,17 +207,23 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
   const compact=(value:bigint,decimals=18)=>robinhoodDisplayUnits((value*10n**BigInt(18-decimals)).toString());
   const paymentIntent=useRef("");paymentIntent.current=paymentAsset+":"+side+":"+amount;
   const paymentBalance=balances?(paymentAsset==="ETH"?balances.native:balances.usdg):null;
-  const switchPayment=(asset:MainnetPaymentAsset)=>{if(working.current||pendingHash.current)return;setPaymentAsset(asset);setAmount("");setPlan(null);setNotice("");};
-  const switchSide=(direction:"buy"|"sell")=>{if(disabled||working.current||pendingHash.current)return;setSide(direction);setAmount("");setPlan(null);setNotice("");};
+  const switchPayment=(asset:MainnetPaymentAsset)=>{if(working.current||pendingHash.current)return;setPaymentAsset(asset);setAmount("");setReviewOpen(false);setPlan(null);setNotice("");};
+  const switchSide=(direction:"buy"|"sell")=>{if(disabled||working.current||pendingHash.current)return;setSide(direction);setAmount("");setReviewOpen(false);setPlan(null);setNotice("");};
   return <><section id={embedded?"robinhood-swap":undefined} tabIndex={embedded?-1:undefined} className={embedded?`panel corner-panel token-swap${sheetOpen?" is-open":""}`:"panel form-panel token-swap"} aria-label="Swap tokens on Robinhood Chain" role={sheetOpen?"dialog":undefined} aria-modal={sheetOpen||undefined}>
     <div className="corner-head"><span className="corner-label">Swap</span><span className="corner-label is-right">Robinhood Chain</span>{embedded&&<button className="sheet-close" aria-label="Close swap" onClick={onClose}><X size={18}/></button>}</div>
     <TradeWalletNotice network="robinhood"/>
     {!enabled?<p role="status">Mainnet launching is not yet available.</p>:<>
-      <TradeFields symbol={record.symbol} paymentSymbol={paymentAsset} side={side} setSide={switchSide} amount={amount} setAmount={value=>{setAmount(value);setPlan(null);setNotice("");}} inputId="rh-swap-amount" disabled={disabled} balanceLabel={balances?side==="sell"?`Balance: ${compact(balances.token)} ${record.symbol}`:paymentBalance===null?"USDG balance unavailable":`Balance: ${compact(paymentBalance,mainnetPaymentDecimals(paymentAsset))} ${paymentAsset}`:session?"Reading wallet balance…":"Connect to see your balance"} output={plan?compact(plan.output,plan.outputDecimals):estimateReady&&indicative.quote?compact(indicative.quote.output,indicative.quote.outputDecimals):"—"} outputHint={plan?"Estimated · final amounts in wallet":!session?"Connect your Robinhood Chain wallet to review a quote":!amount?"Enter an amount to see an estimate":!estimateCurrent||indicative.status==="loading"?"Updating estimate…":indicative.status==="ready"?"Estimated · trading and conversion fees included · network gas extra":indicative.error||"Estimate unavailable"} paymentOptions={<div className="swap-tabs" role="group" aria-label="Payment asset">{(["USDG","ETH"] as const).map(asset=><Button key={asset} aria-pressed={paymentAsset===asset} variant={paymentAsset===asset?"default":"outline"} disabled={disabled} onClick={()=>switchPayment(asset)}>{asset}</Button>)}</div>} onReverse={()=>switchSide(side==="buy"?"sell":"buy")}/>
+      <TradeFields symbol={record.symbol} paymentSymbol={paymentAsset} side={side} setSide={switchSide} amount={amount} setAmount={value=>{setAmount(value);setReviewOpen(false);setPlan(null);setNotice("");}} inputId="rh-swap-amount" disabled={disabled} balanceLabel={balances?side==="sell"?`Balance: ${compact(balances.token)} ${record.symbol}`:paymentBalance===null?"USDG balance unavailable":`Balance: ${compact(paymentBalance,mainnetPaymentDecimals(paymentAsset))} ${paymentAsset}`:session?"Reading wallet balance…":"Connect to see your balance"} output={plan?compact(plan.output,plan.outputDecimals):estimateReady&&indicative.quote?compact(indicative.quote.output,indicative.quote.outputDecimals):"—"} outputHint={plan?"Estimated · final amounts in wallet":!session?"Connect your Robinhood Chain wallet to review a quote":!amount?"Enter an amount to see an estimate":!estimateCurrent||indicative.status==="loading"?"Updating estimate…":indicative.status==="ready"?"Estimated · trading and conversion fees included · network gas extra":indicative.error||"Estimate unavailable"} paymentOptions={<div className="swap-tabs" role="group" aria-label="Payment asset">{(["USDG","ETH"] as const).map(asset=><Button key={asset} aria-pressed={paymentAsset===asset} variant={paymentAsset===asset?"default":"outline"} disabled={disabled} onClick={()=>switchPayment(asset)}>{asset}</Button>)}</div>} onReverse={()=>switchSide(side==="buy"?"sell":"buy")}/>
       <div className="small muted swap-trade-note"><p>Trading fee: 1%, included in the quote.</p><p>{feeExplanation}</p><p>Slippage: 1%. Network gas is paid in ETH. {paymentAsset==="ETH"?"ETH wrapping and unwrapping happen within the trade.":"USDG conversion fees are included in the estimate."}</p></div>
       {notice&&<p className="feedback" role="status">{notice}</p>}
       {pending&&<p className="small muted" role="status">{hash?"Confirmation is checked automatically. You can also check the receipt below.":"Do not repeat the request while its outcome is unknown."}</p>}
-      <Button className="primary-action" disabled={!!busy||pending||!!session&&(!market||!amount)} onClick={()=>session?void run("Preparing quote",()=>review()):openSiteWallet("robinhood")}>{busy||(pending?"Transaction pending…":!session?"Connect wallet":`${side==="buy"?"Buy":"Sell"} ${record.symbol}`)}</Button>
+      <Button className="primary-action" hidden={reviewOpen} disabled={!!busy||pending||!!session&&(!market||!amount)} onClick={()=>session?void run("Checking current price…",()=>review()):openSiteWallet("robinhood")}>{busy||(pending?"Transaction pending…":!session?"Connect wallet":`${side==="buy"?"Buy":"Sell"} ${record.symbol}`)}</Button>
+      <section ref={reviewElement} tabIndex={-1} className="swap-review" aria-label="Review trade" hidden={!reviewOpen} aria-busy={!!busy}>
+        <h3>Review {side} · {record.symbol}</h3><p className="small muted">Robinhood Chain · {paymentAsset} payment. Your wallet shows the exact transaction.</p>
+        {!plan&&<p role="status">{busy?"Checking the current price and wallet balance…":"Quote unavailable. Edit the amount or try again."}</p>}
+        {plan&&<><dl><div><dt>You pay</dt><dd>{amount} {side==="buy"?paymentAsset:record.symbol}</dd></div><div><dt>Estimated receive</dt><dd>{compact(plan.output,plan.outputDecimals)} {side==="buy"?record.symbol:paymentAsset}</dd></div><div><dt>Minimum receive</dt><dd>{compact(plan.minimum,plan.outputDecimals)} {side==="buy"?record.symbol:paymentAsset}</dd></div><div><dt>Trading fee</dt><dd>1% · included in the quote</dd></div><div><dt>Slippage</dt><dd>1%</dd></div></dl><p className="small muted">{feeExplanation}</p><p className="small muted">{plan.approval?"Step 1: approve only the entered amount. After confirmation, your inline trade review updates automatically; the trade needs a separate wallet confirmation.":"The quote expires after one minute. Network gas is separate."}</p><Button className="primary-action" disabled={disabled} onClick={()=>void run("Review in wallet",execute)}>{plan.approval?"Approve exact amount":`Confirm ${side} in wallet`}</Button></>}
+        <Button variant="outline" disabled={disabled} onClick={()=>{setReviewOpen(false);setPlan(null);}}>Cancel review</Button>
+      </section>
       {session&&!market&&!busy&&<Button variant="outline" onClick={()=>void run("Reading wallet balances",()=>refresh(),true)}>Retry balance read</Button>}
       {hash&&<div className="receipt" role="status"><p>{status==="success"?"Transaction confirmed. Review a fresh quote for the next action.":status==="reverted"?"Transaction reverted. No automatic retry.":"Checking an existing transaction does not submit it again."}</p><a href={ROBINHOOD_CHAIN_MAINNET.blockExplorerUrl+"/tx/"+hash} target="_blank" rel="noreferrer">View transaction ↗</a><Button variant="outline" disabled={!!busy||!session} onClick={()=>void run("Checking transaction",()=>check(),true)}>Check transaction</Button></div>}
       {session&&<details className="trade-recovery" open={pending&&!hash||undefined}><summary>Check a previous transaction</summary><label>Transaction hash<Input value={recovery} disabled={!!busy} onChange={event=>setRecovery(event.target.value)} placeholder="0x transaction hash"/></label><Button variant="outline" disabled={!!busy||!recovery} onClick={()=>void run("Checking earlier transaction",()=>check(recovery),true)}>Check receipt</Button><p className="small muted">This only checks a receipt. It never repeats a trade or payment.</p></details>}
@@ -231,6 +240,6 @@ export function RobinhoodMainnetMarket({record,embedded=false,sheetOpen=false,on
       {([true,false] as const).filter(creatorBucket=>session.account===(creatorBucket?market.creator:market.platform)).map(creatorBucket=><div key={String(creatorBucket)}><p>Claimable: {compact(creatorBucket?balances.poolCreatorWeth:balances.poolPlatformWeth)} WETH · {compact(creatorBucket?balances.poolCreatorToken:balances.poolPlatformToken)} {record.symbol}</p><p className="small muted">Claimable amounts exclude uncollected fees. Token fees remain token assets.</p><Button variant="outline" disabled={disabled||(creatorBucket?balances.poolCreatorWeth:balances.poolPlatformWeth)===0n} onClick={()=>void run("Claiming pool WETH",()=>poolClaim(market.quote,creatorBucket))}>Claim WETH</Button><Button variant="outline" disabled={disabled||(creatorBucket?balances.poolCreatorToken:balances.poolPlatformToken)===0n} onClick={()=>void run("Claiming pool tokens",()=>poolClaim(market.tokenAddress,creatorBucket))}>Claim token fees</Button></div>)}
     </div>}
   </details>}
-  <Dialog open={!!plan} onOpenChange={open=>{if(!open&&!busy)setPlan(null);}}><DialogContent className="trade-flow-dialog"><DialogHeader><DialogTitle>Review {side} · {record.symbol}</DialogTitle><DialogDescription>Robinhood Chain · {paymentAsset} payment. Your wallet shows the exact transaction.</DialogDescription></DialogHeader>{plan&&<><dl><div><dt>You pay</dt><dd>{amount} {side==="buy"?paymentAsset:record.symbol}</dd></div><div><dt>Estimated receive</dt><dd>{compact(plan.output,plan.outputDecimals)} {side==="buy"?record.symbol:paymentAsset}</dd></div><div><dt>Minimum receive</dt><dd>{compact(plan.minimum,plan.outputDecimals)} {side==="buy"?record.symbol:paymentAsset}</dd></div><div><dt>Trading fee</dt><dd>1% · included in the quote</dd></div><div><dt>Slippage</dt><dd>1%</dd></div></dl><p className="small muted">{feeExplanation}</p><p className="small muted">{plan.approval?"Step 1: approve only the entered amount. After confirmation, your trade review opens automatically; the trade needs a separate wallet confirmation.":"The quote expires after one minute. Network gas is separate."}</p><Button className="primary-action" disabled={disabled} onClick={()=>void run("Review in wallet",execute)}>{plan.approval?"Approve exact amount":`Confirm ${side} in wallet`}</Button></>}{error&&<p role="alert">{error}</p>}</DialogContent></Dialog>
+
   {!embedded&&<RobinhoodMainnetHistory record={record} enabled={enabled} refreshKey={historyRevision}/>}</>;
 }

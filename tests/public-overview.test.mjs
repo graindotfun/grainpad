@@ -53,3 +53,17 @@ test('homepage amounts stay compact without overstating exact receipts',()=>{
  assert.equal(compactReportedVolume(123.45),'$123.45');
  assert.equal(displayRecordedBurns('1616893367599'),'1616893.367599');
 });
+test('each figure ages from its own evidence time at display',async()=>{
+ const {ageOverview,BURN_TTL_MS,OVERVIEW_TTL_MS,BURN_MAX_STALE_MS,LIVE_COVERAGE_LAG_MS}=await import('../lib/public-overview.mjs');
+ const t=Date.UTC(2026,9,23,13,0),iso=ms=>new Date(ms).toISOString();
+ const data={burned:'130000000000000',burn:{checkedAt:iso(t),stale:false},volumeCoverage:'indexed',volumeIndexedThrough:iso(t)};
+ assert.equal(ageOverview(data,t+BURN_TTL_MS+OVERVIEW_TTL_MS),data,'Unchanged within limits, same object.');
+ const stale=ageOverview(data,t+BURN_TTL_MS+OVERVIEW_TTL_MS+1);
+ assert.deepEqual(stale.burn,{checkedAt:iso(t),stale:true});assert.equal(stale.burned,'130000000000000');
+ assert.deepEqual([ageOverview(data,t+BURN_MAX_STALE_MS+1).burned,ageOverview(data,t+BURN_MAX_STALE_MS+1).burn],[null,null]);
+ for(const broken of [{...data,burn:null},{...data,burn:{checkedAt:'not a time',stale:true}}])assert.equal(ageOverview(broken,t).burned,null,'A burn without a usable read time is withheld.');
+ assert.equal(ageOverview(data,t+LIVE_COVERAGE_LAG_MS).volumeCoverage,'indexed');
+ assert.equal(ageOverview(data,t+LIVE_COVERAGE_LAG_MS+1).volumeCoverage,'partial');
+ assert.equal(ageOverview({...data,volumeIndexedThrough:null},t).volumeCoverage,'partial');
+ assert.equal(ageOverview(null,t),null);
+});

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#e9dac6">
+<title>grainpet</title>
+<link rel="stylesheet" href="pet.css?v=1793044195">
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div class="brand" id="lockup" data-slot="lockup"><span class="wm">grainpet<i>.</i></span></div>
+    <button id="nameBtn" class="pill" type="button" aria-label="name"><span id="nameTxt">grain</span></button>
+    <button id="homeBtn" class="rb" type="button" aria-label="make it yours" title="make it yours"><svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><path d="M12 3.5l2.2 5 5.3.6-4 3.6 1.2 5.3L12 15.2 7.3 18l1.2-5.3-4-3.6 5.3-.6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><i id="homeDot" class="dotnew" hidden></i></button>
+    <button id="fsBtn" class="rb fs" type="button" aria-label="enter full screen" title="enter full screen"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button id="menuBtn" class="rb" type="button" aria-label="menu"><svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+  </header>
+
+  <section class="stage" id="stage">
+    <svg id="sc" viewBox="0 0 512 548" preserveAspectRatio="xMidYMax meet" role="img" aria-label="a small orange stone on a shelf" tabindex="0">
+      <g id="gBack"></g><g id="gChar"></g><g id="gFront"></g>
+    </svg>
+    <p id="say" class="say" aria-live="polite"></p>
+    <p id="saveNote" class="savenote" hidden aria-live="polite"></p>
+  </section>
+
+  <section id="gate" class="gatecard" hidden aria-live="polite">
+    <h2 id="gateH">your grain is waiting<i>.</i></h2>
+    <p id="gateP" class="gateline"></p>
+    <button id="gateBtn" type="button" class="gatebtn">connect wallet</button>
+    <p class="gatefoot">your wallet keeps your grain with you.</p>
+  </section>
+
+  <aside class="side" id="side">
+  <div class="drawers">
+  <nav class="drawer" id="actions" aria-label="things to do">
+    <button type="button" class="tb" data-a="feed" data-obj="plate" data-lbl="crumb"><span class="art"></span><span class="tl">crumb</span></button>
+    <button type="button" class="tb" data-a="play" data-obj="pebble" data-lbl="pebble"><span class="art"></span><span class="tl">pebble</span></button>
+    <button type="button" class="tb" data-a="rest" data-obj="bed" data-lbl="nap"><span class="art"></span><span class="tl">nap</span></button>
+  </nav>
+  <nav class="drawer food" id="tray" hidden aria-label="choose a crumb">
+    <button type="button" class="tb" data-f="0" data-obj="crumb0" data-lbl="mineral"><span class="art"></span><span class="tl">mineral</span></button>
+    <button type="button" class="tb" data-f="1" data-obj="crumb1" data-lbl="kernel"><span class="art"></span><span class="tl">kernel</span></button>
+    <button type="button" class="tb" data-f="2" data-obj="crumb2" data-lbl="flake"><span class="art"></span><span class="tl">flake</span></button>
+    <button type="button" class="tb back" data-a="trayClose" data-obj="back" data-lbl="back"><span class="art"></span><span class="tl">back</span></button>
+  </nav>
+  </div>
+
+  <p id="findPrompt" class="findprompt" hidden></p>
+  <section id="sheet" class="sheet" hidden aria-label="customise home"><div class="sheetTop"><b>home<i>.</i></b><span id="sheetHint" class="small"></span><button id="sheetClose" type="button">done</button></div><div id="sheetTabs" class="tabs"></div><div id="sheetGrid" class="grid"></div></section>
+    <nav class="quick" aria-label="home">
+      <button type="button" data-q="home"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3l2.4 5.2 5.6.7-4.1 3.9 1 5.6L12 15.6 7.1 18.4l1-5.6L4 8.9l5.6-.7z" fill="currentColor"/></svg><span>make it yours</span></button>
+      <button type="button" data-q="notes"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6zM9 8h6M9 12h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>grain notes</span></button>
+      <button type="button" data-q="ideas"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 4h14v11H12l-4 4v-4H5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>idea board</span></button>
+      <button type="button" data-q="history"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>little history</span></button>
+      <button type="button" data-q="share"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11M7.5 8.5L12 4l4.5 4.5M5 14v5h14v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>share card</span></button>
+    </nav>
+  </aside>
+</main>
+
+<dialog id="dMenu"><form method="dialog">
+  <h2>grainpet<i>.</i></h2>
+  <button type="button" id="mSound" data-m="sound">sound: on</button>
+  <button type="button" id="mCalm" data-m="calm">calm motion: off</button>
+  <button type="button" data-m="backup">back up or move device</button>
+  <button type="button" id="mReset" data-m="reset">start over</button>
+  <button type="button" data-m="about">about</button>
+  <button class="ghost" value="x">close</button>
+</form></dialog>
+
+<dialog id="dName"><form method="dialog" id="fName">
+  <h2>name plate<i>.</i></h2>
+  <p class="small">same grain, new name. nothing else changes.</p>
+  <input id="inName" maxlength="16" autocomplete="off" spellcheck="false">
+  <div class="row"><button class="ghost" value="x" type="submit" formnovalidate>cancel</button><button id="okName" type="button">save</button></div>
+  <div class="row"><button class="ghost" id="nmHist" type="button">little history</button><button class="ghost" id="nmShare" type="button">share card</button></div>
+</form></dialog>
+
+<dialog id="dIdeas"><form method="dialog">
+  <h2>idea board<i>.</i></h2>
+  <p class="small">pin what you want to build. it stays with your grain. when one is ready, take it to grainpad.</p>
+  <div class="row"><input id="ideaIn" maxlength="80" autocomplete="off" placeholder="an idea, in a few words"><button type="button" id="pinIdea">pin</button></div>
+  <ol id="ideaList" class="notes ideas"></ol>
+  <button class="ghost" value="x">close</button>
+</form></dialog>
+
+<dialog id="dXmr"><form method="dialog">
+  <h2>xmr chart<i>.</i></h2>
+  <div class="opts"><button type="button" class="opt sel" data-r="24h">24h</button><button type="button" class="opt" data-r="7d">7d</button></div>
+  <div id="xmrBig"></div>
+  <dl id="xmrStats" class="xmrStats"></dl>
+  <div class="row"><button type="button" id="xmrMove">move it</button><button class="ghost" type="button" id="xmrRemove">take it down</button><button class="ghost" value="x">close</button></div>
+</form></dialog>
+
+<dialog id="dInfo"><form method="dialog">
+  <h2 id="infoT"></h2>
+  <p id="infoB"></p>
+  <button class="ghost" value="x">close</button>
+</form></dialog>
+
+<dialog id="dGrainNotes"><form method="dialog">
+  <h2>grain notes<i>.</i></h2>
+  <p class="small">short notes from grain. read when useful.</p>
+  <div id="notesBody" class="notesbody"></div>
+  <button class="ghost" value="x" autofocus>close</button>
+</form></dialog>
+
+<dialog id="dNotes"><form method="dialog">
+  <h2>little history<i>.</i></h2>
+  <ol id="notes" class="notes"></ol>
+  <button class="ghost" value="x">close</button>
+</form></dialog>
+
+<dialog id="dBackup"><form method="dialog">
+  <h2>back up<i>.</i></h2>
+  <p class="small">your grain is saved to your wallet and follows you. this code is an extra copy you can keep. paste a code below to replace this grain with it.</p>
+  <textarea id="code" rows="4" spellcheck="false"></textarea>
+  <div class="row"><button type="button" id="cpCode">copy</button><button type="button" id="dlCode">save file</button></div>
+  <div class="row"><button type="button" id="upCode">restore from code</button><label class="fileBtn">from file<input type="file" id="fileCode" accept=".json,.txt,application/json,text/plain" hidden></label></div>
+  <p id="bkMsg" class="small" role="status"></p>
+  <button class="ghost" value="x">close</button>
+</form></dialog>
+
+<dialog id="dShare"><form method="dialog">
+  <h2>share card<i>.</i></h2>
+  <div id="cardKinds" class="opts"></div>
+  <img id="cardImg" alt="share card preview">
+  <div class="row"><button type="button" id="shareBtn">share</button><button type="button" id="saveCard">save image</button></div>
+  <button class="ghost" value="x">close</button>
+</form></dialog>
+
+<aside id="dev" class="dev" hidden>
+  <div class="devbar"><small id="devInfo"></small><button id="devToggle" type="button">tools</button></div>
+  <div id="devBtns" hidden>
+    <button data-d="away8">+8h</button>
+    <button data-d="away24">+24h</button>
+    <button data-d="away48">+48h</button>
+    <button data-d="away120">+5 days</button>
+    <button data-d="invite">ritual now</button>
+    <button data-d="pxup">px +</button>
+    <button data-d="pxdown">px -</button>
+    <button data-d="pxsame">px same</button>
+    <button data-d="pxbig">px +13</button>
+    <button data-d="pxlen">px 99/100</button>
+    <button data-d="reset">reset</button>
+    <button data-d="move">move test save to wallet</button>
+    <div id="devTypes"></div>
+  </div>
+</aside>
+
+<script src="price-source.js"></script>
+<script src="art/grain-core.js?v=1793044195"></script>
+<script src="art/grain-runtime.js?v=1793044195"></script>
+<script src="persist.js?v=1793044195"></script>
+<script src="pet.js?v=1793044195"></script>
+</body>
+</html>

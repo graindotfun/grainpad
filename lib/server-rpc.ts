@@ -24,3 +24,6 @@ export async function chartHistoryRead(method:string,params:unknown[]=[]) {
  if(data.error)throw new RpcReadFailure(data.diagnostic);
  return data.result;
 }
+
+// The scan scope supplies its dedicated endpoint and reserves only its own namespace.
+export {createIsolatedRpcRead as createFieldScanReadScope} from './rpc-forwarder.mjs';

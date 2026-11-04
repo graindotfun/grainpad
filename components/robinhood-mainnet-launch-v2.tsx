@@ -1,4 +1,5 @@
 "use client";
+import {startViewerPolling} from "@/lib/viewer-polling.mjs";
 import {previewContinuousCreatorBuy} from '@/lib/chain/v3-launch-preview.ts';
 /* eslint-disable @next/next/no-img-element -- Creator-selected data URLs are previewed without a proxy. */
 /**
@@ -106,8 +107,8 @@ export function RobinhoodMainnetLaunchV2() {
   }), []);
 
   /** Advance on the server by transaction hash. Idempotent; the server also advances launches on its own schedule. */
-  const poll = useCallback(async (transactionHash: string, launchId: string) => {
-    const response = await fetch("/api/robinhood/mainnet/v2/launch", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({transactionHash, launchId})});
+  const poll = useCallback(async (transactionHash: string, launchId: string,signal?:AbortSignal) => {
+    const response = await fetch("/api/robinhood/mainnet/v2/launch", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({transactionHash, launchId}),signal});
     const payload = await response.json() as ServerStatus & {error?: string};
     if (!response.ok) throw new Error(payload?.error ?? "Status unavailable. Retrying.");
     return payload as ServerStatus;
@@ -161,18 +162,19 @@ export function RobinhoodMainnetLaunchV2() {
 
   useEffect(() => {
     if (!entry || conflict || (!session && !entry.transactionHash)) return;
-    let active = true, timer: ReturnType<typeof setTimeout> | undefined;
+    let active = true;
     finished.current = false;
-    const tick = async () => {
+    let stop=()=>{};
+    stop=startViewerPolling(async(signal:AbortSignal)=>{
+      if(finished.current)return;
       try {
         const hash = entry.transactionHash ?? (session ? await resolveHash(session, entry) : null);
-        if (hash && active) { const next = await poll(hash, entry.launchId); if (active) { finished.current = next.progress?.stage === "trading_available"; setStatus(next); } }
-        else if (active) setStatus({token: null, facts: {moneroConfirmations: null}, authorizationExpired: false, note: null, progress: {stage: "submitted", status: "working", detail: "Wallet request outcome unknown. Checking the chain for this launch before anything can be repeated.", mayCreateAgain: false}});
-      } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : "Status unavailable. Retrying."); }
-      if (active && !finished.current) timer = setTimeout(() => void tick(), 6000);
-    };
-    void tick();
-    return () => { active = false; if (timer) clearTimeout(timer); };
+        if(!active||signal.aborted)return;
+        if (hash) { const next = await poll(hash, entry.launchId,signal); if (active&&!signal.aborted) { finished.current = next.progress?.stage === "trading_available"; setStatus(next);if(finished.current)stop(); } }
+        else setStatus({token: null, facts: {moneroConfirmations: null}, authorizationExpired: false, note: null, progress: {stage: "submitted", status: "working", detail: "Wallet request outcome unknown. Checking the chain for this launch before anything can be repeated.", mayCreateAgain: false}});
+      } catch (cause) { if (active&&!signal.aborted) setError(cause instanceof Error ? cause.message : "Status unavailable. Retrying."); }
+    },{intervalMs:30_000});
+    return () => { active = false; stop(); };
   }, [session, entry, conflict, resolveHash, poll]);
 
   async function run(label: string, job: () => Promise<void>) {

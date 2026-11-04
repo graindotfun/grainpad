@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {ArrowUpRight} from 'lucide-react';
 import {startViewerPolling} from '@/lib/viewer-polling.mjs';
 import {formatAmount,relativeTime,shortAddress} from '@/lib/price-format';
-import {tapeLedgerRows} from '@/lib/tape-ledger.mjs';
+import {tapeLedgerRows,tapeRowAmount} from '@/lib/tape-ledger.mjs';
 import {useQuotePrices} from '@/hooks/use-quote-prices';
 import {derivedSolWxmr} from '@/lib/reward-credit-illustration.mjs';
 /** `seq` is the event's position in the token's full indexed history. Integration point: the indexer does not
@@ -68,8 +68,7 @@ function Ledger({mint,symbol,feed}:Props&{feed:TapeState}){
   {!data&&!feed.error&&<p role="status" className="ledger-empty">Reading the ledger…</p>}
   {data&&(events.length?<div ref={scroller} className="ledger-scroll" tabIndex={0} aria-label="Indexed events, scroll for earlier records"><ol className="ledger" aria-label="Indexed events, newest first">{events.slice(0,shown).map(e=>{
    const side=e.kind==='buy'||e.kind==='sell'?e.kind:'event',time=e.blockTime?e.blockTime*1000:null;
-   const sym=e.quoteSymbol||data.quote,onChain=e.display?e.display.quote:e.quoteAmount&&e.quoteDecimals!==undefined?Number(e.quoteAmount)/10**e.quoteDecimals:null;
-   const inSol=onChain==null?null:sym==='SOL'?onChain:wxmrPerSol?onChain/wxmrPerSol:null;
+   const {symbol:sym,onChain,inSol}=tapeRowAmount(e,data.quote,wxmrPerSol);
    const quote=onChain==null?null:inSol!=null?`${sym==='SOL'?'':'≈ '}${formatAmount(inSol,3)} SOL`:`${formatAmount(onChain,3)} ${sym}`;
    const quoteTitle=onChain!=null&&sym!=='SOL'?`${formatAmount(onChain,4)} ${sym} on chain${inSol!=null?' · SOL at the current SOL/wXMR rate':''}`:undefined;
    const tokenCount=e.display?e.display.tokens:e.baseAmount&&e.baseDecimals!==undefined&&(e.kind==='buy'||e.kind==='sell')?Number(e.baseAmount)/10**e.baseDecimals:null;

@@ -1,6 +1,6 @@
 {
   "schema": "grainpad.public-source.v2",
-  "sourceCommit": "6ba688d3ae0240f25f7c20b7ef25be9b5180381d",
+  "sourceCommit": "a466663dc28c9fc397678decce39eac4e569c307",
   "releaseKind": "incremental-reviewed-source",
   "files": [
     {
@@ -52,12 +52,28 @@
       "sha256": "69abb9acd9c9c52e09f78c83cedd8e06d55d19eedbe8166b6406ddc3b58a59eb"
     },
     {
+      "path": "app/api/catalog/status/route.ts",
+      "sha256": "960ccaef0bc2d4adc5860a8e052a84807dcf64e41b6d03d94e9365d87ad64cb2"
+    },
+    {
       "path": "app/api/creator/[owner]/route.ts",
-      "sha256": "86a3e024526e8ac72936bd981b095709864bab7ab937be4818eb2c15c2a115e3"
+      "sha256": "c8326b0facb60cfd20c4b071de1d59e97a4e6cb9be7247043c77bb22550d31f2"
     },
     {
       "path": "app/api/discovery/route.ts",
       "sha256": "bb74ca78c4fc98951ec47bd474e2f7ed4e6d213237f6d4ccf3199b44e296cac8"
+    },
+    {
+      "path": "app/api/grainpet/challenge/route.ts",
+      "sha256": "76ff1d97e0d1b2ec7be247f3b8f732863e9866efe61b87b8756c260687dbf248"
+    },
+    {
+      "path": "app/api/grainpet/route.ts",
+      "sha256": "8a7ab40f827f7a66584a67c55f9aa293f6c035b0737c42144ba4594d8e815164"
+    },
+    {
+      "path": "app/api/grainpet/session/route.ts",
+      "sha256": "21dbe5a51f13a4873cf82a4dc42ec9f2240003e2109e956706affcd8bf6d346d"
     },
     {
       "path": "app/api/identity/fame/route.ts",
@@ -65,7 +81,7 @@
     },
     {
       "path": "app/api/identity/manifest/route.ts",
-      "sha256": "b9bf05cb3ec0401f9fe4d5a98599657109e20f5e1c7acabd75ca963e80ceadea"
+      "sha256": "5b7d4c408cadd6d1d5330a2bf0d540704c66ec23fce0421e4135aad6fa1e73dd"
     },
     {
       "path": "app/api/identity/resolve/route.ts",
@@ -106,6 +122,10 @@
     {
       "path": "app/api/identity/x/status/route.ts",
       "sha256": "472d8ed10d9cab8b6a367af12d0f6c20438bb9bbd7cb47a5ba7ed834413e3bce"
+    },
+    {
+      "path": "app/api/launch-image/route.ts",
+      "sha256": "688501432efc5245adfac6d9fe7a3c7d421f6e7603173b3a942fbfb1e1dd19f0"
     },
     {
       "path": "app/api/market/[mint]/history/route.ts",
@@ -169,7 +189,7 @@
     },
     {
       "path": "app/api/site-overview/route.ts",
-      "sha256": "b640e2f42e5ff5a4c216a708a45e68d6d8d95c919e539f7b6c8d674030d521ae"
+      "sha256": "b69113976a93b57bf95eb21529a488c67725d3f1e332e35098cc060ad3b3071b"
     },
     {
       "path": "app/api/sol-acceptance/route.ts",
@@ -193,7 +213,7 @@
     },
     {
       "path": "app/api/token-tape/route.ts",
-      "sha256": "dcc171658c6bc6d70227aed2f4f3ea13aa3764cd73430c1f9dfbba9bbbcf0f77"
+      "sha256": "6de5cc39bf288fefe27d555fc48099eb08abb2c0339c98f3a0a6d6a7076fb3e7"
     },
     {
       "path": "app/api/token/[mint]/launch-post/route.ts",
@@ -206,6 +226,10 @@
     {
       "path": "app/api/version/route.ts",
       "sha256": "f9edb86990b943782a90b2fa5c93a768689dd726a680eb541bfd3a40b5ac2ace"
+    },
+    {
+      "path": "app/api/xmr-price/route.ts",
+      "sha256": "02efb341a5be021b6e9ebde75dab11ce85e7fc4601e34b4d570436adc47ced82"
     },
     {
       "path": "app/authority/authority.css",
@@ -237,7 +261,7 @@
     },
     {
       "path": "app/docs/page.tsx",
-      "sha256": "7e864080d5b83580d00cc78760edcd2fbc2425a4ba382a11193ebfef1afc9fbc"
+      "sha256": "92a806b22de6c203109117853af0e1cf10ff0312a48b2b9fd7db1f48602a7179"
     },
     {
       "path": "app/fees/layout.tsx",
@@ -253,15 +277,19 @@
     },
     {
       "path": "app/globals.css",
-      "sha256": "f0b34d8d59c4631f26bc3c041885de1e596e95fd780506cec1ee7925379ac0ed"
+      "sha256": "de28148a854c22a8540f1671503bd6c43a9744edb23fede041f0e4711ac8983f"
     },
     {
       "path": "app/grain-system.css",
       "sha256": "b6d37a2d069faf675b8b5739113628a24e95b8f4856066119ef5f61b3abcf192"
     },
     {
+      "path": "app/grainpet/route.ts",
+      "sha256": "c0e910da2ae1f78d5a0b1e3672f26b4512d25ad06864ca3db3eeb022c218f48f"
+    },
+    {
       "path": "app/grains.css",
-      "sha256": "0392fffcb2ca28ffab2712b19c94ccff6a37c6552e3e28ce04ab1f3c4be7aa86"
+      "sha256": "41d3bdda007043e706d43af2dfdeaab73db6acadc853a22490e1846d4ee90ab2"
     },
     {
       "path": "app/lab/layout.tsx",
@@ -325,7 +353,7 @@
     },
     {
       "path": "app/layout.tsx",
-      "sha256": "f518f970bf8b64057ae1a7310e82b85cd5a457d588d2d5c48ae77bf27d648236"
+      "sha256": "e0481f3ed1e4d96515314f9a8acab83c3d14a3cc5c01b43b0a8db8efcb31b903"
     },
     {
       "path": "app/marketing-refinements.css",
@@ -356,8 +384,16 @@
       "sha256": "048a9cbcfb206eb2813e043ba65d044bdc8975184187ac530ce865dd577cc344"
     },
     {
+      "path": "app/official/page.tsx",
+      "sha256": "90138a13b0586e7683bef2d2a29b5885c75bb876fe540bbce35451b847ff8eb5"
+    },
+    {
       "path": "app/page.tsx",
       "sha256": "fca85c9a1c78a82c44e1456224a0fb50a0a3e494c58167361010a0d27ffeac5a"
+    },
+    {
+      "path": "app/pet/page.tsx",
+      "sha256": "5a9b42cb7c4f02c952d6fad552c998755dabfb20d63f973a937f91272414c61c"
     },
     {
       "path": "app/premium.css",
@@ -401,7 +437,7 @@
     },
     {
       "path": "app/robots.txt/route.ts",
-      "sha256": "7823627ae7c22f395b4901d4c33487f6315bc50cac2c0c24bd3fe4ab7f8d5d33"
+      "sha256": "d781679c156397e60d8e7118eaa71f6424e95ed09f1900ea0cea6ad4b36a9d6f"
     },
     {
       "path": "app/rooms/layout.tsx",
@@ -413,7 +449,7 @@
     },
     {
       "path": "app/sitemap.xml/route.ts",
-      "sha256": "3c5890b18d98a8f95898540f8e4524d047e80991ae79941e25728ae1a81e09df"
+      "sha256": "1bd357be427578c058645cd1010b504c7a914bbad91471cdee9da04d37372ff9"
     },
     {
       "path": "app/theme.css",
@@ -461,7 +497,7 @@
     },
     {
       "path": "app/wallet-ux.css",
-      "sha256": "d8e4e77808c7068f17cd18a9ccc2db8d65882177e497ba7a4122a14912e9503a"
+      "sha256": "d5dfe0aaa745838b945204ba4945ec762065a48c2cca7ad030f131e4ae0b02c3"
     },
     {
       "path": "cloudflare-env.d.ts",
@@ -482,6 +518,10 @@
     {
       "path": "components/canonical-identity-desk.tsx",
       "sha256": "8c4d6175516b475109c323b96a346eb530d1212df7d15279d3664e5475164a34"
+    },
+    {
+      "path": "components/catalog-listing-status.tsx",
+      "sha256": "51917f69bdbb839a2beef0de48559465a76dcc67e9c9384dfe32bf8f10e3c4e3"
     },
     {
       "path": "components/chain-context-chrome.tsx",
@@ -529,7 +569,7 @@
     },
     {
       "path": "components/docs-content.tsx",
-      "sha256": "b2db1bbd704b943cfcff80ef5d202f929514c6f718e60a458050e11cb3b9e426"
+      "sha256": "813f62bed91967bdc23c541eca1dab9cd98ac4ee6a0d0bb9ee8156269a8ae7f2"
     },
     {
       "path": "components/economics-breakdown.tsx",
@@ -549,7 +589,7 @@
     },
     {
       "path": "components/graduation-coverage.tsx",
-      "sha256": "786d03c83132fcd7e3a6633cb8c5560ee500a29d93bf06f5497d80e642319d75"
+      "sha256": "2866b21ec58f1b922bd631c8584e8ae33316e9180e1d1610aa2433aeb9fc6be0"
     },
     {
       "path": "components/graduation-info.tsx",
@@ -570,6 +610,10 @@
     {
       "path": "components/grain-ui.tsx",
       "sha256": "752a65f07cdf4d3fba322d7999166d333e21ef241af8335dc26761e612bcf60d"
+    },
+    {
+      "path": "components/grainpet-entry.tsx",
+      "sha256": "256fc5b1aaf8ba81858b21cb12b5f0ce8dfb9cf9488ee6ba29c687f0d0af1543"
     },
     {
       "path": "components/grains-chart.tsx",
@@ -602,6 +646,10 @@
     {
       "path": "components/launch-disclosure.tsx",
       "sha256": "5013a37eba1ddb7e163e920e2d3739b88f695e921f1fd3db60b47d1519ec87c3"
+    },
+    {
+      "path": "components/launch-image-proof.tsx",
+      "sha256": "90edf44a935e6eb0b9867a20651a58bbb3d0c45f7dd84d95a64d23b473df66a7"
     },
     {
       "path": "components/launch-network-chip.tsx",
@@ -645,7 +693,7 @@
     },
     {
       "path": "components/launch-workspace.tsx",
-      "sha256": "a0bb90e7f1828f76a0c0e7ce84e49456d0b53f49277bdb345ace2fdad44c77b3"
+      "sha256": "38cb1b8925b66fec4982715deaeffd55b18e995353896c10db65b0c4cde24e4e"
     },
     {
       "path": "components/live-market-chart.tsx",
@@ -669,7 +717,7 @@
     },
     {
       "path": "components/native-tape.tsx",
-      "sha256": "63e8ea727fe689bb4bb231fc12fc2f9f2ce96becbbedb0d875a424c72a7bdfcd"
+      "sha256": "fbc6afe4405ec5c9f41ed99b89a82d2863c95ec64b594c21aaaedad63b8b5285"
     },
     {
       "path": "components/open-in-wallet.tsx",
@@ -681,7 +729,7 @@
     },
     {
       "path": "components/price-tab.tsx",
-      "sha256": "3af6243a248a30f1934d1922154213b7784307ea7ca0ff2450c63ca2e0f4c67e"
+      "sha256": "47e5d3ef63ab80626def80b25a9d61350e135704cbc63c1aa43dfc079c26c60f"
     },
     {
       "path": "components/pro-chart.tsx",
@@ -689,7 +737,11 @@
     },
     {
       "path": "components/protected-launch-workspace.tsx",
-      "sha256": "537684d27977b2c43e95885ebb09798b33b617119ba6fa833cd57789b0b17774"
+      "sha256": "0444ef8a83bcc5d5fb50b590b229620f209fdbf56ca4ed159c3891f42f46bebb"
+    },
+    {
+      "path": "components/public-receipt.tsx",
+      "sha256": "bb731387c9d0e26a35283cc1c11b6c726f7855b38165695c38a4a458baefa247"
     },
     {
       "path": "components/reality-check.tsx",
@@ -721,11 +773,11 @@
     },
     {
       "path": "components/robinhood-mainnet-launch-v2.tsx",
-      "sha256": "9c99f7894dcd9a5e7f28b5d013cc076bed0dc5d6566ad2665c5b4a2ab4614064"
+      "sha256": "d4030483ebcb8a10e4c914062d6625e9b32c5f24ad6b507f9f9161ef860ae106"
     },
     {
       "path": "components/robinhood-mainnet-market.tsx",
-      "sha256": "321b74072e5a9b3751ee93b5526a8fefe5300444498ee8a204da8525806e5b7b"
+      "sha256": "cc8a49e4801163d92a99b2aa8bfdb7c5af9418b35b8c81f7563ff948e2c4af4b"
     },
     {
       "path": "components/robinhood-market-module.tsx",
@@ -749,19 +801,19 @@
     },
     {
       "path": "components/site-footer.tsx",
-      "sha256": "3dbc999aa6a74b45c967c483726f2d40f09e86a5bc8b7f34093ac1729745a929"
+      "sha256": "6ef2f926956f17001d864c562b0e1c21146d7c2372e8f046219ad6f7cb015edf"
     },
     {
       "path": "components/site-header.tsx",
-      "sha256": "b1e3273f049cb2920196332b0be439b94f2916d4b3746dd68c57d72f63c4f27e"
+      "sha256": "aafebde42873d45f649d535ed66874d89b7595eaaef59c8d9ec5e566371eb93f"
     },
     {
       "path": "components/site-overview.tsx",
-      "sha256": "04cae17479cf18d62ddbf4fc75f8239e5eb20be4b6f7e56b74ac47445e470435"
+      "sha256": "c34baac53ffb1278e55e065f9a578ce968f734dd062aa7da285c428ffc2bd093"
     },
     {
       "path": "components/site-wallet.tsx",
-      "sha256": "56f976a5a18dd8078174981d52861d85545553f2d85d98d5ff82455f7c70e719"
+      "sha256": "ee6bc4bb9564518d5b5fda9b3b1e36955ff744576fcd53a968150d008fe335ab"
     },
     {
       "path": "components/theme-toggle.tsx",
@@ -769,7 +821,11 @@
     },
     {
       "path": "components/token-discovery.tsx",
-      "sha256": "63ebc1baf509d3691961f71b98143a5ab4aa6a9c0a8495826132c02753d5037e"
+      "sha256": "1c977985338db54df6e114b3b59fcf7b3afae47105a7f4c52a630b677ad68df9"
+    },
+    {
+      "path": "components/token-header.tsx",
+      "sha256": "2b96180f41bcb1aa2e4c547153d2afeb779c2eafc8cfb38c7c2622973eaf0544"
     },
     {
       "path": "components/token-image.tsx",
@@ -865,7 +921,7 @@
     },
     {
       "path": "components/wallets-faq.tsx",
-      "sha256": "e70729db9b13d494bd43a86d20cf2c80c3869b604789518610b32a145e0c26c5"
+      "sha256": "8a3f12531e3dff731a693d2b218acf351ca7e7511bc9f071bacd4e3f4759ae7b"
     },
     {
       "path": "components/wxmr-wallet-note.tsx",
@@ -1044,6 +1100,10 @@
       "sha256": "2f4ee891f97e138038cc0297143a230cd76ced1011e760b0b55887bc7c45e137"
     },
     {
+      "path": "docs/LAUNCH_IMAGE_ARCHIVES.md",
+      "sha256": "27950e754926701a6265e9a5aea6cadad985556bbe4e8f61e9606a50fa9f5d80"
+    },
+    {
       "path": "docs/SOURCE_UPDATES.md",
       "sha256": "c2edfe5808732a684a083a82a3fa0b64c40e21a0469a2116af381c06e1dd6591"
     },
@@ -1136,12 +1196,16 @@
       "sha256": "52ad46fabf85c3a8edc3dcef27f48244f46050790545b2b9108aaa7f76d8df39"
     },
     {
+      "path": "lib/bounded-request-body.mjs",
+      "sha256": "16228875dce693313b9b060232c3934b3c4871f82026a4c9974e4e6d49c93a82"
+    },
+    {
       "path": "lib/brand-assets.ts",
       "sha256": "9318a517a3ffb586999710388444c26557850d62e9b6fc6bdbd5ae5f4494fb23"
     },
     {
       "path": "lib/brand-colors.mjs",
-      "sha256": "d0eda40c99eba6c41221b04ff4218a3262a2f8928db2eada613d16ed96144d8e"
+      "sha256": "f16f383926a7ae0697993c8a34088dd0ecf4794cff969fc0c3a7eba7c6d66947"
     },
     {
       "path": "lib/brand-presentation.ts",
@@ -1164,12 +1228,24 @@
       "sha256": "e394537d91579f517438658ffcb097bed4d2b465c9766df03a5aaa4602bb6c60"
     },
     {
+      "path": "lib/catalog-launch-index.mjs",
+      "sha256": "7f81a09beeacc9a02fcbdf5653ee5303e988add86d7193a56b28f3b57434ee63"
+    },
+    {
+      "path": "lib/catalog-listing-status.mjs",
+      "sha256": "1ae797cba5ce65a4dfb854b22bfb7730ea2405aafeaa7232119d9ac2daaeae9e"
+    },
+    {
+      "path": "lib/catalog-token-list.mjs",
+      "sha256": "8952ee121df98c9e22f2260813dfa41f56ba580ad2d4ca6c889f060afa54a784"
+    },
+    {
       "path": "lib/chain-display.ts",
       "sha256": "16315ed9221295bea643785bb20b72e757ab443046e8176ad8f56a194adf6600"
     },
     {
       "path": "lib/chain-events.mjs",
-      "sha256": "219ef91965af3f6fe50806c82d5bd7a2a83a17741a0d043b311ff9a6eacde076"
+      "sha256": "f659d203a08714e47351e4e7d3b563c7e109463d4ddb17994b0c600cb8876fd7"
     },
     {
       "path": "lib/chain/adapter.ts",
@@ -1233,7 +1309,7 @@
     },
     {
       "path": "lib/chain/launch-progress.ts",
-      "sha256": "6cd36f66d9a69389925bf440e95fbc6302e06a7594006f2c8eaefb8cc748c689"
+      "sha256": "bf73e123118350965754fa824e94ffcd08c8023e17fbaa5dd6a4940b85093bcf"
     },
     {
       "path": "lib/chain/launch-submission-journal.ts",
@@ -1337,7 +1413,7 @@
     },
     {
       "path": "lib/chain/robinhood-mainnet-payments.ts",
-      "sha256": "d870ab683a51bd0e551098210c58dd74062f9b187992f83f7d96e68740149c8d"
+      "sha256": "c7f3b1ea64793fb23e73219e7d51d13f326075b5701c9f63a24d0e9a13bb8e8b"
     },
     {
       "path": "lib/chain/robinhood-mainnet-registration.ts",
@@ -1349,7 +1425,7 @@
     },
     {
       "path": "lib/chain/robinhood-mainnet-v3-market.ts",
-      "sha256": "390a967ae82d12d4fb0afbb95e3f9f3f9f1680ca36d9ef9f768ca3c26f11ca17"
+      "sha256": "5ac148a723af4ea948dd3e192a00f7932d1c82803a30d6615adda31d73065eae"
     },
     {
       "path": "lib/chain/robinhood-mainnet-v3-metadata.ts",
@@ -1457,7 +1533,7 @@
     },
     {
       "path": "lib/discovery-index.mjs",
-      "sha256": "750e46c2acd3431d2fe0d238b30b7e49637d6bb92f5cab814485c2145ca1b97f"
+      "sha256": "2ec2d89e003583413d630269af94a3d9864ff06ea403f50f4a4bc9281d995c45"
     },
     {
       "path": "lib/discovery-refresh.mjs",
@@ -1465,7 +1541,7 @@
     },
     {
       "path": "lib/docs-config.ts",
-      "sha256": "9908c368b5356b8177ab951aef4c112f782e3f53323f32165456824865a0891b"
+      "sha256": "fdbecad7d49849cc1ea99c7103da983c0fb3b1d6aefa7aac86d46e403841c3b2"
     },
     {
       "path": "lib/economics-breakdown.mjs",
@@ -1478,6 +1554,10 @@
     {
       "path": "lib/event-history.mjs",
       "sha256": "88e3f7fcb990c139ba4492beb2e85b854a7993452f11c93d58741a949f6e1341"
+    },
+    {
+      "path": "lib/exposure-report.mjs",
+      "sha256": "1597be6e74ce6fd99011dac92b71367fe1fa93f3a2f46084961aeecd88aa44ce"
     },
     {
       "path": "lib/fee-freeze-review.mjs",
@@ -1520,6 +1600,30 @@
       "sha256": "7651dbab5fcf6b613689a303ae50a409ca73bcda81378174976ab3804cd4acf9"
     },
     {
+      "path": "lib/grainpet-api.mjs",
+      "sha256": "42a8e2eeddd61f87db4e05b3338e61162ce0120dc4797ee3fd640075d24313d0"
+    },
+    {
+      "path": "lib/grainpet-auth.mjs",
+      "sha256": "892a0b2255dc03eca3dc1022204531f82d1edad1cf458989c6937b6baca72b86"
+    },
+    {
+      "path": "lib/grainpet-client.ts",
+      "sha256": "9ae41555eaecd20face958c0d5e573800388b97d215353495121cea1d5c1da19"
+    },
+    {
+      "path": "lib/grainpet-entry.mjs",
+      "sha256": "f3140585e336b56b628167535f52336e1c6b6f4a0c657c37d8f5ef966f1e459e"
+    },
+    {
+      "path": "lib/grainpet-server.ts",
+      "sha256": "bd0f21dbb5a52f4ef66962635005c0eb6a58154c98674b67f88c6215f175c92f"
+    },
+    {
+      "path": "lib/grainpet-store.mjs",
+      "sha256": "2c12a8ddda225f9c57f43f10f70805692d92e6981748738eb346ac8b4120ed3d"
+    },
+    {
       "path": "lib/header-image.mjs",
       "sha256": "c52982da1c8258371060da1225e067adee757faa333eaf6066b338283b31c980"
     },
@@ -1544,6 +1648,10 @@
       "sha256": "612e0dea0135cfacd760cd6c0c8e722c93729c989a86cdd0529b3707f381f0ea"
     },
     {
+      "path": "lib/isolated-rpc-read.mjs",
+      "sha256": "9be20a804702797d2e3403abf898a17298179253112fc8f69be534b8fb9379df"
+    },
+    {
       "path": "lib/jupiter-route-v2.mjs",
       "sha256": "4ffdf6a95ab961fcfd519c006d6bfad145a27a5873b64cb06be5a6cf04c110ab"
     },
@@ -1562,6 +1670,14 @@
     {
       "path": "lib/launch-identity.mjs",
       "sha256": "17229dba5450c0c3cfd500a8a9989b57b485564d8c33ef66c68e6e984a7daab7"
+    },
+    {
+      "path": "lib/launch-image-archive.mjs",
+      "sha256": "9094cf9b19ea54e3cfe5f1a0969437defec983d7887782553f764df4343e23cc"
+    },
+    {
+      "path": "lib/launch-image-binding.ts",
+      "sha256": "b80c8c178abf0376baf61f7cc1f3127ec9dfb04d8194b3642be951b60aa9cfcf"
     },
     {
       "path": "lib/launch-index.mjs",
@@ -1614,6 +1730,10 @@
     {
       "path": "lib/live-chart.mjs",
       "sha256": "5e0a7c857552f7fc99fde82a5382bcaeac52ba13c01185011571f9a39eabeaa6"
+    },
+    {
+      "path": "lib/live-coverage.mjs",
+      "sha256": "ae519eeb41673baa200612e248e2bcb35d33df5ed666715472a8dc7e943acb71"
     },
     {
       "path": "lib/load-trading.ts",
@@ -1813,7 +1933,7 @@
     },
     {
       "path": "lib/og/cards.tsx",
-      "sha256": "4ea22c6ae03e40b91b9f90dcffdff5bd79fd2b62420159cc63899249d15e7e03"
+      "sha256": "93d8cc7f8d3f9cff4388813c5f0506506d2f4274ad96d9c0535b6e1c0d237be8"
     },
     {
       "path": "lib/og/ibm-plex-mono-500.woff",
@@ -1933,11 +2053,11 @@
     },
     {
       "path": "lib/public-overview.mjs",
-      "sha256": "667bc93d9690322d1908125d447b09e2ca067eb9ed02e4c3b2f643167510fac3"
+      "sha256": "9484c31f682b36f596a7899542e93bcdb012359ef9cc0fe2d57960512b1afa4c"
     },
     {
       "path": "lib/public-read-cache.mjs",
-      "sha256": "00b2c7e2c1e33a1af7a26d483c65e7d1b70a64b89ee7a8c8378606abbfe4ae96"
+      "sha256": "146efa1a4f9b26851550c7570ab6e2e8a3e078c4b32c7861d2da99eaf4354274"
     },
     {
       "path": "lib/public-receipt.mjs",
@@ -1953,7 +2073,7 @@
     },
     {
       "path": "lib/quote-assets.mjs",
-      "sha256": "936cb5307c0d1796d882d42e78ce6749780ec56e6efdd2b4a332b32737837880"
+      "sha256": "e1352482ffa59a64ca535848687b380f19e6d27de90127371fb54e1d08f3171a"
     },
     {
       "path": "lib/quote-freshness.mjs",
@@ -2005,7 +2125,7 @@
     },
     {
       "path": "lib/request-boundary.mjs",
-      "sha256": "593c72116332b1668d05923e40f4d1a3837daaad659f16de6f22a3ece273dd1d"
+      "sha256": "86200853cd990d743afe41fb219b96851e56a965de7d43c8d4345828eb41581c"
     },
     {
       "path": "lib/resource-leases.mjs",
@@ -2017,7 +2137,7 @@
     },
     {
       "path": "lib/reward-credit-illustration.mjs",
-      "sha256": "d0b1cadc5d9cf90899cb1ef7d68fdfcc11cd45b64349e104d71d34f9f1fb520b"
+      "sha256": "19d837ccaa231c02e2525713c9b3d65b70ec320959fa7c6fcfd0b7b449710dd2"
     },
     {
       "path": "lib/reward-credit-totals.mjs",
@@ -2026,6 +2146,10 @@
     {
       "path": "lib/rewards-allocation.mjs",
       "sha256": "34395d8a26857e9fe46f9fed9909c9dff4141ea6a68bd6ef4b43bfc8461dbced"
+    },
+    {
+      "path": "lib/rewards-card-options.mjs",
+      "sha256": "793eb61e831ab4724ebd51caa48726828cfcb5f5133a6d23bc3b040d6a6aa298"
     },
     {
       "path": "lib/rewards-cost-policy.mjs",
@@ -2101,7 +2225,7 @@
     },
     {
       "path": "lib/rpc-forwarder.mjs",
-      "sha256": "fe372a87c15cf0eef2fb203fe0af066f872f520c3b6f8cfd41ff3ec1ec0712e3"
+      "sha256": "c3274c2ed0477a02cdcf7c0ef25c2c87e70a89610152125a604da0966aa8e082"
     },
     {
       "path": "lib/rpc-session.mjs",
@@ -2117,7 +2241,7 @@
     },
     {
       "path": "lib/security-headers.mjs",
-      "sha256": "983d2bddd336a8a73b4669e24b4df1e4cce2ab34c7c1c7042aed687e18d59fb0"
+      "sha256": "b5e4e4ded5ff8bdb47be8f656e0a4dfbbfd1107e17222c58cb5c56575ae4f6b7"
     },
     {
       "path": "lib/server-cache.ts",
@@ -2129,7 +2253,7 @@
     },
     {
       "path": "lib/server-homepage.ts",
-      "sha256": "69f3a047eb4b1bb563cd946d92d38848505112bc37dadb938c04936082edaad9"
+      "sha256": "9f4d18496f5618b33e99544e6885c8a0d464eebe6185cbe39871c084a38f2a1c"
     },
     {
       "path": "lib/server-market-live.ts",
@@ -2157,7 +2281,7 @@
     },
     {
       "path": "lib/server-rpc.ts",
-      "sha256": "6723764127166fc24820b2ccc5e880a94b48061d44a6a3753a419c0523fdf61c"
+      "sha256": "674b6fb4c75f126d21a14c81d37306ab55787f625238a14e1ab75d81db6ad220"
     },
     {
       "path": "lib/server-sol-trade.ts",
@@ -2177,7 +2301,7 @@
     },
     {
       "path": "lib/shared-market-cache.mjs",
-      "sha256": "ed287d3f7d56bd79dee27f996f1d53cb62c0a2237b2b1357ff46f0cdac173f98"
+      "sha256": "bf465514af4c3ca5613a8996a5951e1f33ce69087cb742dbe85b5ce4f3e26a08"
     },
     {
       "path": "lib/signing-attempt.mjs",
@@ -2194,6 +2318,14 @@
     {
       "path": "lib/site-config.ts",
       "sha256": "166e0f4b2bd5ac23f39312c927cb3a36321aa3f54b55a0f76738b379f07efb31"
+    },
+    {
+      "path": "lib/site-stats-sql.mjs",
+      "sha256": "d3fe3d25f48c9402c8246a353283e669b1ee2a6d474c68ca0ca82b7c1eeadc9f"
+    },
+    {
+      "path": "lib/site-stats.mjs",
+      "sha256": "8f5374148a9b1802c5b2a0d9861970adef9624280f4990cad9d3c19a16e97142"
     },
     {
       "path": "lib/site-wallet-client.ts",
@@ -2297,11 +2429,11 @@
     },
     {
       "path": "lib/tape-ledger.mjs",
-      "sha256": "91803439007b418bfe911c2aa0fc8b62f9ebf4c61dbcc2d1b68d8212b136fe35"
+      "sha256": "915e9fdfd9e51f3778f48dc2d5048073589a97cf0deacb08cf38055e8a4a4644"
     },
     {
       "path": "lib/token-discovery.ts",
-      "sha256": "1d9b9efa4e93fa3c21ae4b7fdd308aa2a9c8f2ab24b934e65ae7d6b180731b0b"
+      "sha256": "b40280bf39eca9f0d5627a5878e8db31be429c586c9f4ed8093cdb7526c1d45a"
     },
     {
       "path": "lib/token-launch-post.mjs",
@@ -2388,6 +2520,10 @@
       "sha256": "8fe3a04f526fd721ce007b5c4918e093f6830c74306693aa16f22e1df5ad2117"
     },
     {
+      "path": "lib/verified-monero-catalog.mjs",
+      "sha256": "e600e0176e71b4ecaaf5d7205ef356af06adeb27e01cbe73967caf51969e7c58"
+    },
+    {
       "path": "lib/verify-launch.mjs",
       "sha256": "7bcad59876163c4b414a0acea68d9da3c9c5a68eeae329a6e2c405d5150d2ad7"
     },
@@ -2433,15 +2569,19 @@
     },
     {
       "path": "lib/wallet.ts",
-      "sha256": "48e6846a41feb5b68e872731e668737befc1ddb084a1ce9eefc657b675c9db49"
+      "sha256": "1ed89a5ba0942d0ab34329fddc6baf1f63b325790c3c97219dea62b735110887"
     },
     {
       "path": "lib/x-oauth.mjs",
       "sha256": "cb54d41fef25a752842abf0e531733c30204a8b9a1c323ed0f83b7cf0b28d789"
     },
     {
+      "path": "lib/xmr-usd.mjs",
+      "sha256": "f4855b8aeda5ea042704b9e88a6f1bd0d3d5b4c91daaafcca6de0291894bebbb"
+    },
+    {
       "path": "middleware.ts",
-      "sha256": "a10d2b8f79969424e90465f908ca95f592b9c8800ec9204d755db19facd23fe5"
+      "sha256": "28d9dd3756c2e17f53bca0cef44062f23c31a88d6c80a8260a72c407d01ffd0f"
     },
     {
       "path": "next-env.d.ts",
@@ -2464,6 +2604,10 @@
       "sha256": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde"
     },
     {
+      "path": "public/_headers",
+      "sha256": "54c1709f35fa7482142c71723196e7c7b40498c177af090ed7e252f2e4f8f7ae"
+    },
+    {
       "path": "public/brand/chains/robinhood.svg",
       "sha256": "526b7c346f630ac94d196ec0e6041775f1dd8f406546cd55cbcbf8cb7e17d88d"
     },
@@ -2472,12 +2616,24 @@
       "sha256": "509462a67bb2ab00ffab47a1a145d6cb235bd45ee8b32bd4ac37b9e0e3c5b993"
     },
     {
+      "path": "public/brand/grain-logo-1080.png",
+      "sha256": "9040bddb9cc31277a83d7642cbd31d4dd7f25af888dc2a8e2e91fd25a38ffdbb"
+    },
+    {
+      "path": "public/brand/grain-logo-512.png",
+      "sha256": "2cca7fdfe189ebea6a6154de4f5d8c94e5a082b60f89b48c3868bb8f9ffcdad1"
+    },
+    {
       "path": "public/brand/grain-token.png",
       "sha256": "c29539e0d739b00fb16e4f05c682e525dcd39cd668e5a377020b0f159deebce2"
     },
     {
       "path": "public/brand/grainpad-logo-horizontal-core.svg",
       "sha256": "b9dc1750795fcd9e06ba2c58e9a5c37ff222f9b13b28fd8cab28789c8f2bce6a"
+    },
+    {
+      "path": "public/brand/grainpad-social-ideas-20261103.jpeg",
+      "sha256": "82155441900552350a1bed8c4b6805d7c56233e51cde48cb608f9aa2cb507788"
     },
     {
       "path": "public/brand/grainpad-social-minute-two-20261010.jpeg",
@@ -2516,6 +2672,50 @@
       "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7"
     },
     {
+      "path": "public/pet/OFL.txt",
+      "sha256": "5c856c086e8743b84932aae46ced424729a703932b601e9eb8aaeac15a617ec6"
+    },
+    {
+      "path": "public/pet/albert-sans.woff2",
+      "sha256": "c2fb6fda415c7bf5926c15aa98f759da45cdc5ac4ac6925a72a84db4eb3862a3"
+    },
+    {
+      "path": "public/pet/art/grain-core.js",
+      "sha256": "bb6609e6e59d926afeda63720c46df350566683716525070ec1b801bcce5d1fd"
+    },
+    {
+      "path": "public/pet/art/grain-friends.manifest.json",
+      "sha256": "2fe1e5f2721b437b13a824c9c2666983392ec8b488fe5ee56fde0dda30cd4005"
+    },
+    {
+      "path": "public/pet/art/grain-runtime.js",
+      "sha256": "25cadbb9317b3c3a6a4f298221a6edb32dd1174541eb0a1d3ad485cadfed592f"
+    },
+    {
+      "path": "public/pet/brand/grainpet-logo-face-v1.svg",
+      "sha256": "db0b9eef1ba47c069377a43ee71ccc8e9b6a89bec4d9e733c01c60cb126d10b8"
+    },
+    {
+      "path": "public/pet/persist.js",
+      "sha256": "faca5512a94b82205de91eb810a71f7ca9942823b1d73622ba803e3823e2dfa7"
+    },
+    {
+      "path": "public/pet/pet.css",
+      "sha256": "d2a8501110f74d698253b40e7465838cab141c48dbf8784e74379b4e6177a8c8"
+    },
+    {
+      "path": "public/pet/pet.js",
+      "sha256": "0bc4cb88d83e40bd946ed1fbee3dbd8fbfce5938ba8aac3aaea032284abd8986"
+    },
+    {
+      "path": "public/pet/price-source.js",
+      "sha256": "eef2537f73b9c09844bd85334ae2764f8531d79bf393c2f72609011be7e9c130"
+    },
+    {
+      "path": "public/pet/room.html",
+      "sha256": "4c042198d48719289a2122797af3e631797cfbd1a361aace8c67c7c7fe5e2107"
+    },
+    {
       "path": "public/research/ARCHITECTURE.md",
       "sha256": "b249e9eeefabb5be646a1258394515f92a7af00cedaecae35eee42bf70d25fbb"
     },
@@ -2548,12 +2748,20 @@
       "sha256": "34ba3a3e792d8980c0236b51f4a52e26df74d994b2faed0b99939f53ba54a16f"
     },
     {
+      "path": "scripts/restore-client-assets-compatibility.mjs",
+      "sha256": "20ec1019827c1710697da9b5e8164b71491b9f90f284431cf9879bd0cc021900"
+    },
+    {
       "path": "scripts/rpc-config.mjs",
       "sha256": "86bf259ba4353399a838f2a6d8367488c9f008350363531f9b4d623c4e288a44"
     },
     {
       "path": "scripts/verify-fees.mjs",
       "sha256": "fa980ae839f739515ab66a8dc58e242bb43ae4861c9dd20adffe0ed270c6c7f7"
+    },
+    {
+      "path": "scripts/verify-launch-image-archive.mjs",
+      "sha256": "02bc822f5793feefbade9ac549b5bbda8b4ffe129c792ebbade8f47eeccea969"
     },
     {
       "path": "scripts/verify-launch.mjs",
@@ -2578,6 +2786,10 @@
     {
       "path": "tests/blockhash-window.test.mjs",
       "sha256": "b7c3f752d4bc350d8dab4a939e44dc08023bbd58b8a2a6410401a1e9f01110d9"
+    },
+    {
+      "path": "tests/bounded-request-body.test.mjs",
+      "sha256": "5fedbb824ef8dbf9fd3d46f78920eb4a4bcd4e7574f199853099bb25e8ca3c2b"
     },
     {
       "path": "tests/brand-orange.test.mjs",
@@ -2618,6 +2830,10 @@
     {
       "path": "tests/discovery-refresh.test.mjs",
       "sha256": "4e9c8408a55a93505c184f1bb317ae2238fd50c01a6774be4bdd42f861d1fb7b"
+    },
+    {
+      "path": "tests/docs-claims.test.mjs",
+      "sha256": "9c124b70dcde80ac6fe21ff817256c796d7b6cb6d9ec5e553dc7fccf02bfb601"
     },
     {
       "path": "tests/evm-network-contracts.test.mjs",
@@ -2684,8 +2900,16 @@
       "sha256": "5f9675db21d01645ffa7a7a9d13fb66379265e98fdedfde04393123f035c6433"
     },
     {
+      "path": "tests/grainpet-api.test.mjs",
+      "sha256": "cf7607ddea92a4c244aed0c9824f30859995b2b6abd33f0340ce05101f21cd7c"
+    },
+    {
+      "path": "tests/grainpet-entry.test.mjs",
+      "sha256": "24606b0a49e0ad0cb4a23e00677b8e3a4a1c42a08bd4c645135e8b9ee5ece712"
+    },
+    {
       "path": "tests/homepage-server-render.test.mjs",
-      "sha256": "7e66b72cb094c2cdd62d96476d0cea0890202bd1bfe8de20962e8b646e80b2d2"
+      "sha256": "a9c7a56e32cec2ad8b77820bf5a7fc66324a226e1a4f2fdbcc235212f93a1f5d"
     },
     {
       "path": "tests/identity-amendment.test.mjs",
@@ -2761,7 +2985,7 @@
     },
     {
       "path": "tests/market-ui-state.test.mjs",
-      "sha256": "ce8459b4821e3834de5430805ea9bc80c14c80450d5061b68e3ff501c2a43b9f"
+      "sha256": "3ca56fe5292f23b8a3f1e02694285f1fa7d514b4f820717a7ab23593972b75e1"
     },
     {
       "path": "tests/metadata-browser-load.test.mjs",
@@ -2814,6 +3038,10 @@
     {
       "path": "tests/monero-record.test.mjs",
       "sha256": "0c176ce0d8e2e1e04aad1a001afd8c7284c4c1288ce6964461d77438d48d8702"
+    },
+    {
+      "path": "tests/official-addresses.test.mjs",
+      "sha256": "e9fb297c4361407b1fa972326fdc0ef6dd4d996e3800b2fb6bd73bb88f9806f1"
     },
     {
       "path": "tests/official-burn-connection.test.mjs",
@@ -2873,7 +3101,7 @@
     },
     {
       "path": "tests/public-creator-buy-ui.test.mjs",
-      "sha256": "4ba1e99cd773d4864be39e4f62334087a1754a1b1b97a08083addd372102980f"
+      "sha256": "c92ed7286ed0485689a94aa1442903b13c2fcf2e27d03f10da3ae6e61b553ad4"
     },
     {
       "path": "tests/public-launch-eligibility.test.mjs",
@@ -2881,11 +3109,11 @@
     },
     {
       "path": "tests/public-overview.test.mjs",
-      "sha256": "aa5a6d3d054ad1755c9a38fe5cec71a427e72defcecdd83eaab20696760df31e"
+      "sha256": "e051f67a440b5c111bb8589e6fa9ac94d59c26093963d7820a253a62c971af97"
     },
     {
       "path": "tests/public-read-cache.test.mjs",
-      "sha256": "7720d66663e7c5c1c07a55ab7a2c1fd6b04e6c9d87a42c333a8a994557bafaf1"
+      "sha256": "101f32055985f68e6c2f6b878faf8b7ea2907da9c6fcf181a768df9272a5e4e2"
     },
     {
       "path": "tests/quote-price-client-store.test.mjs",
@@ -2941,7 +3169,7 @@
     },
     {
       "path": "tests/reward-credit-illustration.test.mjs",
-      "sha256": "7668a78d40746e53420bbc4e40f24478a8a44be9c88eac362a4ef938679e4704"
+      "sha256": "070361b399057383683afcbe65b33375d5ed9067eacdf6b63b29f11acf42affe"
     },
     {
       "path": "tests/reward-credit-totals.test.mjs",
@@ -2961,7 +3189,7 @@
     },
     {
       "path": "tests/robinhood-launch-disconnect.test.mjs",
-      "sha256": "93826858c8e3e2a3d1583a48ed9209dba7434cd8dd8544e3c84ebf1ffea04fad"
+      "sha256": "a4511c387fcde04f0b8aab8d1ca4e982b763d3accda194295d73690f9501dd94"
     },
     {
       "path": "tests/robinhood-mainnet-history.test.mjs",
@@ -2981,7 +3209,7 @@
     },
     {
       "path": "tests/robinhood-mainnet-payments.test.mjs",
-      "sha256": "3b62fc60098922f57787fec2b769cf67b119d8a863952a4f19300a86f957d69b"
+      "sha256": "f6061dc850587580a40ed0db65f9a7bee028d0b388d30d3df057a6745a3dc769"
     },
     {
       "path": "tests/robinhood-mainnet-registration.test.mjs",
@@ -3000,12 +3228,20 @@
       "sha256": "777c6c16f5780eeab24937f45d8ae7845a1c98e723482fc652767af05469efef"
     },
     {
+      "path": "tests/robinhood-market-parallel.test.mjs",
+      "sha256": "abd308d0d5f1570d30b0facf82f510ac52468ee8dc2cc9a32fa9191a34b099fc"
+    },
+    {
       "path": "tests/robinhood-market.test.mjs",
       "sha256": "4d387f6106d8957dfe9b1e55673d78c1d70c5e274edd3b29d963ba5f37075b3f"
     },
     {
       "path": "tests/robinhood-wallet.test.mjs",
       "sha256": "394087f461c931fd252f9a75096bd29aa8bd488dde61e6e95157bd904f9d5a64"
+    },
+    {
+      "path": "tests/robots.test.mjs",
+      "sha256": "cb7d22a9ed21d0cc6f81240a9da36db7a63ddaaa8f556a6e9063b20929035e58"
     },
     {
       "path": "tests/room-funding.test.mjs",
@@ -3021,7 +3257,7 @@
     },
     {
       "path": "tests/rpc-forwarder.test.mjs",
-      "sha256": "a02b99507d0a635adab547caf5303077cf8aa68db742f6c5615b88e59e584f55"
+      "sha256": "dadc38970a7b0892073e2b741051a4de98fbb769f5d9dfeb232239ab37a0e611"
     },
     {
       "path": "tests/rpc-relay-policy.test.mjs",
@@ -3033,7 +3269,7 @@
     },
     {
       "path": "tests/security-headers.test.mjs",
-      "sha256": "e7669cee069b811a73dd56f1569b3596a25bb2603fabd56a93d9ac8877df404d"
+      "sha256": "9633afeeed0fe6016cfd8f4364701c2188f0c93471fe6fb5d776e1cce4aa8fc5"
     },
     {
       "path": "tests/sell-percentage.test.mjs",
@@ -3045,7 +3281,7 @@
     },
     {
       "path": "tests/site-overview-route.test.mjs",
-      "sha256": "008c833ecb297bad8ce23b51f1cee6f3c717adee0124c515a84a1dca7cf4b1f5"
+      "sha256": "142a4beef08e5204acaef0d97198e672a37b1941a34ad75208ba7a8c0313331c"
     },
     {
       "path": "tests/sol-acceptance-policy.test.mjs",
@@ -3105,7 +3341,7 @@
     },
     {
       "path": "tests/trade-indicative.test.mjs",
-      "sha256": "7030a9e47a656874194901c3136132182014b5fd1c0546614cc45b3bb994b19e"
+      "sha256": "24e1d67b2f45697e410258dc0d7e3c3c68dcc39a53b3f7afec447b54b5f9f9ed"
     },
     {
       "path": "tests/trade-latency.test.mjs",
@@ -3169,7 +3405,11 @@
     },
     {
       "path": "tests/wxmr-wallet-help.test.mjs",
-      "sha256": "d249d3d614b9a526376c48832c1afc6efcb3c71e36ef21e9a213b35d8b820648"
+      "sha256": "8d23d88854b8f9c3c3e385058ba2c448bbaa30e2dcd92c3d896618de6f221792"
+    },
+    {
+      "path": "tests/xmr-usd.test.mjs",
+      "sha256": "617d42b84aa277b0b5364acbfca84e90b908fc48d0f5bab36228a4d9b639674e"
     },
     {
       "path": "tsconfig.json",
@@ -3201,7 +3441,7 @@
     },
     {
       "path": "worker.ts",
-      "sha256": "df13082b9542544f1ac930dbaeeb5c3dd80bf1e700aef5896cdea455a633101e"
+      "sha256": "1f47f17332ffb4ddf87323d8b643109a5eeaeec03cf7937821e10c84136c4448"
     },
     {
       "path": "wrangler.jsonc",

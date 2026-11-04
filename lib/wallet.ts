@@ -3,9 +3,9 @@ import {walletSession} from './wallet-session.mjs';
 import {getWallets} from '@wallet-standard/app';
 import {discoverWalletProviders} from './wallet-adapters.mjs';
 import type {PublicKey,VersionedTransaction} from '@solana/web3.js';
-export type Wallet={publicKey:PublicKey|null;connect:(options?:{silent?:boolean})=>Promise<unknown>;disconnect?:()=>Promise<void>;invalidateSession?:()=>void;signMessage:(m:Uint8Array,encoding?:string)=>Promise<{signature:Uint8Array}|Uint8Array>;signTransaction:(t:VersionedTransaction)=>Promise<VersionedTransaction>;on?:(event:string,handler:()=>void)=>void;removeListener?:(event:string,handler:()=>void)=>void};
+export type Wallet={publicKey:PublicKey|null;connect:(options?:{silent?:boolean})=>Promise<unknown>;disconnect?:()=>Promise<void>;invalidateSession?:()=>void;signMessage:(m:Uint8Array,encoding?:string)=>Promise<{signature:Uint8Array}|Uint8Array>;signTransaction:(t:VersionedTransaction)=>Promise<VersionedTransaction>;transferIdentity?:()=>unknown;signReviewedTransferTransaction?:(t:VersionedTransaction,ticket:unknown)=>Promise<VersionedTransaction>;signReviewedManagedTransaction?:(t:VersionedTransaction,ticket:unknown)=>Promise<VersionedTransaction>;on?:(event:string,handler:()=>void)=>void;removeListener?:(event:string,handler:()=>void)=>void};
 const observed=new WeakSet<Wallet>();
-export type WalletProvider={name:string;brand:string;kind:'injected'|'standard';icon:string|null;wallet:Wallet};
+export type WalletProvider={name:string;brand:string;kind:'injected'|'standard'|'native';icon:string|null;wallet:Wallet};
 export function walletProviders():WalletProvider[]{
  if(typeof window==='undefined')return [];
  const providers=discoverWalletProviders(window,[...getWallets().get()]) as WalletProvider[];

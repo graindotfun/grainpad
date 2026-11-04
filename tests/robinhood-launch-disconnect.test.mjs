@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
+import {startViewerPolling} from '../lib/viewer-polling.mjs';
 
 // Exercise the actual component's state, effects, cleanup and rendered controls.
 // Wallet, HTTP, clock and browser stores are local fixtures; no wallet request is made.
@@ -27,7 +28,9 @@ function harness({defer = false} = {}) {
  };
  const jsx = (type, props) => ({type, props});
  const status = () => ({token: '0x' + '55'.repeat(20), facts: {moneroConfirmations: confirmations, transactionHash: hash}, progress: {stage: confirmations >= 10 ? 'trading_available' : 'awaiting_monero', detail: 'Confirmations: ' + confirmations}, note: null});
+ const listeners=new Map(),document={hidden:false,addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:name=>listeners.delete(name)};
  const modules = {
+  '@/lib/viewer-polling.mjs':{startViewerPolling:(task,options)=>startViewerPolling(task,{...options,document,setTimer:(fn,ms)=>{assert.equal(ms,30000);const id=Symbol();timers.set(id,fn);return id;},clearTimer:id=>timers.delete(id)})},
   react,
   'react/jsx-runtime': {jsx, jsxs: jsx},
   '@/lib/chain/robinhood-mainnet-v2.ts': {robinhoodMainnetV2Profile: () => ({factory: '0x' + '66'.repeat(20), chainId: 4663})},
@@ -59,6 +62,7 @@ function harness({defer = false} = {}) {
   async connect() {render(); await flush(); button('Connect wallet').props.onClick(); await flush();},
   async change(account) {assert.ok(watch, 'connected wallet watcher'); watch(account ? session(account) : null); await flush();},
   async tick(count) {confirmations = count; const jobs = [...timers.values()]; timers.clear(); for (const job of jobs) job(); await flush();},
+  async visibility(hidden){document.hidden=hidden;listeners.get('visibilitychange')?.();await flush();},
   async respond() {assert.ok(resolveResponse); resolveResponse(); await flush();},
   text: () => text(tree), button, calls, flush,
  };
@@ -106,3 +110,5 @@ test('refresh followed by same-wallet connection resumes the saved transaction w
   assert.equal(h.calls.filter(c => c === 'send').length, 0);
  }
 });
+
+test('hidden creation tab makes no progress requests and resumes once when visible',async()=>{const h=harness();await h.connect();assert.equal(h.calls.length,1);await h.visibility(true);await h.tick(5);assert.equal(h.calls.length,1);await h.visibility(false);assert.equal(h.calls.length,2);await h.tick(10);const done=h.calls.length;await h.tick(10);assert.equal(h.calls.length,done);assert.equal(h.calls.filter(c=>c==='send').length,0);});

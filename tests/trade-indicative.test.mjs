@@ -26,9 +26,12 @@ test('late old read cannot overwrite a new amount or publish an obsolete failure
  const stop=startIndicativeQuote({delayMs:0,read:()=>old,publish:x=>events.push(x)});await wait(5);stop();resolveOld({output:'999',expiresAt:Date.now()+100});await wait(5);assert.deepEqual(events.map(x=>x.status),['loading']);
  const rejection=new Promise((_,reject)=>{rejectOld=reject;});const stopFailure=startIndicativeQuote({delayMs:0,read:()=>rejection,publish:x=>events.push(x)});await wait(5);stopFailure();rejectOld(Error('Old route failure'));await wait(5);assert.deepEqual(events.map(x=>x.status),['loading','loading']);
 });
-test('estimate expiry clears the amount, and a current upstream failure publishes unavailable',async()=>{
- const events=[];const stop=startIndicativeQuote({delayMs:0,lifetimeMs:15,read:async()=>({output:'123',expiresAt:Date.now()+100}),publish:x=>events.push(x)});await wait(35);stop();assert.deepEqual(events.map(x=>x.status),['loading','ready','expired']);assert.equal(events.at(-1).quote,null);
- const failed=[];const stopFailure=startIndicativeQuote({delayMs:0,read:async()=>{throw Error('Market unavailable');},publish:x=>failed.push(x)});await wait(5);stopFailure();assert.equal(failed.at(-1).status,'unavailable');assert.equal(failed.at(-1).quote,null);
+test('estimate expiry clears the amount, and a current upstream failure publishes unavailable',async t=>{
+ t.mock.timers.enable({apis:['setTimeout','Date'],now:1000});
+ const events=[];const stop=startIndicativeQuote({delayMs:0,lifetimeMs:15,read:async()=>({output:'123',expiresAt:Date.now()+100}),publish:x=>events.push(x)});
+ t.mock.timers.tick(0);await Promise.resolve();assert.deepEqual(events.map(x=>x.status),['loading','ready']);
+ t.mock.timers.tick(14);assert.equal(events.at(-1).status,'ready');t.mock.timers.tick(1);stop();assert.deepEqual(events.map(x=>x.status),['loading','ready','expired']);assert.equal(events.at(-1).quote,null);
+ const failed=[];const stopFailure=startIndicativeQuote({delayMs:0,read:async()=>{throw Error('Market unavailable');},publish:x=>failed.push(x)});t.mock.timers.tick(0);await Promise.resolve();stopFailure();assert.equal(failed.at(-1).status,'unavailable');assert.equal(failed.at(-1).quote,null);
 });
 
 test('an unresponsive estimate reaches a bounded visible failure and ignores a late result',async()=>{

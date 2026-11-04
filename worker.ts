@@ -4,6 +4,7 @@ import handler from 'vinext/server/fetch-handler';
 import {runScheduledIndexer,refreshMoneroOnIndexerTick,runRobinhoodV2Discovery} from './lib/scheduled-indexer.mjs';
 import {ROBINHOOD_MAINNET_V2_FACTORY_ADDRESS} from './lib/chain/robinhood-mainnet-v2.ts';
 import {createPublicReadCache} from './lib/public-read-cache.mjs';
+import {rewardsTrackerEnabled} from './lib/utility-rewards-tracker/gate.mjs';
 import {migrationFrozen,migrationFreezeResponse} from './lib/migration-freeze.mjs';
 
 declare const __GRAINPAD_COMMIT__: string | null;
@@ -26,7 +27,7 @@ const worker = {
   if(frozen!==null)return frozen;
   if(/^\/api\/market\/[1-9A-HJ-NP-Za-km-z]{32,44}\/live$/.test(new URL(clean.url).pathname))return marketLive(clean,env);
   refreshMoneroOnIndexerTick(clean,handler,env,context);
-  return publicReads(clean, () => handler.fetch(clean, env, context), (task: Promise<unknown>) => context.waitUntil(task));
+  return publicReads(clean, () => handler.fetch(clean, env, context), (task: Promise<unknown>) => context.waitUntil(task), rewardsTrackerEnabled(env) ? 'rewards-released' : 'rewards-held');
  },
  async scheduled(_controller: ScheduledController, env: {INDEXER_SECRET?: string; MONERO_DAEMON_URL?: string; SOLANA_RPC_URL?:string; MIGRATION_WRITE_FREEZE?:string}, context: ExecutionContext) {
   if(migrationFrozen(env))return;

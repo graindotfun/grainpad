@@ -3,7 +3,7 @@ import {quoteAsset} from '@/lib/quote-assets.mjs';
 import {database} from '@/lib/server-owner';
 import {sharedMarketCache} from '@/lib/server-cache';
 import {grainpadPlatformId} from '@/lib/platform-policy';
-import {indexedLaunchPage} from "@/lib/launch-index.mjs";
+import {indexedLaunchPage} from "@/lib/catalog-launch-index.mjs";
 import {loadQuoteUsd,quoteUsdFor} from "@/lib/quote-usd.mjs";
 import {nativeTapeQuote} from "@/lib/native-market.mjs";
 import {serverMarket} from "@/lib/server-market";
@@ -40,7 +40,9 @@ async function refresh(): Promise<TokenTapeData> {
 export async function GET() {
   try {
     const result=await sharedMarketCache(database(),`token-tape:quotes:v6:${grainpadPlatformId().toBase58()}`,refresh,{ttl:15_000,maxStale:600_000});
-    return Response.json({...result.data,...(result.stale?{marketStatus:'stale'}:{})},{headers:{"Cache-Control":"no-store"}});
+    const current=await indexedLaunchPage(database(),'mainnet-beta',grainpadPlatformId().toBase58());
+    const visible=new Set(current.launches.map((row:{mint:string})=>row.mint));
+    return Response.json({...result.data,tokens:result.data.tokens.filter((token:TokenTapeData['tokens'][number])=>visible.has(token.mint)),total:current.total,...(result.stale?{marketStatus:'stale'}:{})},{headers:{"Cache-Control":"no-store"}});
   } catch {
     return Response.json({error:"Launch feed is temporarily unavailable."},{status:503,headers:{"Cache-Control":"no-store"}});
   }

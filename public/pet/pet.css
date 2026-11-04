@@ -1,0 +1,330 @@
+@font-face{font-family:"Albert Sans";src:url("albert-sans.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{
+  --orange:#ff6600;--shade:#d94e00;--cream:#e9dac6;--ink:#1a1714;
+  --page:#f4ecdf;--card:#e9dac6;--text:#1a1714;--soft:#5d5246;--btn:#1a1714;--btnText:#f4ecdf;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme]){--page:#1a1714;--text:#f4ecdf;--soft:#b9ab99;--btn:#f4ecdf;--btnText:#1a1714}
+}
+/* framed by /pet the room takes the site's own theme (data-theme), not the system's */
+:root[data-theme=dark]{--page:#1a1714;--text:#f4ecdf;--soft:#b9ab99;--btn:#f4ecdf;--btnText:#1a1714}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--page);color:var(--text);font-family:"Albert Sans",system-ui,sans-serif;font-weight:600}
+body{min-height:100dvh;display:flex;justify-content:center}
+.app{width:100%;max-width:520px;padding:max(12px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+i{font-style:normal;color:var(--orange)}
+.top{display:flex;align-items:center;gap:10px}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.04em;margin-right:auto}
+.chip{display:flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:8px 14px;background:var(--btn);color:var(--btnText);font:700 15px "Albert Sans",sans-serif;letter-spacing:-.02em;cursor:pointer}
+.icon{border:0;background:none;color:var(--text);width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.icon svg{fill:currentColor}
+.stage{position:relative;border-radius:28px;overflow:hidden;background:var(--card);touch-action:none;user-select:none;-webkit-user-select:none}
+#sc{display:block;width:100%;height:auto;max-height:62dvh;outline:none;cursor:grab}
+#sc:active{cursor:grabbing}
+.say{position:absolute;left:0;right:0;top:14px;margin:0;text-align:center;font-weight:700;font-size:26px;letter-spacing:-.045em;color:var(--ink);text-shadow:0 0 0 #fff,-2px 0 #e9dac6,2px 0 #e9dac6,0 -2px #e9dac6,0 2px #e9dac6;min-height:34px;pointer-events:none;transition:opacity .35s}
+.say .dot{color:var(--orange)}
+.say.off{opacity:0}
+.hint{margin:0;text-align:center;color:var(--soft);font-size:14px}
+.actions{display:flex;gap:10px}
+.actions button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;border-radius:20px;padding:12px 6px 10px;background:var(--btn);color:var(--btnText);font:700 14px "Albert Sans",sans-serif;letter-spacing:-.02em;cursor:pointer;min-height:68px;transition:transform .12s}
+.actions button:active{transform:scale(.95)}
+.actions button:disabled{opacity:.45}
+.actions svg{width:26px;height:26px}
+.actions .ghost,dialog .ghost{background:none;color:var(--soft);border:2px solid color-mix(in srgb,var(--soft) 40%,transparent)}
+.tray[hidden],.actions[hidden]{display:none}
+.cr{display:block;width:22px;height:18px;border-radius:40% 55% 45% 50%}
+.c0{background:#e0903c}.c1{background:#b5603a;border-radius:30%}.c2{background:#d9b078;height:10px;margin:4px 0;border-radius:6px}
+.foot{margin:2px 0 0;text-align:center;color:var(--soft);font-size:12.5px;font-weight:500}
+
+dialog{border:0;border-radius:24px;padding:20px;width:min(420px,calc(100vw - 32px));background:var(--page);color:var(--text);box-shadow:0 20px 60px #0006}
+dialog::backdrop{background:#1a171499}
+dialog h2{margin:0 0 12px;font-size:26px;letter-spacing:-.045em}
+dialog form{display:flex;flex-direction:column;gap:10px}
+dialog button,.fileBtn{border:0;border-radius:16px;padding:13px 14px;background:var(--btn);color:var(--btnText);font:700 16px "Albert Sans",sans-serif;cursor:pointer;text-align:center}
+dialog .row{display:flex;gap:10px}.row>*{flex:1}
+dialog input,dialog textarea{width:100%;border:2px solid color-mix(in srgb,var(--soft) 50%,transparent);border-radius:14px;padding:12px;background:transparent;color:var(--text);font:600 17px "Albert Sans",sans-serif}
+dialog textarea{font:500 12px ui-monospace,monospace;word-break:break-all}
+.small{margin:0;color:var(--soft);font-size:14px;font-weight:500}
+.notes{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:16px;letter-spacing:-.02em;max-height:50dvh;overflow:auto}
+#cardImg{width:100%;border-radius:16px}
+
+
+.dev{position:relative;flex:none;padding:4px 8px;border-radius:12px;background:#1a1714e6;color:#fff;font:500 10px/1.3 ui-monospace,monospace;z-index:9}
+.devbar{display:flex;align-items:flex-start;gap:8px}.devbar small{flex:1;font-size:10px}
+.dev button{margin:2px;padding:4px 7px;border:0;border-radius:8px;background:#ff6600;color:#fff;font:600 11px ui-monospace,monospace}
+.dev #devToggle{background:#ffffff26;flex:none}
+.dev b{color:#ff9447}.dev i{font-style:normal;color:#ffb98a}
+#devBtns{display:flex;flex-wrap:wrap;margin-top:4px;position:absolute;left:0;right:0;top:100%;padding:6px;border-radius:12px;background:#1a1714f2;z-index:20}#devBtns[hidden]{display:none}#devTypes{display:contents}
+
+.top .icon{position:relative}
+.dotnew{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--orange)}
+.dotnew[hidden]{display:none}
+#homeBody h3{margin:12px 0 6px;font-size:15px;letter-spacing:-.02em;color:var(--soft)}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+dialog .opt{background:none;color:var(--text);border:2px solid color-mix(in srgb,var(--soft) 45%,transparent);padding:9px 12px;font-size:15px}
+dialog .opt.sel{background:var(--orange);color:#fff;border-color:var(--orange)}
+dialog .opt.lock{opacity:.5;border-style:dashed}
+.ideas li{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ideas li span{flex:1 1 100%}
+.ideas a{color:var(--orange);font-weight:700;text-decoration:none}
+dialog .mini{padding:2px 8px;font-size:13px;background:none;color:var(--soft)}
+
+.findprompt{margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;font-size:15px;color:var(--text)}
+.findprompt[hidden]{display:none}
+.findprompt button{border:0;border-radius:999px;padding:8px 14px;background:var(--orange);color:#fff;font:700 14px "Albert Sans",sans-serif;cursor:pointer}
+.wm i{color:var(--orange)}
+.notesbody .card{background:color-mix(in srgb,var(--soft) 12%,transparent);border-radius:16px;padding:12px 14px}
+.notesbody h3{margin:0 0 6px;font-size:19px;letter-spacing:-.03em}
+.notesbody p{margin:6px 0;font-size:15px;line-height:1.4;font-weight:500}
+#cardKinds{margin-bottom:6px}
+
+.brand{display:flex;align-items:center;gap:8px;margin-right:auto}
+.brand .mark{display:block;flex:none;transform-origin:50% 90%}
+.brand .wm{font-weight:800;font-size:22px;letter-spacing:-.04em}
+
+.sheet{border-radius:24px;background:var(--card);padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;color:var(--ink)}
+.sheet[hidden]{display:none}
+.sheetTop{display:flex;align-items:center;gap:10px}
+.sheetTop b{font-size:20px;letter-spacing:-.04em}.sheetTop i{color:var(--orange)}
+.sheetTop .small{flex:1;font-size:13px;color:#5d5246}
+.sheetTop button{border:0;border-radius:999px;padding:8px 16px;background:var(--ink);color:#f4ecdf;font:700 14px "Albert Sans",sans-serif;cursor:pointer}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:0;border-radius:999px;padding:7px 13px;background:#00000014;color:var(--ink);font:700 14px "Albert Sans",sans-serif;cursor:pointer}
+.tab.on{background:var(--ink);color:#f4ecdf}
+.grid{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 4px}
+.grid::-webkit-scrollbar{display:none}
+.cell{flex:none;width:104px;border:2px solid transparent;border-radius:16px;background:#ffffff70;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--ink);font:700 12px "Albert Sans",sans-serif}
+.cell.on{border-color:var(--orange);background:#fff}
+.cell .th{position:relative;display:block;width:84px;height:84px}
+.cell .th svg{width:100%;height:100%}
+.cell .th svg{display:block}
+.cell.lock .th svg{opacity:.9;filter:saturate(.45) brightness(.97)}
+.cell.lock .th::after{content:"";position:absolute;inset:4px;border-radius:14px;background:#f6ead7b3}
+.cell .lk{position:absolute;z-index:1;right:2px;bottom:2px;width:26px;height:26px;border-radius:50%;background:#f6ead7;box-shadow:inset 0 -3px 0 #d3bf9c}
+.cell .lk::before{content:"";position:absolute;left:8px;top:12px;width:10px;height:8px;border-radius:2.5px;background:#5d5246}
+.cell .lk::after{content:"";position:absolute;left:9.5px;top:5.5px;width:7px;height:8px;border:2.4px solid #5d5246;border-bottom:0;border-radius:5px 5px 0 0}
+.cell .lb{text-align:center;line-height:1.1;letter-spacing:-.02em}
+.cell .ht{font-weight:500;font-size:10.5px;color:#6b5f52;line-height:1.1;text-align:center}
+.notesbody h3{font-size:24px;line-height:1.1}
+.notesbody .kick{font-weight:800;color:var(--orange);font-size:18px}
+.notesbody .more{display:inline-block;margin-top:8px;color:var(--orange);font-weight:700;text-decoration:none}
+
+/* ---------- responsive layout: mobile fills the screen, desktop puts the room first and the controls beside it ---------- */
+html,body{height:100%}
+body{display:block;min-height:0;overflow:hidden}
+.app{height:100dvh;width:100%;max-width:640px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
+.top{gap:6px}
+.chip{font-size:13px;padding:6px 12px}
+.chip svg{width:12px;height:12px}
+.brand .wm{font-size:20px}
+.stage{flex:1 1 auto;min-height:0;border-radius:22px}
+#sc{width:100%;height:100%;max-height:none}
+.say{font-size:clamp(13px,3.4vw,17px);font-weight:700;top:10px;letter-spacing:-.02em;opacity:.92;text-shadow:0 0 8px #e9dac6e6;min-height:22px}
+.stage.dark .say{color:#f4ecdf;text-shadow:none}
+.stage.dark .say .dot{color:var(--orange)}
+.side{flex:none;display:flex;flex-direction:column;gap:8px;max-height:46dvh;overflow:auto;scrollbar-width:none}
+.side::-webkit-scrollbar{display:none}
+.quick{display:none}
+.top .fs{display:none}
+.notesbody .more{text-decoration:underline;text-underline-offset:3px}
+.notesbody .more::after{content:" \2197"}
+@media (min-width:960px){
+  .app{max-width:none;display:grid;grid-template-columns:minmax(0,1fr) clamp(340px,26vw,440px);grid-template-rows:auto minmax(0,1fr);gap:12px 22px;padding:14px 26px 22px}
+  .top{grid-column:1/-1}
+  .stage{grid-column:1;grid-row:2;border-radius:30px}
+  .side{grid-column:2;grid-row:2;max-height:none;overflow:auto}
+  .quick{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .quick button{border:0;border-radius:16px;padding:12px 14px;text-align:left;background:color-mix(in srgb,var(--soft) 14%,transparent);color:var(--text);font:700 15px "Albert Sans",sans-serif;cursor:pointer}
+  .quick button:hover{background:color-mix(in srgb,var(--soft) 24%,transparent)}
+  .top .fs{display:grid}
+    .say{font-size:clamp(15px,1.25vw,20px);top:16px}
+  .sheet{padding:14px}
+  .sheet .tabs{flex-wrap:wrap;overflow:visible}
+  .sheet .grid{flex-wrap:wrap;overflow:visible}
+  .cell{width:96px}
+  .sheetTop{flex-wrap:wrap}
+  .sheetTop .small{flex:1 1 100%;order:3}
+}
+body.fs .app{padding-top:8px}
+body.fs .brand .mark{width:30px;height:30px}
+
+/* polish round: calmer header on phones, readable captions, a cap on how large the room grows, visible scroll cues */
+@media (max-width:959px){
+  .brand .mark{width:26px;height:26px}
+  .brand .wm{font-size:17px}
+  .chip{font-size:12px;padding:5px 10px}
+  .icon{width:34px;height:34px}
+  .top{gap:2px}
+  .tabs,.grid{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+}
+.say{opacity:1;transition:opacity .18s}
+.say.off{opacity:0}
+.quick button{display:flex;align-items:center;gap:10px}
+.quick button svg{flex:none;opacity:.8}
+.quick button span{flex:1}
+.quick .mk{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.02em;color:#fff;background:var(--orange);border-radius:999px;padding:2px 8px}
+.quick .mk[hidden]{display:none}
+@media (min-width:960px){
+  .stage{justify-self:center;align-self:center;width:100%;height:min(100%,900px);max-width:1240px}
+  .side{max-width:420px}
+}
+body.fs .top .fs{display:grid}
+
+/* ---------- interaction tray: a small drawer of real objects ---------- */
+.side{position:relative;z-index:0;margin-top:-22px}
+.stage{z-index:1}
+.drawer{position:relative;display:flex;gap:2px;align-items:stretch;margin:0;padding:24px 8px 6px;border-radius:22px 22px 24px 24px;background:#e2cfae;box-shadow:inset 0 14px 0 #cdb58e,inset 0 16px 0 #f3e6cf,inset 0 -5px 0 #d3bd98;z-index:0}
+.drawer[hidden]{display:none}
+.tb{position:relative;flex:1 1 0;min-width:0;min-height:clamp(84px,11.5dvh,108px);border:0;border-radius:18px;background:none;padding:0 0 6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0;cursor:pointer;color:var(--ink);touch-action:manipulation;-webkit-user-select:none;user-select:none;font-family:"Albert Sans",system-ui,sans-serif}
+.tb .art{display:block;width:100%;max-width:128px}
+.tb svg{display:block;width:100%;height:auto;overflow:visible}
+.tb .tl{font-weight:700;font-size:12.5px;line-height:1;letter-spacing:-.01em;color:#6a5a44;margin-top:-6px;transition:color .2s}
+.tb:focus-visible{outline:3px solid var(--orange);outline-offset:-3px}
+.tb .obj,.tb .sh,.tb .slot,.tb .crumb,.tb .turn,.tb .breathe,.tb .zz,.tb .glint{transform-box:fill-box;transform-origin:50% 100%}
+.tb .obj{transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.tb .sh{transform-origin:50% 50%;transition:transform .2s cubic-bezier(.3,1.6,.5,1),opacity .2s}
+.tb .slot{opacity:0;transition:opacity .2s}
+.tb .zz,.tb .glint{opacity:0}
+/* idle micro-motion: each object has its own small life */
+.tb[data-obj=plate] .crumb{animation:cSway 3.6s ease-in-out infinite}
+.tb[data-obj=pebble] .turn{animation:pTurn 6s ease-in-out infinite}
+.tb[data-obj=bed] .blk{transform-origin:0% 100%;animation:blkInvite 5.2s ease-in-out infinite}
+.tb[data-obj=bed] .sleeper{opacity:0}
+.tb[data-obj^=crumb] .turn{animation:pTurn 5s ease-in-out infinite}
+.tb:nth-child(2) .obj{animation-delay:-1.4s}
+@keyframes cSway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) translateY(-1px)}}
+@keyframes pTurn{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes pBreathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.015,1.045)}}
+/* press: the object sinks, its shadow shortens, it squashes; release overshoots once */
+.tb.press .obj{transform:translateY(3px) scale(1.06,.9);transition-duration:.06s}
+.tb.press .sh{transform:scaleX(.8);transition-duration:.06s}
+.tb.rel .obj{animation:relPop .3s cubic-bezier(.3,1.6,.5,1)}
+.tb.rel .sh{animation:relSh .3s ease-out}
+@keyframes relPop{0%{transform:translateY(3px) scale(1.06,.9)}45%{transform:translateY(-3px) scale(.97,1.06)}100%{transform:none}}
+@keyframes relSh{0%{transform:scaleX(.8)}45%{transform:scaleX(.9)}100%{transform:none}}
+.tb.no .obj{animation:shake .36s ease-in-out}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-4px) rotate(-3deg)}50%{transform:translateX(4px) rotate(3deg)}80%{transform:translateX(-2px) rotate(-1deg)}}
+/* states, drawn as part of the object */
+.tb[data-st=hint] .tl{color:var(--ink);font-weight:800}
+.tb[data-st=hint][data-obj=plate] .obj{animation:rattle 3.2s ease-in-out infinite}
+.tb[data-st=hint][data-obj=plate] .crumb{animation-duration:1.3s}
+@keyframes rattle{0%,82%,100%{transform:none}86%{transform:translateX(-2.5px)}90%{transform:translateX(2.5px)}94%{transform:translateX(-1.5px)}}
+@keyframes zFloat{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(-4px);opacity:1}}
+.tb[data-st=hint][data-obj=pebble] .glint{opacity:1;animation:glint 2.2s ease-in-out infinite}
+@keyframes glint{0%,100%{transform:scale(.3) rotate(0);opacity:0}45%{transform:scale(1) rotate(20deg);opacity:1}70%{transform:scale(.7) rotate(40deg);opacity:.8}}
+.tb[data-st=busy] .slot{opacity:1}
+.tb[data-st=busy][data-obj=plate] .crumb{display:none}
+.tb[data-st=busy][data-obj=pebble] .obj{display:none}
+.tb[data-st=busy][data-obj=pebble] .sh{opacity:0}
+.tb[data-st=busy] .tl{color:#9b8868}
+.tb[data-st=cool] .obj{animation:coolIn .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes coolIn{0%{transform:translateY(-10px) scale(.92,1.08)}100%{transform:none}}
+.tb[data-st=cool] .tl,.tb[data-st=soft] .tl{color:#9b8868}
+.tb[data-st=soft] .obj{transform:translateY(3px) scale(.96);filter:saturate(.7)}
+.tb[data-st=soft] .sh{transform:scaleX(.88)}
+.tb[data-st=soft] .crumb{animation:none}
+@media (prefers-reduced-motion:reduce){.tb *{animation:none!important}.tb .obj,.tb .sh{transition-duration:.01s}}
+@media (min-width:960px){.side{margin-top:0}.drawer{padding-top:22px;border-radius:26px}.tb{min-height:122px}.tb .tl{font-size:14px}}
+
+/* customise sheet: slides up from the bottom; before a group is chosen only the tabs show */
+.sheet:not([hidden]){animation:sheetIn .3s cubic-bezier(.3,1.25,.5,1)}
+@keyframes sheetIn{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet.pick{padding-bottom:12px}
+.sheet .grid[hidden]{display:none}
+.cell:active{transform:scale(.96)}
+@media (prefers-reduced-motion:reduce){.sheet:not([hidden]){animation:none}}
+
+/* header: one calm family. soft cream pills and circles, no black blocks */
+:root{--soft-fill:#e6d7c0}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--soft-fill:#2c2722}}
+:root[data-theme=dark]{--soft-fill:#2c2722}
+.top{align-items:center;gap:8px}
+.pill{border:0;border-radius:999px;height:36px;padding:0 14px;background:var(--soft-fill);color:var(--text);font:700 14px "Albert Sans",sans-serif;letter-spacing:-.02em;cursor:pointer;max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill:active,.rb:active{transform:scale(.95)}
+.rb{position:relative;border:0;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--soft-fill);color:var(--text);cursor:pointer;flex:none}
+.rb svg{fill:currentColor}.rb svg path{fill:none}.rb#menuBtn svg{fill:currentColor}
+.rb .dotnew{top:3px;right:3px;width:9px;height:9px;box-shadow:0 0 0 2px var(--soft-fill)}
+.top .fs{display:none}
+@media (min-width:960px){.top .fs{display:grid}}
+body.calm *{animation-duration:.001s!important;animation-iteration-count:1!important}
+body.calm .tb *{animation:none!important}
+
+.mk{display:none!important}
+.rb.new svg{animation:starPulse 2.8s ease-in-out infinite}
+@keyframes starPulse{0%,70%,100%{transform:scale(1) rotate(0)}80%{transform:scale(1.18) rotate(14deg)}90%{transform:scale(.96) rotate(-6deg)}}
+.rb.new{color:var(--orange)}
+
+/* dialogs and sheet: soft fills, orange only for the one main action */
+dialog button,.fileBtn{background:var(--soft-fill);color:var(--text)}
+dialog #okName,dialog #pinIdea,dialog #shareBtn,dialog #saveCard,dialog #cpCode,dialog #upCode,.fileBtn{background:var(--orange);color:#fff}
+.sheetTop button{background:var(--orange);color:#fff}
+.tab.on{background:var(--orange);color:#fff}
+
+/* the nap bed: the blanket invites, the mattress squashes when pressed, and an occupied bed is visibly occupied */
+@keyframes blkInvite{0%,55%,100%{transform:none}65%{transform:translateY(-3px) rotate(-4deg)}75%{transform:translateY(-1px) rotate(-2deg)}85%{transform:none}}
+.tb[data-obj=bed] .bedbase,.tb[data-obj=bed] .pil,.tb[data-obj=bed] .blk{transform-box:fill-box;transition:transform .12s cubic-bezier(.3,1.6,.5,1)}
+.tb[data-obj=bed] .bedbase{transform-origin:50% 100%}
+.tb.press[data-obj=bed] .bedbase{transform:scale(1.02,.9)}
+.tb.press[data-obj=bed] .blk{animation:none;transform:translateY(-5px) rotate(-5deg)}
+.tb.press[data-obj=bed] .pil{transform:translateY(2px) scale(1,.9)}
+.tb[data-st=hint][data-obj=bed] .blk{animation-duration:2.6s}
+.tb[data-st=busy][data-obj=bed] .blk{animation:none;transform:translate(-3px,-2px) scale(1,1.06)}
+.tb[data-st=busy][data-obj=bed] .pil{opacity:0}
+.tb[data-st=busy][data-obj=bed] .sleeper{opacity:1;animation:sleepBreath 3.4s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+.tb[data-st=busy][data-obj=bed] .zz{opacity:1;animation:zFloat 3s ease-in-out infinite}
+@keyframes sleepBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.04,1.07)}}
+.tb[data-st=busy][data-obj=bed] .bedbase{transform:none}
+.tb[data-st=busy][data-obj=bed] .slot{opacity:0}
+
+#xmrBig svg{display:block;width:100%;height:auto;border-radius:14px}
+.xmrStats{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:15px}
+.xmrStats dt{color:var(--soft);font-weight:600}.xmrStats dd{margin:0;font-weight:700;text-align:right;letter-spacing:-.02em}
+.xmrStats a{color:var(--orange);text-decoration:underline;text-underline-offset:3px}
+
+/* the drawer tucks under the room; the customise sheet does not (its first line must stay visible) */
+.editing .side{margin-top:6px}
+
+/* a phone on its side: the room takes the left, the drawer or sheet the right (same idea as the desktop layout, smaller) */
+@media (orientation:landscape) and (max-height:520px) and (max-width:959px){
+  .app{max-width:none;display:grid;grid-template-columns:minmax(0,1fr) clamp(250px,34vw,330px);grid-template-rows:auto minmax(0,1fr);gap:8px 12px;padding:max(8px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+  .top{grid-column:1/-1}
+  .stage{grid-column:1;grid-row:2}
+  .side{grid-column:2;grid-row:2;max-height:none;overflow:auto;margin-top:0}
+  .drawer{padding-top:14px;border-radius:22px}
+  .tb{min-height:84px}
+  .sheet{padding:10px}
+  .sheet .tabs{flex-wrap:wrap;overflow:visible}
+  .sheet .grid{flex-wrap:wrap;overflow:visible}
+  .dev{grid-column:1/-1}
+}
+.sheetTop{padding-top:4px}
+#dXmr .row button{padding:13px 8px;font-size:15px;white-space:nowrap}
+
+/* the action drawer and the food drawer share one place: opening the food picker never moves the room */
+.drawers{display:grid}
+.drawers>.drawer{grid-area:1/1}
+.drawers>.drawer[hidden]{display:flex;visibility:hidden;pointer-events:none}
+.editing .drawers{display:none}
+
+/* wallet gate: the room with the grain peeking over a blanket, and one way in */
+.gate #side,.gate #nameBtn,.gate #homeBtn,.gate #menuBtn,.gate #fsBtn,.gate #say,.gate #dev{display:none!important}
+.gate .stage{pointer-events:none}
+.gatecard{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:2px 12px 6px}
+.gatecard[hidden]{display:none}
+.gatecard h2{margin:0;font-size:30px;font-weight:800;letter-spacing:-.05em;line-height:1.05}
+.gateline{margin:0;min-height:20px;color:var(--soft);font-size:15px;font-weight:600;letter-spacing:-.02em;max-width:30ch}
+.gatebtn{border:0;border-radius:999px;height:52px;padding:0 30px;background:var(--btn);color:var(--btnText);font:800 17px "Albert Sans",sans-serif;letter-spacing:-.03em;cursor:pointer;min-width:180px}
+.gatebtn:active{transform:scale(.97)}
+.gatebtn[hidden]{display:none}
+.gatefoot{margin:2px 0 0;color:var(--soft);font-size:13px;font-weight:600}
+.savenote{position:absolute;right:12px;bottom:12px;margin:0;padding:5px 11px;border-radius:999px;background:rgba(244,236,223,.92);font-size:12.5px;font-weight:700;color:#5d5246;letter-spacing:-.01em;pointer-events:none;z-index:3}
+.savenote[hidden]{display:none}
+.frozen .stage,.frozen #side{pointer-events:none;opacity:.7}
+
+/* dialogs always fit the frame: they scroll inside instead of running off the bottom */
+dialog{max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
+#dShare{width:min(460px,calc(100vw - 32px))}
+#cardImg{width:auto;max-width:100%;max-height:calc(100dvh - 350px);min-height:140px;align-self:center;object-fit:contain}
+dialog input:focus,dialog textarea:focus{outline:none;border-color:var(--orange)}
+dialog button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}

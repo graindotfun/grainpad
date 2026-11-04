@@ -1,3 +1,4 @@
+import {catalogListingStatus} from '../catalog-listing-status.mjs';
 /** Pure progress and recovery derivation for the one-approval launch. No I/O, no wallet. */
 import {keccak_256} from "@noble/hashes/sha3";
 
@@ -19,6 +20,8 @@ export type LaunchFacts = {
   moneroAuthorized: boolean;
   moneroConfirmations: number | null;
   admitted: boolean;
+  moneroPublicationState?: string | null;
+  moneroTransactionHash?: string | null;
 };
 
 export type LaunchProgress = {
@@ -47,6 +50,10 @@ export function deriveLaunchProgress(f: LaunchFacts): LaunchProgress {
   if (f.admitted) return {stage: "trading_available", status: "done", detail: "Monero registration verified. Trading is available.", mayCreateAgain: false, nextAutomaticStep: "none"};
   if (!f.moneroAuthorized) return {stage: "metadata_verified", status: "working", detail: "Metadata verified. Registering with Monero.", mayCreateAgain: false, nextAutomaticStep: "register"};
   const n = f.moneroConfirmations;
+  if(f.moneroPublicationState!==undefined){
+    const listing=catalogListingStatus({confirmations:n??0,publicationState:f.moneroPublicationState,hasTransaction:!!f.moneroTransactionHash});
+    return {stage:'awaiting_monero',status:listing.state==='requires-review'?'blocked':'working',detail:listing.title+'. '+listing.detail,mayCreateAgain:false,nextAutomaticStep:n!==null&&n>=MONERO_CONFIRMATIONS_REQUIRED?'admit':'poll_monero'};
+  }
   return {stage: "awaiting_monero", status: "working",
     detail: n === null ? "Registration submitted. Waiting for Monero confirmations." : `Monero confirmations ${Math.min(n, MONERO_CONFIRMATIONS_REQUIRED)}/${MONERO_CONFIRMATIONS_REQUIRED}.`,
     mayCreateAgain: false, nextAutomaticStep: n !== null && n >= MONERO_CONFIRMATIONS_REQUIRED ? "admit" : "poll_monero"};

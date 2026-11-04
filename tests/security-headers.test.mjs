@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {documentSecurityHeaders} from '../lib/security-headers.mjs';
 const nonce='0123456789abcdef0123456789abcdef';
 test('public pages send framing, transport and script limits; local dev does not',()=>{
@@ -14,8 +15,22 @@ test('public pages send framing, transport and script limits; local dev does not
  assert.match(headers['Strict-Transport-Security'],/max-age=31536000/);
  assert.equal(documentSecurityHeaders('www.grainpad.fun',nonce)['X-Frame-Options'],'DENY');
 });
+test('only the grainpet page may frame, and only this origin',()=>{
+ const frame=path=>documentSecurityHeaders('grainpad.fun',nonce,path)['Content-Security-Policy'].split(';').map(p=>p.trim()).find(p=>p.startsWith('frame-src'));
+ assert.equal(frame('/pet'),"frame-src 'self'");assert.equal(frame('/pet/'),"frame-src 'self'");
+ for(const path of ['','/','/petrol','/pet/x','/launches','/api/grainpet'])assert.equal(frame(path),"frame-src 'none'");
+ assert.equal(documentSecurityHeaders('grainpad.fun',nonce,'/pet')['X-Frame-Options'],'DENY');assert.match(documentSecurityHeaders('grainpad.fun',nonce,'/pet')['Content-Security-Policy'],/frame-ancestors 'none'/);
+});
 test('public document policies reject missing, weak and injected nonces',()=>{
  for(const invalid of [undefined,'short',`${nonce}' 'unsafe-inline`,nonce+'\n'])assert.throws(()=>documentSecurityHeaders('grainpad.fun',invalid),/nonce/);
  const changed=documentSecurityHeaders('grainpad.fun','abcdef0123456789abcdef0123456789');
  assert.notEqual(changed['Content-Security-Policy'],documentSecurityHeaders('grainpad.fun',nonce)['Content-Security-Policy']);
+});
+test('the static room page can only be framed by this origin, on the address it is really served from (static assets bypass the Worker, so public/_headers carries the rule)',()=>{
+ const rules=readFileSync(new URL('../public/_headers',import.meta.url),'utf8');
+ /* the asset layer serves room.html at /pet/room (".html" is dropped by a 307), and the redirect response is not the page that gets framed */
+ for(const path of ['/pet/room','/pet/room.html']){
+  const block=rules.split(/\n(?=\/)/).find(b=>b.startsWith(path+'\n'));
+  assert.ok(block,path);assert.match(block,/X-Frame-Options: SAMEORIGIN/);assert.match(block,/frame-ancestors 'self'/);
+ }
 });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {marketMetricSeries} from '../lib/market-metric.mjs';
-import {tapeLedgerRows} from '../lib/tape-ledger.mjs';
+import {tapeLedgerRows,tapeRowAmount} from '../lib/tape-ledger.mjs';
 const rows=[{time:60,close:.001},{time:120,close:.002}];
 const native={nativePrice:.002,nativeMarketCap:2000000,quoteUsd:{price:150,source:'fixture',freshness:'fresh'}};
 test('price↔market cap transforms actual plotted axis values using current supply, preserving times',()=>{
@@ -45,4 +45,11 @@ test('actual market outage render keeps verified wXMR pair and does not invent z
  const html=renderToStaticMarkup(createElement(MarketModule,props));
  assert.match(html,/on-chain · (?:<span class="gx-word">)?wXMR/);assert.match(html,/<dt>Pair<\/dt><dd>wXMR<\/dd>/);assert.match(html,/Price temporarily unavailable/);assert.doesNotMatch(html,/Price appears with the first trade|on-chain · SOL|<dd>SOL<\/dd>/);
  const unknown=renderToStaticMarkup(createElement(MarketModule,{...props,quoteSymbol:undefined}));assert.match(unknown,/<dt>Pair<\/dt><dd>—<\/dd>/);assert.doesNotMatch(unknown,/on-chain · SOL/);
+});
+test('tape fee claimed in the token itself stays in the token, never priced at the SOL/wXMR rate',()=>{
+ const lp={quoteSymbol:'GRAIN',quoteAmount:'11081148135820',quoteDecimals:6},wxmr={quoteSymbol:'wXMR',quoteAmount:'837085743766',quoteDecimals:12};
+ assert.deepEqual(tapeRowAmount(lp,'wXMR',0.1736),{symbol:'GRAIN',onChain:11081148.13582,inSol:null});
+ assert.equal(tapeRowAmount(wxmr,'wXMR',0.1736).inSol,0.837085743766/0.1736);
+ assert.equal(tapeRowAmount({quoteSymbol:'SOL',quoteAmount:'1500000000',quoteDecimals:9},'wXMR',null).inSol,1.5);
+ assert.equal(tapeRowAmount(wxmr,'wXMR',null).inSol,null);
 });

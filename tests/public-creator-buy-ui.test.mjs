@@ -26,6 +26,7 @@ const stubComponents={
 };
 await build({entryPoints:[join(candidate,'components/launch-workspace.tsx')],outfile,bundle:true,platform:'node',format:'esm',packages:'external',jsx:'automatic',logLevel:'silent',plugins:[{name:'public-ui-boundaries',setup(b){
  b.onResolve({filter:/^next\/(image|link)$/},a=>({path:a.path,namespace:'fixture'}));
+ b.onResolve({filter:/^\.\/use-shared-wallet$/},()=>({path:'@/components/use-shared-wallet',namespace:'fixture'}));
  b.onResolve({filter:/^react$/},()=>({path:'react',namespace:'fixture'}));
  // The Protected Launch tab imports the shared wallet hook relatively; it gets the same stub.
  b.onResolve({filter:/^\.\/use-shared-wallet$/},()=>({path:'@/components/use-shared-wallet',namespace:'fixture'}));

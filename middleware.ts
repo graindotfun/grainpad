@@ -3,7 +3,7 @@ import {documentSecurityHeaders} from "@/lib/security-headers.mjs";
 
 export function middleware(request: NextRequest) {
   const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, "0")).join("");
-  const headers = documentSecurityHeaders(request.nextUrl.hostname, nonce);
+  const headers = documentSecurityHeaders(request.nextUrl.hostname, nonce, request.nextUrl.pathname);
   const requestHeaders = new Headers(request.headers);
   // The renderer reads this policy to nonce its inline bootstrap/RSC scripts.
   // Replace client-supplied policies so they cannot choose the rendering nonce.

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1280" viewBox="0 0 1280 1280" role="img" aria-labelledby="title desc">
+<title id="title">grainpet</title><desc id="desc">The orange Grain emblem with Mori’s eyes, blush and smile.</desc>
+<defs><clipPath id="badge-clip"><circle cx="640" cy="640" r="590"/></clipPath></defs>
+<g id="badge" clip-path="url(#badge-clip)">
+<circle id="orange-disc" cx="640" cy="640" r="590" fill="#ff6600"/>
+<path id="white-brand-band" fill="#fff" d="M0 1010 188 832Q210 812 210 780V694C210 637 254 610 293 642L381 717Q407 741 436 718L598 647Q640 611 682 647L844 718Q873 741 899 717L987 642C1026 610 1070 637 1070 694V780Q1070 812 1092 832L1280 1010V1280H0Z"/>
+<path id="ink-base" fill="#1a1714" d="M0 1280V1104L598 769Q640 735 682 769L1280 1104V1280Z"/>
+<g id="charcoal-panels" fill="#3c3c3c"><path d="M88 1127 453 883Q529 849 563 880Q593 905 592 963L587 1280H88Z"/><path d="M1192 1127 827 883Q751 849 717 880Q687 905 688 963L693 1280H1192Z"/></g>
+<g id="mori-face">
+<ellipse id="highlight" cx="355" cy="248" rx="85" ry="40" transform="rotate(-40 355 248)" fill="#ffdfb7"/>
+<g id="eyes" fill="#1a1714"><ellipse cx="478" cy="422" rx="76" ry="94"/><ellipse cx="802" cy="422" rx="76" ry="94"/></g>
+<g id="catchlights" fill="#fff"><circle cx="498" cy="386" r="27"/><circle cx="456" cy="461" r="12"/><circle cx="822" cy="386" r="27"/><circle cx="780" cy="461" r="12"/></g>
+<g id="blush" fill="#ff8b85"><ellipse cx="396" cy="550" rx="72" ry="35"/><ellipse cx="884" cy="550" rx="72" ry="35"/></g>
+<path id="smile" d="M584 539Q640 596 696 539" fill="none" stroke="#1a1714" stroke-width="28" stroke-linecap="round"/>
+</g></g></svg>

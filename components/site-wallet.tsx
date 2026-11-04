@@ -70,6 +70,7 @@ export function SiteWallet(){
    <button type="button" className="wallet-action" onClick={()=>void copy(session.owner)} aria-live="polite">{copied?<><Check size={15}/>Copied</>:<><Copy size={15}/>Copy address</>}</button>
    <a className="wallet-action" href={session.family==='solana'?`https://solscan.io/account/${session.owner}`:`https://robinhoodchain.blockscout.com/address/${session.owner}`} target="_blank" rel="noreferrer"><ArrowUpRight size={15}/>{session.family==='solana'?'View on Solscan':session.session.chainId===4663?'View on Robinhood Explorer':'View Robinhood address'}</a>
    <button type="button" className="wallet-action" onClick={()=>void selectNetwork(family)}><Repeat size={15}/>Switch wallet</button>
+   <a className="wallet-action" href="/pet/">open grainpet<ArrowUpRight size={15}/></a>
   </div>
   <button type="button" className="wallet-disconnect" onClick={()=>void disconnect()}><LogOut size={15}/>Disconnect</button>
  </div>;
@@ -101,7 +102,7 @@ export function SiteWallet(){
  </>;
 
  return <><Button className="header-cta site-wallet-trigger" onClick={show} aria-label={session?`Connected wallet ${session.owner} on ${connectedNetwork}`:'Connect wallet'}>{session?<><Avatar address={session.owner} size={16}/><span className="wallet-trigger-full">{shortAddress(session.owner)}</span><span className="wallet-network-badge">{session.family==='solana'?'SOL':session.session.chainId===4663?'RH':'EVM'}</span></>:<><span className="wallet-trigger-full">Connect wallet</span><span className="wallet-trigger-short" aria-hidden="true">Connect</span></>}</Button>
- <Dialog open={open} onOpenChange={value=>{if(!value)back();setOpen(value);}}><DialogContent className="wallet-session-dialog">
+ <Dialog open={open} onOpenChange={value=>{if(!value){back();window.dispatchEvent(new CustomEvent('grainpad-wallet-closed'));}setOpen(value);}}><DialogContent className="wallet-session-dialog">
   <DialogHeader className="wallet-dialog-header"><span className="wallet-dialog-mark" aria-hidden="true"><Image unoptimized src={BRAND_ASSETS.mark} alt="" width={28} height={28}/></span><DialogTitle>{account?'your wallet':switching?'switch wallet':'connect to grainpad'}</DialogTitle><DialogDescription>{account?'One connection across grainpad.':'Choose a wallet to continue.'}</DialogDescription></DialogHeader>
   <div className="wallet-network-tabs" role="group" aria-label="Wallet network"><Button variant={family==='solana'?'default':'outline'} aria-pressed={family==='solana'} onClick={()=>void selectNetwork('solana')}>Solana</Button><Button variant={family==='robinhood'?'default':'outline'} aria-pressed={family==='robinhood'} onClick={()=>void selectNetwork('robinhood')}>Robinhood Chain</Button></div>
   {session&&!account&&!attempt&&!evmAttempt&&<p className="small muted">Active wallet: {connectedNetwork}. Choose a wallet below to switch.</p>}

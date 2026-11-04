@@ -37,18 +37,23 @@ export async function prepareMainnetPaymentTrade(rpc:Rpc,market:MainnetMarket,ow
  await assertRobinhoodChain(rpc,'robinhood:mainnet');
  const call=async(to:string,signature:string,args='',count=1)=>words(await rpc('eth_call',[{to:address(to),data:selector(signature)+args},market.block]),count);
  const readAddress=async(to:string,signature:string,args='')=>{const [n]=await call(to,signature,args);if(n>=1n<<160n)throw Error('Invalid route address.');return address('0x'+n.toString(16).padStart(40,'0'));};
- for(const contract of [MAINNET_V3_ROUTER,MAINNET_V3_QUOTER]){
-  if(await readAddress(contract,'factory()')!==DEX||await readAddress(contract,'WETH9()')!==WETH)throw Error('Unreviewed payment router wiring.');
- }
- if(await readAddress(DEX,'getPool(address,address,uint24)',aw(WETH)+aw(market.tokenAddress)+uintWord(10000n))!==market.pool)throw Error('Token pool identity changed.');
+ // Independent reads share the same pinned block; concurrency changes neither admission nor transaction bytes.
+ const [routerFactory,routerWeth,quoterFactory,quoterWeth,tokenPool]=await Promise.all([
+  readAddress(MAINNET_V3_ROUTER,'factory()'),readAddress(MAINNET_V3_ROUTER,'WETH9()'),
+  readAddress(MAINNET_V3_QUOTER,'factory()'),readAddress(MAINNET_V3_QUOTER,'WETH9()'),
+  readAddress(DEX,'getPool(address,address,uint24)',aw(WETH)+aw(market.tokenAddress)+uintWord(10000n)),
+ ]);
+ if(routerFactory!==DEX||routerWeth!==WETH||quoterFactory!==DEX||quoterWeth!==WETH)throw Error('Unreviewed payment router wiring.');
+ if(tokenPool!==market.pool)throw Error('Token pool identity changed.');
  const tokenIn=side==='buy'?(asset==='USDG'?ROBINHOOD_USDG:WETH):market.tokenAddress,tokenOut=side==='buy'?market.tokenAddress:(asset==='USDG'?ROBINHOOD_USDG:WETH);
  let output:bigint;let path='';
  if(asset==='USDG'){
-  if((await call(ROBINHOOD_USDG,'decimals()'))[0]!==6n)throw Error('USDG precision changed.');
-  const pool=await readAddress(DEX,'getPool(address,address,uint24)',aw(ROBINHOOD_USDG)+aw(WETH)+uintWord(USDG_WETH_FEE));
+  const [precision,pool]=await Promise.all([call(ROBINHOOD_USDG,'decimals()'),readAddress(DEX,'getPool(address,address,uint24)',aw(ROBINHOOD_USDG)+aw(WETH)+uintWord(USDG_WETH_FEE))]);
+  if(precision[0]!==6n)throw Error('USDG precision changed.');
   if(BigInt(pool)===0n)throw Error('USDG conversion liquidity unavailable. Choose ETH.');
   const [token0,token1]=[ROBINHOOD_USDG,WETH].sort();
-  if(await readAddress(pool,'token0()')!==token0||await readAddress(pool,'token1()')!==token1||await readAddress(pool,'factory()')!==DEX||(await call(pool,'fee()'))[0]!==USDG_WETH_FEE||(await call(pool,'liquidity()'))[0]===0n)throw Error('USDG conversion pool is unavailable or changed.');
+  const [actual0,actual1,poolFactory,poolFee,liquidity]=await Promise.all([readAddress(pool,'token0()'),readAddress(pool,'token1()'),readAddress(pool,'factory()'),call(pool,'fee()'),call(pool,'liquidity()')]);
+  if(actual0!==token0||actual1!==token1||poolFactory!==DEX||poolFee[0]!==USDG_WETH_FEE||liquidity[0]===0n)throw Error('USDG conversion pool is unavailable or changed.');
   path=side==='buy'?ROBINHOOD_USDG.slice(2)+USDG_WETH_FEE.toString(16).padStart(6,'0')+WETH.slice(2)+(10000).toString(16).padStart(6,'0')+market.tokenAddress.slice(2):market.tokenAddress.slice(2)+(10000).toString(16).padStart(6,'0')+WETH.slice(2)+USDG_WETH_FEE.toString(16).padStart(6,'0')+ROBINHOOD_USDG.slice(2);
   const value=await call(MAINNET_V3_QUOTER,'quoteExactInput(bytes,uint256)',uintWord(64n)+uintWord(amount)+bytes(path),10);
   if(value[1]!==128n||value[2]!==224n||value[4]!==2n||value[7]!==2n||value[5]<=0n||value[6]<=0n||value[5]>=1n<<160n||value[6]>=1n<<160n||value[8]>=1n<<32n||value[9]>=1n<<32n)throw Error('USDG route quote is malformed.');
@@ -65,13 +70,14 @@ export async function prepareMainnetPaymentTrade(rpc:Rpc,market:MainnetMarket,ow
  let approval:Transaction|null=null,estimatedGasReserve:bigint|null=null;
  if(asset==='ETH'&&side==='buy'){
   const balance=quantity(await rpc('eth_getBalance',[account,'latest']));if(balance<amount)throw Error('Insufficient ETH balance.');
-  const gas=quantity(await rpc('eth_estimateGas',[transaction])),gasPrice=quantity(await rpc('eth_gasPrice',[]));
+  const [gasRaw,priceRaw]=await Promise.all([rpc('eth_estimateGas',[transaction]),rpc('eth_gasPrice',[])]),gas=quantity(gasRaw),gasPrice=quantity(priceRaw);
   if(gas<=0n||gasPrice<=0n)throw Error('Network fee estimate unavailable.');
   estimatedGasReserve=(gas*gasPrice*120n+99n)/100n;
   if(balance<amount+estimatedGasReserve)throw Error('Keep enough ETH for network gas. Reduce the amount.');
  }else{
-  if((await call(tokenIn,'balanceOf(address)',aw(account)))[0]<amount)throw Error('Insufficient '+(side==='buy'?'USDG':'token')+' balance.');
-  const allowance=(await call(tokenIn,'allowance(address,address)',aw(account)+aw(MAINNET_V3_ROUTER)))[0];
+  const [balance,allowed]=await Promise.all([call(tokenIn,'balanceOf(address)',aw(account)),call(tokenIn,'allowance(address,address)',aw(account)+aw(MAINNET_V3_ROUTER))]);
+  if(balance[0]<amount)throw Error('Insufficient '+(side==='buy'?'USDG':'token')+' balance.');
+  const allowance=allowed[0];
   if(allowance<amount)approval=tx(tokenIn,'0x095ea7b3'+aw(MAINNET_V3_ROUTER)+uintWord(amount));
  }
  await assertRobinhoodChain(rpc,'robinhood:mainnet');
