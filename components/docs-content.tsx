@@ -110,7 +110,8 @@ export function DocsContent({ platformId, feeWallet, rates, solTradingEnabled, s
         </Section>
         <Section index={4}>
           <p>Rewards are for GRAIN holders only. The 1% creator fee on the GRAIN pool (paired with wXMR) is split three ways: 50% to GRAIN holders, 35% to grainpad and 15% to a GRAIN buyback that is burned. The buyback is a market buy, never a sale. Until the buyback step is built and reviewed, the 15% accrues in wXMR.</p>
-          <p>Holder rewards are paid in wXMR today. Native XMR payouts are the next step and are being tested; they are not live and there is no date. Fees from other launches on grainpad are platform income and never fund GRAIN holder rewards. The separate 2% transfer tax on the GRAIN mint is not part of this split and its handling is paused.</p>
+          <p>Split history: the relaunch announcement used 70% to GRAIN holders, 15% to the buyback and burn, and 15% to grainpad. The split was updated to 50% / 15% / 35% by owner decision on 30 October 2026, and earlier rounds stay visible under their original split.</p>
+          <p>Holder rewards are paid in wXMR today, and every holder payment is published with its receipt on the <a href="/rewards">Rewards</a> page. The first round paid from the creator fee split has not run yet. Native XMR payouts are the next step and are being tested; they are not live and there is no date. Fees from other launches on grainpad are platform income and never fund GRAIN holder rewards. The separate 2% transfer tax on the GRAIN mint is not part of this split and its handling is paused.</p>
           <p><a href="/grainpet">Grainpet</a> is a small pet that follows your wallet. It does not change how rewards are paid. <a href="/rewards">View the current distribution status and verified receipts</a>.</p>
         </Section>
         <Section index={5}>
