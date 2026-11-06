@@ -1,6 +1,7 @@
 # Grainpad launchpad: public source
 
-<img width="1774" height="887" alt="readme-image" src="https://github.com/user-attachments/assets/7c72333a-96e4-47e7-809f-837c06193043" />
+<img width="1280" height="640" alt="grainpad-banner-cream-1280x640" src="https://github.com/user-attachments/assets/08ec045a-6294-4e88-83b3-e18ddac12da0" />
+
 
 The source of the grainpad.fun launchpad: website, product logic, Solana and Robinhood Chain transaction builders, EVM onboarding modules, wallet signing helpers, receipts and charts, GRN1 Monero provenance records, read-only verifiers and tests. Files and commit history are exported from Grainpad's private development repository through a reviewed allowlist. Commits keep their original author dates; distribution commits add the public packaging and verification inventory.
 
